@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: beathunter_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./dataset_processed:/app/dataset_processed
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - beathunter_net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: beathunter_ui
+    ports:
+      - "8501:8501"
+    environment:
+      # The frontend uses the Docker service name 'backend' instead of localhost (127.0.0.1) 
+      # to resolve the API URL within the shared Docker network.
+      - API_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - beathunter_net
+
+networks:
+  beathunter_net:
+    driver: bridge

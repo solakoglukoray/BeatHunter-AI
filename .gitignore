@@ -1,0 +1,42 @@
+# === Python System Files ===
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.tldp_cache/
+
+# === Data & Datasets ===
+# We exclude these to keep the repository lightweight and avoid GitHub size limits
+dataset/
+dataset_v2/
+dataset_processed/
+
+# === Inference & Temporary Files ===
+# Files generated during Demucs separation or temporary analysis
+temp_inference/
+htdemucs/
+*.mp3
+*.wav
+*.png
+*.jpg
+*.jpeg
+
+# === Machine Learning Models ===
+# Large binary files should not be tracked in Git (use LFS if needed)
+models/*.keras
+models/*.npy
+models/*.h5
+# We keep classes.json as it defines the label taxonomy
+!models/classes.json
+
+# === Environments & IDEs ===
+.env
+.venv
+venv/
+env/
+.vscode/
+.idea/
+
+# === OS Specific Files ===
+.DS_Store
+Thumbs.db

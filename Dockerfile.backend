@@ -1,0 +1,26 @@
+# Base Image: Official TensorFlow with pre-configured GPU (CUDA) support for hardware acceleration
+FROM tensorflow/tensorflow:2.15.0-gpu
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Install OS-level dependencies required for audio processing and extraction (FFmpeg, libsndfile)
+# Cleaning up the apt cache (rm -rf) reduces the final image size
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file and install Python dependencies
+# Done before copying the rest of the code to leverage Docker layer caching
+COPY requirements-backend.txt .
+RUN pip install --no-cache-dir -r requirements-backend.txt
+
+# Copy the entire application source code into the container
+COPY . .
+
+# Expose the port on which the FastAPI backend will listen
+EXPOSE 8000
+
+# Command to spin up the ASGI server using Uvicorn
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]

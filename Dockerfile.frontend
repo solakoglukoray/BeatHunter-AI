@@ -1,0 +1,17 @@
+# Base Image: Lightweight Python environment to minimize container size
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install dependencies required for Streamlit and API communication (Requests)
+COPY requirements-frontend.txt .
+RUN pip install --no-cache-dir -r requirements-frontend.txt
+
+# Copy the frontend application source code
+COPY app.py .
+
+# Expose the default port used by Streamlit
+EXPOSE 8501
+
+# Command to launch the Streamlit UI on container startup
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

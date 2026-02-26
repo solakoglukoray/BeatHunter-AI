@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+tensorflow==2.15.0
+numpy
+pandas
+librosa
+matplotlib
+scikit-learn
+scipy
+yt-dlp
+demucs
