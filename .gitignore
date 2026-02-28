@@ -40,3 +40,9 @@ env/
 # === OS Specific Files ===
 .DS_Store
 Thumbs.db
+
+# === Database & Security Files ===
+# Veritabanı dosyaları ve gizli anahtarlar asla Git'e eklenmemelidir
+*.db
+*.sqlite3
+beathunter_users.db
