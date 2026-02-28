@@ -13,6 +13,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import time
+import hashlib
+from diskcache import Cache
+
+api_cache = Cache("api_cache_dir")
 
 # Import custom inference engine modules
 from inference_engine import (
@@ -112,7 +116,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     access_token = auth.create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
-# --- ENDPOINT 1: LOCAL FILE ANALYSIS (PROTECTED) ---
+# --- ENDPOINT 1: LOCAL FILE ANALYSIS (PROTECTED & CACHED) ---
 @app.post("/analyze_file/")
 async def analyze_file_endpoint(
     file: UploadFile = File(...), 
@@ -121,10 +125,26 @@ async def analyze_file_endpoint(
 ):
     """
     Accepts an uploaded audio file, optionally applies vocal separation, 
-    and returns ML-based feature analysis. Requires JWT Authentication.
+    and returns ML-based feature analysis. Uses DiskCache for extreme speed.
     """
     try:
         print(f"👤 Secure Local Analysis requested by user: {current_user.username}")
+        
+        # 1. Read file content to generate a unique mathematical footprint (Hash)
+        file_content = await file.read()
+        file_hash = hashlib.md5(file_content).hexdigest()
+        cache_key = f"file_{file_hash}_{skip_demucs}"
+
+        # 2. Check if this exact file was analyzed before (Cache Hit)
+        cached_result = api_cache.get(cache_key)
+        if cached_result:
+            print(f"⚡ [CACHE HIT] Exact file found in memory! Serving in 0.01s.")
+            cached_result["user"] = current_user.username # Update user info
+            return JSONResponse(content=cached_result)
+
+        # 3. If not in cache, reset file cursor and proceed with normal ML inference
+        await file.seek(0)
+        
         if not os.path.exists(TEMP_FOLDER): 
             os.makedirs(TEMP_FOLDER)
             
@@ -141,7 +161,8 @@ async def analyze_file_endpoint(
         formatted_result, recommendations, bpm, key = analyze_beat(beat_path)
         tags = formatted_result.split(" / ")
 
-        return JSONResponse(content={
+        # 4. Prepare the final response data
+        response_data = {
             "status": "success",
             "user": current_user.username,
             "source": "local_file",
@@ -154,12 +175,17 @@ async def analyze_file_endpoint(
                 "key": key
             },
             "recommendations": recommendations
-        })
+        }
+        
+        # 5. Save the result to cache for 7 days (604800 seconds)
+        api_cache.set(cache_key, response_data, expire=604800)
+        
+        return JSONResponse(content=response_data)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- ENDPOINT 2: YOUTUBE LINK/QUERY ANALYSIS (PROTECTED) ---
+# --- ENDPOINT 2: YOUTUBE LINK/QUERY ANALYSIS (PROTECTED & CACHED) ---
 @app.post("/analyze_youtube/")
 async def analyze_youtube_endpoint(
     query: str = Form(...),
@@ -167,18 +193,30 @@ async def analyze_youtube_endpoint(
 ):
     """
     Takes a YouTube URL/query, downloads audio, applies vocal separation,
-    and returns ML-based feature analysis. Requires JWT Authentication.
+    and returns ML-based feature analysis. Uses DiskCache for extreme speed.
     """
     try:
         print(f"🔍 [API] Incoming YouTube Request from {current_user.username}: {query}")
         
+        # 1. Create a unique cache key based on the search query
+        cache_key = f"yt_{query.strip().lower()}"
+        
+        # 2. Check if this query was analyzed before (Cache Hit)
+        cached_result = api_cache.get(cache_key)
+        if cached_result:
+            print(f"⚡ [CACHE HIT] Query found in memory! Serving in 0.01s: {query}")
+            cached_result["user"] = current_user.username # Update user info
+            return JSONResponse(content=cached_result)
+        
+        # 3. If not in cache, proceed with heavy ML inference
         file_path = download_youtube_audio(query)
         beat_path = separate_audio(file_path)
         
         formatted_result, recommendations, bpm, key = analyze_beat(beat_path)
         tags = formatted_result.split(" / ")
 
-        return JSONResponse(content={
+        # 4. Prepare the final response data
+        response_data = {
             "status": "success",
             "user": current_user.username,
             "source": "youtube",
@@ -191,7 +229,12 @@ async def analyze_youtube_endpoint(
                 "key": key
             },
             "recommendations": recommendations
-        })
+        }
+        
+        # 5. Save the result to cache for 7 days (604800 seconds)
+        api_cache.set(cache_key, response_data, expire=604800)
+        
+        return JSONResponse(content=response_data)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

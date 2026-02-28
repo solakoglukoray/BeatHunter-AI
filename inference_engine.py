@@ -16,9 +16,9 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import img_to_array
 import matplotlib.pyplot as plt
-from sklearn.metrics.pairwise import cosine_similarity
 import scipy.stats as stats
 from collections import Counter
+import faiss
 
 # --- CONFIGURATION ---
 TEMP_FOLDER = "temp_inference"
@@ -27,12 +27,11 @@ CLASSES_PATH = "models/classes.json"
 
 PROCESSED_CSV = "dataset_processed/metadata_processed.csv"
 IMG_DIR = "dataset_processed/images"
-VECTOR_DB_PATH = "models/vector_db.npy"
+FAISS_INDEX_PATH = "models/vector_db.index" 
 VECTOR_META_PATH = "models/vector_meta.csv"
 
 SAMPLE_RATE = 22050
 SEGMENT_DURATION = 3  # seconds
-# The number of uniform segments to extract from the track for Majority Voting
 NUM_SEGMENTS = 8
 
 
@@ -184,11 +183,18 @@ def separate_audio(input_path):
 
 
 def build_vector_database():
-    """Extracts and saves latent vectors for the entire dataset in optimized batches."""
-    if os.path.exists(VECTOR_DB_PATH):
-        return
+    """Extracts latent vectors and builds a high-speed FAISS index."""
+    # If index exists, check if model is newer — if so, rebuild
+    if os.path.exists(FAISS_INDEX_PATH):
+        model_time = os.path.getmtime(MODEL_PATH)
+        index_time = os.path.getmtime(FAISS_INDEX_PATH)
+        if model_time <= index_time:
+            return  # Index is up-to-date, skip rebuild
+        else:
+            print("🔄 Model has been updated — rebuilding vector database...")
+            os.remove(FAISS_INDEX_PATH)
 
-    print("🧬 Building Vector Database (Initial run only)...")
+    print("🧬 Building FAISS Vector Database (Initial run only)...")
     model = tf.keras.models.load_model(MODEL_PATH)
     embed_model = tf.keras.Model(
         inputs=model.input,
@@ -197,7 +203,7 @@ def build_vector_database():
 
     df = pd.read_csv(PROCESSED_CSV)
     vectors = []
-    BATCH = 256  # Process 256 images per batch instead of individual loops for extreme speed
+    BATCH = 256  
 
     img_paths = [os.path.join(IMG_DIR, f) for f in df['filename']]
 
@@ -207,7 +213,6 @@ def build_vector_database():
         img = tf.image.resize(img, (224, 224))
         return tf.cast(img, tf.float32) / 255.0
 
-    # Build an optimized TensorFlow data pipeline using AUTOTUNE
     ds = tf.data.Dataset.from_tensor_slices(img_paths)
     ds = ds.map(load_img_tf, num_parallel_calls=tf.data.AUTOTUNE)
     ds = ds.batch(BATCH).prefetch(tf.data.AUTOTUNE)
@@ -218,12 +223,20 @@ def build_vector_database():
         vecs = embed_model.predict(batch, verbose=0)
         vectors.extend(vecs)
         processed += len(batch)
-        if processed % 10000 == 0:
+        if processed % 500 == 0:
             print(f"   ⏳ Processed {processed:,} / {total:,} images...")
 
-    np.save(VECTOR_DB_PATH, np.array(vectors))
+    # 🚀 FAISS INDEXING MAGIC
+    vectors_np = np.array(vectors, dtype=np.float32)
+    faiss.normalize_L2(vectors_np)
+    d = vectors_np.shape[1]
+    
+    index = faiss.IndexFlatIP(d)    # Inner Product
+    index.add(vectors_np)
+    
+    faiss.write_index(index, FAISS_INDEX_PATH)
     df.to_csv(VECTOR_META_PATH, index=False)
-    print("✅ Vector Database is fully operational!")
+    print("✅ FAISS Vector Database is fully operational!")
 
 
 def analyze_beat(audio_path):
@@ -263,24 +276,32 @@ def analyze_beat(audio_path):
     plt.savefig(f"{TEMP_FOLDER}/temp_spec.png", bbox_inches='tight', pad_inches=0)
     plt.close()
 
-    # Query the Vector Database for Cosine Similarity matches
+    # --- 🚀 QUERY FAISS VECTOR DATABASE ---
     build_vector_database()
-    db_vectors = np.load(VECTOR_DB_PATH)
-    db_meta    = pd.read_csv(VECTOR_META_PATH)
+    
+    index = faiss.read_index(FAISS_INDEX_PATH)
+    db_meta = pd.read_csv(VECTOR_META_PATH)
 
-    similarities = cosine_similarity(mean_vector, db_vectors)[0]
-    top_indices  = similarities.argsort()[-10:][::-1]  # Fetch top 10 to ensure 5 unique matches
+    query_vector = np.array(mean_vector, dtype=np.float32)
+    faiss.normalize_L2(query_vector)
+
+    distances, indices = index.search(query_vector, 10)
+    
+    top_indices = indices[0]
+    similarities = distances[0]
 
     recommendations = []
     seen = set()
-    for idx in top_indices:
+    for i, idx in enumerate(top_indices):
         raw_name = db_meta.iloc[idx]['filename'].split('_slice')[0]
         if raw_name in seen:
             continue
-        score  = float(similarities[idx] * 100)
+            
+        score  = float(similarities[i] * 100)
         artist = db_meta.iloc[idx]['artist_type']
         mood   = db_meta.iloc[idx]['mood']
         genre  = db_meta.iloc[idx]['genre']
+        
         recommendations.append({
             "id":    raw_name,
             "title": f"{artist} / {mood} / {genre}",
