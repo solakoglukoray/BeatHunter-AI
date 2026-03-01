@@ -7,7 +7,7 @@ source separation (Demucs), ML inference, and now JWT-based Authentication.
 import os
 import shutil
 import uvicorn
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, status
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, status, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -15,6 +15,7 @@ from pydantic import BaseModel
 import time
 import hashlib
 from diskcache import Cache
+import psutil
 
 api_cache = Cache("api_cache_dir")
 
@@ -185,40 +186,27 @@ async def analyze_file_endpoint(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- ENDPOINT 2: YOUTUBE LINK/QUERY ANALYSIS (PROTECTED & CACHED) ---
-@app.post("/analyze_youtube/")
-async def analyze_youtube_endpoint(
-    query: str = Form(...),
-    current_user: auth.User = Depends(check_rate_limit)
-):
+# --- THE HEAVY WORKER FUNCTION (RUNS IN BACKGROUND) ---
+def background_youtube_worker(query: str, cache_key: str, username: str):
     """
-    Takes a YouTube URL/query, downloads audio, applies vocal separation,
-    and returns ML-based feature analysis. Uses DiskCache for extreme speed.
+    Runs completely in the background. Does the heavy ML lifting (Demucs & Model) 
+    and updates the DiskCache when finished, preventing API timeouts.
     """
     try:
-        print(f"🔍 [API] Incoming YouTube Request from {current_user.username}: {query}")
+        # 1. Mark task as processing
+        api_cache.set(cache_key, {"status": "processing", "query": query}, expire=3600)
         
-        # 1. Create a unique cache key based on the search query
-        cache_key = f"yt_{query.strip().lower()}"
-        
-        # 2. Check if this query was analyzed before (Cache Hit)
-        cached_result = api_cache.get(cache_key)
-        if cached_result:
-            print(f"⚡ [CACHE HIT] Query found in memory! Serving in 0.01s: {query}")
-            cached_result["user"] = current_user.username # Update user info
-            return JSONResponse(content=cached_result)
-        
-        # 3. If not in cache, proceed with heavy ML inference
+        # 2. Execute heavy lifting
         file_path = download_youtube_audio(query)
         beat_path = separate_audio(file_path)
         
         formatted_result, recommendations, bpm, key = analyze_beat(beat_path)
         tags = formatted_result.split(" / ")
 
-        # 4. Prepare the final response data
+        # 3. Prepare final success payload
         response_data = {
-            "status": "success",
-            "user": current_user.username,
+            "status": "completed",
+            "user": username,
             "source": "youtube",
             "query": query,
             "analysis": {
@@ -231,13 +219,81 @@ async def analyze_youtube_endpoint(
             "recommendations": recommendations
         }
         
-        # 5. Save the result to cache for 7 days (604800 seconds)
+        # 4. Save the final result to cache for 7 days
         api_cache.set(cache_key, response_data, expire=604800)
+        print(f"✅ [WORKER] Background task finished successfully for: {query}")
         
-        return JSONResponse(content=response_data)
+    except Exception as e:
+        # 5. Handle failures gracefully
+        print(f"❌ [WORKER] Task failed for {query}: {str(e)}")
+        api_cache.set(cache_key, {"status": "failed", "error": str(e)}, expire=3600)
+
+
+# --- ENDPOINT 2: YOUTUBE LINK/QUERY ANALYSIS (ASYNC TICKET SYSTEM) ---
+@app.post("/analyze_youtube/")
+async def analyze_youtube_endpoint(
+    background_tasks: BackgroundTasks,
+    query: str = Form(...),
+    current_user: auth.User = Depends(check_rate_limit)
+):
+    """
+    Takes a YouTube query. If not cached, issues a Ticket (Task ID) 
+    and delegates heavy ML inference to a background worker.
+    """
+    try:
+        print(f"🔍 [API] Incoming YouTube Request from {current_user.username}: {query}")
+        
+        # 1. Create a unique Task ID (Cache Key) based on the search query
+        cache_key = f"yt_{query.strip().lower()}"
+        
+        # 2. Check current state in memory
+        cached_result = api_cache.get(cache_key)
+        
+        if cached_result:
+            if cached_result.get("status") == "completed":
+                print(f"⚡ [CACHE HIT] Query already completed! Serving instantly.")
+                cached_result["user"] = current_user.username
+            else:
+                print(f"⏳ [CACHE QUEUE] Task is already processing or pending.")
+            # Return the existing task state
+            return JSONResponse(content={"task_id": cache_key, "current_state": cached_result})
+        
+        # 3. If completely new, issue a ticket and start the background worker
+        print(f"🎟️ [NEW TASK] Issuing ticket for: {query}")
+        
+        initial_state = {"status": "pending", "query": query}
+        api_cache.set(cache_key, initial_state, expire=3600)
+        
+        # Fire and forget! (Delegating to background)
+        background_tasks.add_task(background_youtube_worker, query, cache_key, current_user.username)
+        
+        return JSONResponse(content={
+            "task_id": cache_key, 
+            "current_state": initial_state,
+            "message": "Task queued successfully. Please poll for status."
+        })
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- ENDPOINT 3: TASK STATUS POLLING (LIMIT-FREE) ---
+@app.get("/task_status/{task_id}")
+async def get_task_status(
+    task_id: str, 
+    current_user: auth.User = Depends(auth.get_current_user)
+):
+    """
+    Check task status without hitting the rate limit. 
+    Only authentication is required.
+    """
+    clean_id = task_id.strip()
+    cached_result = api_cache.get(clean_id)
+    
+    if not cached_result:
+        return JSONResponse(content={"status": "pending", "message": "Initializing..."}, status_code=200)
+        
+    return JSONResponse(content=cached_result)
 
 # --- ADMIN ROUTES (SUPER SECRET) ---
 @app.get("/admin/users", tags=["Admin Dashboard"])
@@ -255,6 +311,49 @@ def get_all_users(
         for u in users
     ]
     return safe_users_data
+
+@app.get("/admin/stats")
+async def get_admin_stats(current_user: auth.User = Depends(auth.get_current_user)):
+    """
+    Admin-only endpoint to retrieve system health, cache metrics, 
+    and recent analysis activities.
+    """
+    if current_user.username.lower() != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden: Admins only.")
+    
+    # 1. Filter and count song-related keys in DiskCache
+    all_keys = [key for key in api_cache.iterkeys() if key.startswith("yt_")]
+    total_cached_songs = len(all_keys)
+    
+    # 2. Extract recent activities (last 5 tasks)
+    recent_tasks = []
+    # Taking the last 5 keys to show the most recent submissions
+    for k in all_keys[-5:]:
+        data = api_cache.get(k)
+        if data and isinstance(data, dict):
+            recent_tasks.append({
+                "query": data.get("query", "Unknown"),
+                "user": data.get("user", "System"),
+                "status": data.get("status", "unknown")
+            })
+
+    # 3. Collect system performance metrics
+    cpu_usage = psutil.cpu_percent()
+    ram_usage = psutil.virtual_memory().percent
+    
+    # 4. Compile final statistics payload
+    stats = {
+        "total_queries": total_cached_songs,
+        "system_health": {
+            "cpu": f"%{cpu_usage}",
+            "ram": f"%{ram_usage}",
+            "status": "Healthy" if cpu_usage < 80 else "Overloaded"
+        },
+        "cache_size": f"{len(api_cache)} items",
+        "recent_activities": recent_tasks  # Added for the new Dashboard UI
+    }
+    
+    return stats
 
 if __name__ == "__main__":
     print("🚀 Starting BeatHunter Enterprise API: http://127.0.0.1:8000")

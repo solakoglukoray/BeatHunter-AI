@@ -7,6 +7,7 @@ and JWT Bearer Token authorization for backend API requests.
 import streamlit as st
 import requests
 import os
+import time
 
 # --- API CONFIGURATION ---
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
@@ -94,21 +95,68 @@ with st.sidebar:
 HEADERS = {"Authorization": f"Bearer {st.session_state.token}"}
 
 # ==========================================
-# 👑 ADMIN DASHBOARD RENDER LOGIC
+# 👑 ADMIN DASHBOARD RENDER LOGIC (v1.3 Updated)
 # ==========================================
 if show_admin:
     st.title("👑 Executive Admin Dashboard")
-    st.markdown("System overview, user management, and metrics.")
+    st.markdown("Real-time system monitoring, user management, and cache metrics.")
     st.divider()
     
+    # Initialize stats to avoid NameError if API call fails
+    stats = {} 
+
+    try:
+        stats_res = requests.get(f"{API_URL}/admin/stats", headers=HEADERS)
+        if stats_res.status_code == 200:
+            stats = stats_res.json()
+            
+            # --- 1. METRICS SECTION ---
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Total Analyzed", stats.get("total_queries", 0), "🎵 Songs")
+            
+            cpu_val = stats["system_health"]["cpu"]
+            ram_val = stats["system_health"]["ram"]
+            
+            m2.metric("CPU Usage", cpu_val, help="Total CPU consumption of the server")
+            m3.metric("RAM Usage", ram_val, help="Total Memory consumption")
+            
+            status_color = "normal" if stats["system_health"]["status"] == "Healthy" else "inverse"
+            m4.metric("System Status", stats["system_health"]["status"], delta_color=status_color)
+            
+            st.divider()
+    except Exception as e:
+        st.warning(f"⚠️ Could not fetch real-time stats: {e}")
+
+    # --- 2. USER DATA SECTION ---
     with st.spinner("Fetching secure user data..."):
         res = requests.get(f"{API_URL}/admin/users", headers=HEADERS)
         if res.status_code == 200:
             users_data = res.json()
-            st.subheader("👥 Registered Users")
+            st.subheader(f"👥 Registered Users ({len(users_data)})")
             st.dataframe(users_data, use_container_width=True)
         else:
             st.error(f"Access Denied or API Error: {res.text}")
+    
+    st.divider() # Optional: adds a visual break before activities
+
+    # --- 3. RECENT ACTIVITIES & ACTIONS ---
+    col_act, col_btns = st.columns([2, 1])
+    
+    with col_act:
+        st.subheader("🕒 Recent Analysis Tasks")
+        # Check if we have data from the stats API
+        if "recent_activities" in stats and stats["recent_activities"]:
+            for act in reversed(stats["recent_activities"]):
+                # Clean display of recent tasks
+                st.write(f"👤 **{act['user']}** searched for: *{act['query']}* `{act['status']}`")
+        else:
+            st.info("No recent activity found or API unreachable.")
+
+    with col_btns:
+        st.subheader("⚙️ System Actions")
+        # Clear Cache Button (Logic to be implemented in v1.4)
+        if st.button("🧹 Clear All Cache", type="secondary", use_container_width=True):
+            st.warning("⚠️ Action Required: This feature will be linked to an API endpoint in the next update.")
             
     st.stop()
 
@@ -129,15 +177,48 @@ with tab1:
     song_query = st.text_input("Search on YouTube (e.g., Travis Scott Type Beat):")
     if st.button("🚀 Fetch and Analyze from YouTube", type="primary"):
         if song_query:
-            with st.spinner("📡 Sending secure request to API (Model is analyzing)..."):
+            with st.spinner("📡 Sending secure request to API (Booking Ticket)..."):
                 try:
                     res = requests.post(f"{API_URL}/analyze_youtube/", data={"query": song_query}, headers=HEADERS)
+                    
                     if res.status_code == 200:
-                        api_response = res.json()
+                        data = res.json()
+                        
+                        if "task_id" in data:
+                            task_id = data["task_id"]
+                            status_placeholder = st.empty()
+                            
+                            while True:
+                                try:
+                                    poll_res = requests.get(f"{API_URL}/task_status/{task_id}", headers=HEADERS)
+                                    
+                                    if poll_res.status_code == 200:
+                                        poll_data = poll_res.json()
+                                        current_status = poll_data.get("status")
+                                        
+                                        if current_status == "completed":
+                                            status_placeholder.success("✅ AI Analysis Complete!")
+                                            api_response = poll_data
+                                            break
+                                        elif current_status == "failed":
+                                            status_placeholder.error(f"❌ Analysis failed: {poll_data.get('error')}")
+                                            break
+                                        else:
+                                            status_placeholder.info(f"⏳ Task Status: **{current_status.upper()}**... AI is working.")
+                                            time.sleep(3)
+                                    else:
+                                        status_placeholder.error(f"⚠️ API returned status: {poll_res.status_code}")
+                                        break
+                                except Exception as poll_err:
+                                    status_placeholder.error(f"📡 Connection lost during polling: {poll_err}")
+                                    break
+                        else:
+                            api_response = data
+                            
                     elif res.status_code == 401:
                         st.error("Session expired! Please log out and log in again.")
                     elif res.status_code == 429:
-                        st.warning("⏳ **Whoa there, speedster!**\n\nTo ensure top performance for everyone, you can only analyze 3 songs per minute. Please take a short breather and try again.", icon="🛑")
+                        st.warning("⏳ **Whoa there, speedster!**\n\nTo ensure top performance for everyone, you can only analyze 3 songs per minute.", icon="🛑")
                     else:
                         st.error(f"API Error: {res.text}")
                 except Exception as e:
@@ -169,7 +250,7 @@ with tab2:
             st.warning("Please upload a file first!")
 
 # --- MAIN PROCESS (DISPLAYING API JSON RESPONSE) ---
-if api_response and api_response.get("status") == "success":
+if api_response and api_response.get("status") in ["success", "completed"]:
     analysis = api_response["analysis"]
     recs = api_response["recommendations"]
     
