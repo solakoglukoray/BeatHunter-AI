@@ -64,6 +64,22 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+def create_refresh_token(data: dict):
+    """
+    Generates a long-lived refresh token.
+    Used to obtain a new access token without requiring re-login.
+    """
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    
+    # Add a specific type to differentiate from access tokens
+    to_encode.update({"exp": expire, "type": "refresh"})
+    
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
 # --- DEPENDENCIES ---
 def get_db():
     """Yields a database session and safely closes it after the request."""
