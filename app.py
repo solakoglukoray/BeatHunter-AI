@@ -1,11 +1,11 @@
 """
-BeatHunter AI - Frontend (Streamlit) v1.2 Enterprise Edition
+BeatHunter AI - Frontend (Streamlit) v1.5 Enterprise Edition
 
-Changes in v1.2:
-- Audio preview now uses beat_path from API response (works with UUID temp folders)
-- asyncio.run() replaced with nest_asyncio to fix Streamlit event loop conflict
-- WebSocket correctly skipped on cache hits
-- Silent token refresh integrated into both tabs
+Changes in v1.5:
+- Added 'My Library' tab to view Search History and Favorite Beats
+- Integrated 'Save to Favorites' button into the global analysis results section
+- Added pandas for beautiful dataframe rendering
+- Injected task_id tracking for Favorite API interactions
 """
 
 import streamlit as st
@@ -16,6 +16,7 @@ import asyncio
 import websockets
 import json
 import nest_asyncio
+import pandas as pd  # Added for rendering history & favorites tables
 
 # Fix: Streamlit has its own event loop — nest_asyncio allows asyncio.run() inside it
 nest_asyncio.apply()
@@ -32,21 +33,34 @@ if "refresh_token" not in st.session_state:
     st.session_state.refresh_token = None
 if "username" not in st.session_state:
     st.session_state.username = None
-
+if "api_response" not in st.session_state:
+    st.session_state.api_response = None
 
 async def wait_for_analysis_ws(task_id):
-    """
-    Connects to the FastAPI WebSocket endpoint for a given task_id
-    and blocks until the worker sends back the final result JSON.
-    """
-    ws_url = API_URL.replace("http", "ws") + f"/ws/{task_id}"
+    import urllib.parse
+    encoded_task_id = urllib.parse.quote(task_id, safe="")
+    ws_url = API_URL.replace("http", "ws") + f"/ws/{encoded_task_id}"
     try:
         async with websockets.connect(ws_url) as websocket:
             message = await websocket.recv()
             return json.loads(message)
     except Exception as e:
-        return {"status": "failed", "error": str(e)}
-
+        print(f"WebSocket failed: {e} — falling back to polling...")
+        # WebSocket koparsa cache'de sonuç var mı diye kontrol et
+        for _ in range(60):  # 3 dakika bekle
+            await asyncio.sleep(3)
+            try:
+                res = requests.get(
+                    f"{API_URL}/task_status/{urllib.parse.quote(task_id, safe='')}",
+                    headers=HEADERS
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    if data.get("status") in ["completed", "failed"]:
+                        return data
+            except Exception:
+                pass
+        return {"status": "failed", "error": "Timeout: Analysis took too long."}
 
 # --- API HEALTH CHECK ---
 try:
@@ -54,7 +68,6 @@ try:
 except requests.exceptions.ConnectionError:
     st.error("🚨 Red Alert: Backend API server is unreachable! Please run `python api.py` first.")
     st.stop()
-
 
 # ==========================================
 # 🔒 AUTHENTICATION SCREEN
@@ -102,7 +115,6 @@ if not st.session_state.token:
 
     st.stop()
 
-
 # --- SILENT TOKEN REFRESH ---
 def attempt_silent_refresh():
     """
@@ -128,7 +140,6 @@ def attempt_silent_refresh():
     except Exception:
         return False
 
-
 # ==========================================
 # 🚀 MAIN APP (AUTHENTICATED)
 # ==========================================
@@ -152,7 +163,6 @@ with st.sidebar:
         st.rerun()
 
 HEADERS = {"Authorization": f"Bearer {st.session_state.token}"}
-
 
 # ==========================================
 # 👑 ADMIN DASHBOARD
@@ -221,7 +231,6 @@ if show_admin:
 
     st.stop()
 
-
 # ==========================================
 # 🎵 MAIN ANALYSIS APP
 # ==========================================
@@ -229,9 +238,8 @@ st.title("🎵 BeatHunter AI : MLOps Edition")
 st.markdown("AI-Powered Music Information Retrieval & Vectorized Beat Recommendation.")
 st.divider()
 
-tab1, tab2 = st.tabs(["🔗 Analyze from YouTube", "📁 Upload Local File"])
-
-api_response = None
+# Updated to include Tab 3 for Library
+tab1, tab2, tab3 = st.tabs(["🔗 Analyze from YouTube", "📁 Upload Local File", "📚 My Library"])
 
 # --- TAB 1: YOUTUBE ANALYSIS ---
 with tab1:
@@ -251,52 +259,47 @@ with tab1:
 
                         if "task_id" in data:
                             current_state = data.get("current_state", {})
+                            task_id = data["task_id"]
 
                             # Cache hit — result already ready, no WebSocket needed
                             if current_state.get("status") == "completed":
                                 st.success("⚡ Cache Hit! Serving instantly.")
-                                api_response = current_state
-
+                                st.session_state.api_response = current_state
+                                st.session_state.api_response["task_id"] = task_id  # Injected for Favorites tracking
                             else:
                                 # New task — connect WebSocket and wait for worker callback
-                                task_id = data["task_id"]
                                 st.info("🎟️ Ticket booked! Establishing real-time WebSocket connection...")
-
                                 with st.spinner("🎸 AI is analyzing the beat... Waiting for callback!"):
                                     ws_response = asyncio.run(wait_for_analysis_ws(task_id))
 
                                 if ws_response and ws_response.get("status") == "completed":
                                     st.success("✅ Analysis received via WebSocket!")
-                                    api_response = ws_response
+                                    st.session_state.api_response = ws_response
+                                    st.session_state.api_response["task_id"] = task_id  # Injected for Favorites tracking
                                 elif ws_response and ws_response.get("status") == "failed":
                                     st.error(f"❌ Analysis failed: {ws_response.get('error')}")
                                 else:
                                     st.error("⚠️ Connection lost or unknown WebSocket error.")
                         else:
-                            # Direct response (no task system)
+                            # Direct response (fallback)
                             st.success("⚡ Instant response received.")
-                            api_response = data
+                            st.session_state.api_response = data
+                            st.session_state.api_response["task_id"] = f"yt_{song_query}"
 
                     elif res.status_code == 401:
-                        # Try silent token refresh before forcing logout
                         if attempt_silent_refresh():
                             st.warning("🔄 Session silently refreshed! Please click Analyze again.")
                             time.sleep(1.5)
                             st.rerun()
                         else:
                             st.error("Session completely expired. Please log out and log in again.")
-
                     elif res.status_code == 429:
-                        st.warning(
-                            "⏳ **Rate limit reached.**\n\nYou can analyze 3 songs per minute. Please wait.",
-                            icon="🛑"
-                        )
+                        st.warning("⏳ **Rate limit reached.**\nYou can analyze 3 songs per minute. Please wait.", icon="🛑")
                     else:
                         st.error(f"API Error: {res.text}")
 
                 except Exception as e:
                     st.error(f"Connection Error: {e}")
-
 
 # --- TAB 2: LOCAL FILE UPLOAD ---
 with tab2:
@@ -318,8 +321,9 @@ with tab2:
                     )
 
                     if res.status_code == 200:
-                        api_response = res.json()
-
+                        st.session_state.api_response = res.json()
+                        # Fallback task_id for local files so Favorites button still works
+                        st.session_state.api_response["task_id"] = f"file_{uploaded_file.name}"
                     elif res.status_code == 401:
                         if attempt_silent_refresh():
                             st.warning("🔄 Session silently refreshed! Please click Analyze again.")
@@ -327,25 +331,100 @@ with tab2:
                             st.rerun()
                         else:
                             st.error("Session completely expired. Please log out and log in again.")
-
                     elif res.status_code == 429:
-                        st.warning(
-                            "⏳ **Rate limit reached.**\n\nYou can analyze 3 songs per minute. Please wait.",
-                            icon="🛑"
-                        )
+                        st.warning("⏳ **Rate limit reached.**\nYou can analyze 3 songs per minute. Please wait.", icon="🛑")
                     else:
                         st.error(f"API Error: {res.text}")
-
                 except Exception as e:
                     st.error(f"Connection Error: {e}")
         else:
             st.warning("Please upload a file first!")
 
+# --- TAB 3: USER LIBRARY & HISTORY ---
+with tab3:
+    st.header("📚 My Library")
+    st.markdown("View your recent analysis history and favorite beats.")
+    
+    lib_history, lib_favorites = st.tabs(["🕒 Search History", "⭐ Favorite Beats"])
+    
+    # 1. History Sub-Tab
+    with lib_history:
+        if st.button("🔄 Refresh History", key="btn_refresh_hist"):
+            st.rerun()
+            
+        with st.spinner("Loading history..."):
+            try:
+                res_hist = requests.get(f"{API_URL}/users/me/history", headers=HEADERS)
+                if res_hist.status_code == 200:
+                    history_data = res_hist.json()
+                    if history_data:
+                        df_hist = pd.DataFrame(history_data)
+                        # Format the date cleanly
+                        df_hist['created_at'] = pd.to_datetime(df_hist['created_at']).dt.strftime('%Y-%m-%d %H:%M')
+                        st.dataframe(df_hist[['query', 'source', 'created_at']], use_container_width=True)
+                    else:
+                        st.info("No search history found. Start analyzing some beats!")
+            except Exception as e:
+                st.error(f"Connection error: {e}")
+
+    # 2. Favorites Sub-Tab
+    with lib_favorites:
+        if st.button("🔄 Refresh Favorites", key="btn_refresh_fav"):
+            st.rerun()
+            
+        with st.spinner("Loading favorites..."):
+            try:
+                res_fav = requests.get(f"{API_URL}/users/me/favorites", headers=HEADERS)
+                if res_fav.status_code == 200:
+                    fav_data = res_fav.json()
+                    if fav_data:
+                        df_fav = pd.DataFrame(fav_data)
+                        df_fav['created_at'] = pd.to_datetime(df_fav['created_at']).dt.strftime('%Y-%m-%d %H:%M')
+                        
+                        # --- INTERACTIVE DELETE FEATURE ---
+                        # Insert a boolean column for checkboxes
+                        df_fav.insert(0, "Select", False)
+                        
+                        st.markdown("Check the boxes next to the beats you want to remove.")
+                        
+                        # Render an interactive dataframe
+                        edited_df = st.data_editor(
+                            df_fav[['Select', 'query', 'created_at', 'task_id']],
+                            hide_index=True,
+                            column_config={
+                                "Select": st.column_config.CheckboxColumn("Select", default=False),
+                                "task_id": None, # Hide the technical ID from the user
+                                "query": "Beat Name",
+                                "created_at": "Added On"
+                            },
+                            use_container_width=True,
+                            key="fav_editor"
+                        )
+                        
+                        # Extract task_ids of selected rows
+                        selected_tasks = edited_df[edited_df["Select"]]["task_id"].tolist()
+                        
+                        # Show delete button only if something is selected
+                        if len(selected_tasks) > 0:
+                            if st.button("🗑️ Remove Selected", type="primary"):
+                                with st.spinner("Removing selected beats..."):
+                                    for tid in selected_tasks:
+                                        # Call the DELETE API endpoint
+                                        requests.delete(f"{API_URL}/users/me/favorites/{tid}", headers=HEADERS)
+                                st.success("✅ Removed successfully!")
+                                time.sleep(1)
+                                st.rerun() # Refresh the page to show updated list
+                                
+                    else:
+                        st.info("You haven't added any beats to your favorites yet.")
+            except Exception as e:
+                st.error(f"Connection error: {e}")
 
 # ==========================================
 # 🎯 ANALYSIS RESULTS DISPLAY
 # ==========================================
-if api_response and api_response.get("status") in ["success", "completed"]:
+if st.session_state.api_response and st.session_state.api_response.get("status") in ["success", "completed"]:
+    api_response = st.session_state.api_response
     analysis = api_response["analysis"]
     recs     = api_response["recommendations"]
 
@@ -367,17 +446,42 @@ if api_response and api_response.get("status") in ["success", "completed"]:
     with col_img:
         st.image("temp_inference/temp_spec.png", use_container_width=True, caption="Mel-Spectrogram")
 
-        # Audio preview — use beat_path from response (UUID folder) or fallback for local files
-        if api_response.get("source") == "local_file":
+        # Audio preview
+        if st.session_state.api_response.get("source") == "local_file":
             audio_path = "temp_inference/api_uploaded_song.mp3"
         else:
-            # beat_path is provided by the worker in api.py response_data
-            audio_path = api_response.get("beat_path", "")
+            audio_path = st.session_state.api_response.get("beat_path", "")
 
         if audio_path and os.path.exists(audio_path):
             st.audio(audio_path, format="audio/mp3")
         else:
             st.info("🎵 Audio preview not available (temp file may have been cleaned up).")
+
+        # --- ⭐️ ADD TO FAVORITES BUTTON ---
+        st.divider()
+        col_fav1, col_fav2 = st.columns([1, 2])
+        with col_fav1:
+            # We safely extract the task_id to use as a unique key
+            fav_task_id = st.session_state.api_response.get("task_id", f"unknown_{int(time.time())}")
+            fav_query   = st.session_state.api_response.get("query") or st.session_state.api_response.get("filename") or "Unknown Beat"
+
+            if st.button("⭐ Save to Favorites", key=f"fav_btn_{fav_task_id}"):
+                fav_payload = {
+                    "query": fav_query, 
+                    "task_id": fav_task_id
+                }
+                fav_res = requests.post(
+                    f"{API_URL}/users/me/favorites", 
+                    json=fav_payload, 
+                    headers=HEADERS
+                )
+                
+                if fav_res.status_code == 200:
+                    st.toast("✅ Beat added to your favorites!")
+                elif fav_res.status_code == 401:
+                    st.error("Session expired! Please refresh or log in again.")
+                else:
+                    st.error("Could not save to favorites. It might already be in your list.")
 
     with col_rec:
         st.subheader("🧬 Vector-Based Recommendations")

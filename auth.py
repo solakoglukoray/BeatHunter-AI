@@ -1,7 +1,7 @@
 """
-BeatHunter AI - Authentication & Security Module (v1.1)
+BeatHunter AI - Authentication & Security Module (v1.5)
 Handles user registration, database session management (SQLite), 
-password hashing (bcrypt), and JWT-based authentication.
+password hashing (bcrypt), JWT-based authentication, and user data models.
 """
 
 import os
@@ -9,8 +9,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import create_engine, Column, Integer, String, Boolean
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 import bcrypt
 from jose import JWTError, jwt
 
@@ -36,6 +36,35 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
+    
+    # Relationships linking the user to their search history and favorite beats
+    history = relationship("SearchHistory", back_populates="owner")
+    favorites = relationship("Favorite", back_populates="owner")
+
+class SearchHistory(Base):
+    """Database model for tracking user search history."""
+    __tablename__ = "search_history"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    query = Column(String, index=True)          # e.g., "Travis Scott Type Beat"
+    source = Column(String)                     # e.g., "youtube" or "local"
+    task_id = Column(String)                    # The cache key (e.g., "yt_...")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationship linking back to the user
+    owner = relationship("User", back_populates="history")
+
+class Favorite(Base):
+    """Database model for a user's favorite beats."""
+    __tablename__ = "favorites"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    query = Column(String)                      # Song name or search query
+    task_id = Column(String)                    # To retrieve analysis from cache
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationship linking back to the user
+    owner = relationship("User", back_populates="favorites")
 
 # Generate the SQLite database and tables if they don't exist
 Base.metadata.create_all(bind=engine)
