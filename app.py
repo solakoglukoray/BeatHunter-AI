@@ -487,7 +487,14 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     col_img, col_rec = st.columns([1, 1])
 
     with col_img:
-        st.image("temp_inference/temp_spec.png", use_container_width=True, caption="Mel-Spectrogram")
+        # Per-request path: a shared filename meant concurrent analyses could show
+        # each other's spectrogram. Older cached responses have no path — skip rather
+        # than display a stale image belonging to someone else.
+        spec = api_response.get("spectrogram_path")
+        if spec and os.path.exists(spec):
+            st.image(spec, use_container_width=True, caption="Mel-Spectrogram")
+        else:
+            st.caption("Spectrogram unavailable for this result.")
 
         # Audio preview — her iki source türü de response'dan path alır
         if st.session_state.api_response.get("source") == "local_file":

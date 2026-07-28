@@ -5,18 +5,22 @@ password hashing (bcrypt), JWT-based authentication, and user data models.
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, DateTime, text
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 import bcrypt
 from jose import JWTError, jwt
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- CONFIGURATION ---
-# In production, SECRET_KEY must be stored in an environment (.env) file!
-SECRET_KEY = "beathunter-super-secret-jwt-key-change-me"
+# SECRET_KEY .env dosyasından okunur. Üretmek için:
+#   python -c "import secrets; print(secrets.token_hex(32))"
+SECRET_KEY = os.getenv("SECRET_KEY", "beathunter-fallback-key-CHANGE-IN-PRODUCTION")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 SQLALCHEMY_DATABASE_URL = "sqlite:///./beathunter_users.db"
@@ -36,6 +40,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
     
     # Relationships linking the user to their search history and favorite beats
     history = relationship("SearchHistory", back_populates="owner")
@@ -49,7 +54,7 @@ class SearchHistory(Base):
     query = Column(String, index=True)          # e.g., "Travis Scott Type Beat"
     source = Column(String)                     # e.g., "youtube" or "local"
     task_id = Column(String)                    # The cache key (e.g., "yt_...")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relationship linking back to the user
     owner = relationship("User", back_populates="history")
@@ -61,13 +66,33 @@ class Favorite(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     query = Column(String)                      # Song name or search query
     task_id = Column(String)                    # To retrieve analysis from cache
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relationship linking back to the user
     owner = relationship("User", back_populates="favorites")
 
 # Generate the SQLite database and tables if they don't exist
 Base.metadata.create_all(bind=engine)
+
+
+def run_migrations():
+    """
+    Applies schema migrations that can't be handled by create_all.
+    Safe to run multiple times — checks before altering.
+    """
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info(users)"))
+        columns = [row[1] for row in result]
+
+        if "is_admin" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
+            # Mevcut 'admin' kullanıcısına otomatik olarak admin yetkisi ver
+            conn.execute(text("UPDATE users SET is_admin = 1 WHERE username = 'admin'"))
+            conn.commit()
+            print("✅ Migration: is_admin kolonu eklendi, 'admin' kullanıcısına yetki verildi.")
+
+
+run_migrations()
 
 # --- SECURITY & CRYPTOGRAPHY ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -86,9 +111,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Generates a JSON Web Token (JWT) for authenticated sessions."""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -101,7 +126,7 @@ def create_refresh_token(data: dict):
     Used to obtain a new access token without requiring re-login.
     """
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     
     # Add a specific type to differentiate from access tokens
     to_encode.update({"exp": expire, "type": "refresh"})

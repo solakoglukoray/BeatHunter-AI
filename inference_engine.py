@@ -34,6 +34,7 @@ import io
 import os
 import sys
 import json
+import uuid
 import threading
 import subprocess
 import librosa
@@ -50,6 +51,7 @@ import faiss
 
 # --- CONFIGURATION ---
 TEMP_FOLDER   = "temp_inference"
+SPEC_FOLDER   = os.path.join(TEMP_FOLDER, "spectrograms")
 MODEL_PATH    = "models/beathunter_model.keras"
 CLASSES_PATH  = "models/classes.json"
 TAXONOMY_PATH = "models/taxonomy.json"   # artist -> {genre, mood}, for joint decoding
@@ -76,6 +78,7 @@ _cached_class_names = None
 _cached_faiss_index = None
 _cached_faiss_meta  = None
 _cached_taxonomy    = None
+_cached_embed_model = None
 
 
 def _get_model():
@@ -226,6 +229,16 @@ def build_embedding_model(model):
     )
 
 
+def _get_embedding_model(model):
+    """Cached embedding sub-model — rebuilding it per request wastes graph construction."""
+    global _cached_embed_model
+    if _cached_embed_model is None:
+        with _cache_lock:
+            if _cached_embed_model is None:
+                _cached_embed_model = build_embedding_model(model)
+    return _cached_embed_model
+
+
 def _get_faiss():
     """Returns the cached FAISS index and metadata, loading on first call."""
     global _cached_faiss_index, _cached_faiss_meta
@@ -262,28 +275,65 @@ HOP_LEN = 512
 IMG_SIZE = (224, 224)   # must match model_trainer.py IMG_SIZE
 
 
+# Beat trackers routinely report hip-hop tempos at half or double speed. Both 70 and
+# 140 sit inside any sane [60, 200] range, so a range check alone never catches it —
+# the fold has to target the tempo band the genre actually lives in.
+BPM_RANGE  = (60, 200)      # hard bounds; anything outside is certainly wrong
+# Deliberately wide at the top. Folding 70 -> 140 fixes the common half-time miss, but
+# a tight upper bound would also fold genuinely fast tempos: drill and jersey sit in the
+# 160-175 range, and halving those to ~87 would be a new error introduced to fix an old
+# one. Below 78 a doubling is nearly always right; above 180 it is nearly always wrong.
+BPM_TARGET = (78, 180)
+
+
+def _fold_bpm(bpm):
+    """
+    Folds a tempo into the plausible range by repeated halving/doubling.
+
+    The previous version applied a single *2 or /2 and then clamped, so 25 BPM became
+    50 and was then clamped to 60 — a number the tracker never suggested. Doubling
+    repeatedly reaches 100 instead.
+
+    Once inside the hard range, a value below the target band is doubled (and above,
+    halved) if that lands it inside — this is the 70-vs-140 trap case.
+    """
+    if bpm <= 0:
+        return float(BPM_TARGET[0])
+
+    lo, hi = BPM_RANGE
+    while bpm < lo:
+        bpm *= 2
+    while bpm > hi:
+        bpm /= 2
+
+    t_lo, t_hi = BPM_TARGET
+    if bpm < t_lo and t_lo <= bpm * 2 <= hi:
+        bpm *= 2
+    elif bpm > t_hi and lo <= bpm / 2 <= hi:
+        bpm /= 2
+
+    return float(bpm)
+
+
 def extract_bpm_and_key(y, sr):
     """
-    Extracts Tempo (BPM) and Musical Key from audio.
+    Extracts tempo (BPM) and musical key from audio.
 
-    v2.0: start_bpm=120 guides tracker toward Hip-hop tempos.
-    Half-time/double-time correction applied, result clamped to [60, 200].
+    Neither value comes from the model — both are measured from the signal, so they
+    stay trustworthy while the classifier does not.
     """
     print("🥁 Analyzing BPM and Musical Key...")
 
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr, start_bpm=120)
     bpm = float(tempo[0]) if isinstance(tempo, (np.ndarray, list)) else float(tempo)
+    bpm = _fold_bpm(bpm)
 
-    # Half-time correction
-    if bpm < 60:
-        bpm *= 2
-    elif bpm > 200:
-        bpm /= 2
-
-    bpm = max(60, min(200, bpm))
-
-    # Krumhansl-Schmuckler key detection
-    chromagram  = librosa.feature.chroma_stft(y=y, sr=sr)
+    # Key detection on the HARMONIC component only. chroma_stft on a full mix is
+    # dominated by drum transients, which smear energy across every pitch class —
+    # on beats, that is most of the signal. Separating harmonics out and using CQT
+    # (log-spaced bins, so one bin per semitone) is markedly more reliable.
+    y_harmonic  = librosa.effects.harmonic(y)
+    chromagram  = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr)
     mean_chroma = np.mean(chromagram, axis=1)
 
     chroma_to_key = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -342,13 +392,24 @@ def audio_to_spectrogram_array(y_segment, sr):
     decode_png(channels=3) → tf.image.resize (bilinear) → float32 in [0, 255].
     EfficientNetB3 has built-in rescaling, so no manual normalization here.
     """
-    png_bytes = render_spectrogram_png(y_segment, sr)
+    return segments_to_batch([y_segment], sr)
 
-    img = tf.image.decode_png(png_bytes, channels=3)
-    img = tf.image.resize(img, IMG_SIZE)
-    img = tf.cast(img, tf.float32)
 
-    return np.expand_dims(img.numpy(), 0)
+def segments_to_batch(segments, sr):
+    """
+    Renders several segments into one (N, 224, 224, 3) batch.
+
+    Callers should build a batch and run a single predict() over it. One call per
+    segment costs a full graph invocation each time, and the previous code made two of
+    them per segment (classification, then embedding) — 16 invocations for one track
+    where 12 images in two calls will do.
+    """
+    imgs = []
+    for seg in segments:
+        img = tf.image.decode_png(render_spectrogram_png(seg, sr), channels=3)
+        img = tf.image.resize(img, IMG_SIZE)
+        imgs.append(tf.cast(img, tf.float32))
+    return np.stack([i.numpy() for i in imgs], axis=0)
 
 
 def compute_retrieval_embedding(model, y_full, sr):
@@ -374,18 +435,15 @@ def compute_retrieval_embedding(model, y_full, sr):
     if n_slices < 1:
         return None
 
-    idxs        = np.unique(np.linspace(0, n_slices - 1, min(RETRIEVAL_SEGMENTS, n_slices)).astype(int))
-    embed_model = build_embedding_model(model)
-    vectors     = []
+    idxs = np.unique(np.linspace(0, n_slices - 1, min(RETRIEVAL_SEGMENTS, n_slices)).astype(int))
 
-    for i in idxs:
-        seg = y_full[i * spt:(i + 1) * spt]
-        if len(seg) < spt:
-            continue
-        vectors.append(embed_model.predict(audio_to_spectrogram_array(seg, sr), verbose=0)[0])
-
-    if not vectors:
+    segments = [y_full[i * spt:(i + 1) * spt] for i in idxs]
+    segments = [s for s in segments if len(s) == spt]
+    if not segments:
         return None
+
+    embed_model = _get_embedding_model(model)
+    vectors     = embed_model.predict(segments_to_batch(segments, sr), verbose=0)
     return np.mean(vectors, axis=0, keepdims=True)
 
 
@@ -420,35 +478,17 @@ def predict_with_majority_voting(model, y_full, sr, class_names, joint=True):
     max_start = len(usable_audio) - samples_per_segment
     starts    = [0] if max_start <= 0 else np.linspace(0, max_start, NUM_SEGMENTS, dtype=int)
 
-    # Soft voting accumulators
-    genre_probs  = None
-    artist_probs = None
-    mood_probs   = None
+    segments = [usable_audio[s: s + samples_per_segment] for s in starts]
+    segments = [s for s in segments if len(s) == samples_per_segment]
+    if not segments:
+        raise ValueError("Track too short to extract a single analysis segment.")
 
-    print(f"🔍 Analyzing {len(starts)} segments (Soft Voting)...")
+    print(f"🔍 Analyzing {len(segments)} segments (Soft Voting)...")
 
-    for start in starts:
-        segment = usable_audio[start: start + samples_per_segment]
-        if len(segment) < samples_per_segment:
-            continue
-
-        img_array = audio_to_spectrogram_array(segment, sr)
-        preds     = model.predict(img_array, verbose=0)
-
-        # Accumulate softmax probability vectors
-        if genre_probs is None:
-            genre_probs  = preds[0][0].copy()
-            artist_probs = preds[1][0].copy()
-            mood_probs   = preds[2][0].copy()
-        else:
-            genre_probs  += preds[0][0]
-            artist_probs += preds[1][0]
-            mood_probs   += preds[2][0]
-
-    n = max(1, len(starts))
-    genre_probs  = genre_probs  / n
-    artist_probs = artist_probs / n
-    mood_probs   = mood_probs   / n
+    # One batched call rather than one per segment. Soft voting then averages the
+    # softmax rows: a segment 99% sure of "Travis" outweighs three 35% "Drake" ones.
+    preds = model.predict(segments_to_batch(segments, sr), verbose=0)
+    genre_probs, artist_probs, mood_probs = (p.mean(axis=0) for p in preds)
 
     if joint:
         gi, ai, mi = joint_decode_indices(genre_probs, artist_probs, mood_probs, class_names)
@@ -483,19 +523,39 @@ def download_youtube_audio(song_name):
     return os.path.join(TEMP_FOLDER, "downloaded_song.mp3")
 
 
-def separate_audio(input_path):
-    """Uses Demucs AI to isolate the instrumental beat from vocals."""
+DEMUCS_TIMEOUT = 900   # 15 min; a stuck Demucs used to hang the worker indefinitely
+
+
+def separate_audio(input_path, out_folder=None):
+    """
+    Uses Demucs to isolate the instrumental from the vocals.
+
+    Runs without shell=True — the previous version interpolated a user-supplied path
+    into a shell string, and checks neither the exit code nor a timeout, so a Demucs
+    crash surfaced later as a confusing "file not found" and a hang blocked the worker
+    forever.
+    """
     print("✂️ AI Source Separation in progress (Demucs)...")
-    command = (
-        f'"{sys.executable}" -m demucs -n htdemucs --two-stems=vocals '
-        f'--mp3 --mp3-bitrate 320 "{input_path}" -o "{TEMP_FOLDER}"'
-    )
-    subprocess.run(command, shell=True)
+    out_folder = out_folder or TEMP_FOLDER
+
+    cmd = [sys.executable, "-m", "demucs", "-n", "htdemucs", "--two-stems=vocals",
+           "--mp3", "--mp3-bitrate", "320", input_path, "-o", out_folder]
+
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=DEMUCS_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"Demucs timed out after {DEMUCS_TIMEOUT}s on {input_path}")
+
+    if proc.returncode != 0:
+        tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-5:]
+        raise RuntimeError(
+            f"Demucs failed (exit {proc.returncode}): " + " | ".join(tail))
+
     base_name = os.path.splitext(os.path.basename(input_path))[0]
-    beat_path = os.path.join(TEMP_FOLDER, "htdemucs", base_name, "no_vocals.mp3")
-    if os.path.exists(beat_path):
-        return beat_path
-    raise Exception("Source separation failed.")
+    beat_path = os.path.join(out_folder, "htdemucs", base_name, "no_vocals.mp3")
+    if not os.path.exists(beat_path):
+        raise RuntimeError(f"Demucs reported success but produced no file at {beat_path}")
+    return beat_path
 
 
 def rebuild_vector_database_if_needed():
@@ -555,12 +615,14 @@ def analyze_beat(audio_path):
 
     formatted_output = f"{predicted_artist} Type / {predicted_mood} / {predicted_genre}"
 
-    # Save mid-segment spectrogram for UI (disk write kept only for the display image).
-    # Reuses the shared renderer — no pyplot global state, safe under run_in_executor.
-    # NOTE: this path is still fixed/shared across concurrent requests — see TODO.md 3.5.
+    # Mid-track spectrogram for the UI. The filename is per-request: a fixed path meant
+    # two concurrent analyses overwrote each other's image, so users could be shown a
+    # spectrogram belonging to somebody else's track.
+    os.makedirs(SPEC_FOLDER, exist_ok=True)
+    spec_path = os.path.join(SPEC_FOLDER, f"spec_{uuid.uuid4().hex[:12]}.png")
     mid_start = len(y_full) // 2
     mid_seg   = y_full[mid_start: mid_start + int(SEGMENT_DURATION * sr)]
-    with open(f"{TEMP_FOLDER}/temp_spec.png", "wb") as f:
+    with open(spec_path, "wb") as f:
         f.write(render_spectrogram_png(mid_seg, sr))
 
     # Query FAISS (read-only, cached)
@@ -589,7 +651,7 @@ def analyze_beat(audio_path):
     # confidence is returned separately so callers can decide whether the genre/artist/
     # mood triple is fit to show. BPM and key are NOT affected — they come from librosa,
     # not the model, and stay trustworthy regardless.
-    return formatted_output, recommendations, int(bpm), str(key), confidence
+    return formatted_output, recommendations, int(bpm), str(key), confidence, spec_path
 
 
 if __name__ == "__main__":
@@ -598,7 +660,7 @@ if __name__ == "__main__":
         mp3_path  = download_youtube_audio(song_input)
         beat_path = separate_audio(mp3_path)
         print("\n🧠 Analyzing...")
-        result, recs, bpm, key = analyze_beat(beat_path)
+        result, recs, bpm, key, conf, _ = analyze_beat(beat_path)
         print(f"\n🎯 {result} | BPM: {bpm} | Key: {key}")
         for i, r in enumerate(recs):
             print(f"  {i+1}. {r['title']} — {r['score']:.1f}%")

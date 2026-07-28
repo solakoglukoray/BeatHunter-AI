@@ -1,12 +1,40 @@
+# ⚠️ TensorFlow has no native Windows GPU support past 2.10. On Windows this stack runs
+# inference on CPU (measured ~10 img/s); under WSL2 with CUDA the same work measured
+# ~90 img/s. Train and rebuild the FAISS index under WSL2.
+#
+# tensorflow is deliberately unpinned: the previous file pinned 2.15.0, which was
+# installed nowhere — the API host runs 2.20.0 and the WSL2 training box runs 2.21.0.
+# A pin matching no real environment hides the fact that the two differ. Pin per
+# environment if that ever matters.
+
 fastapi
 uvicorn
 python-multipart
-tensorflow==2.15.0
+python-dotenv
+
+# --- ML ---
+tensorflow
 numpy
 pandas
-librosa
-matplotlib
 scikit-learn
 scipy
+
+# --- Audio ---
+librosa
+matplotlib
 yt-dlp
 demucs
+mutagen          # data_collector.get_audio_duration
+soundfile        # librosa's audio backend
+
+# --- Search / cache ---
+faiss-cpu
+diskcache
+
+# --- Auth & infra ---
+python-jose[cryptography]
+bcrypt
+sqlalchemy
+psutil
+pillow
+h5py             # reads weights out of .keras archives when diagnosing a model

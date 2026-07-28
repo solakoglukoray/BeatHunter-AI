@@ -294,7 +294,7 @@ async def analyze_file_endpoint(
             beat_path = file_path
 
         # Run Vector Inference in a separate thread
-        formatted_result, recommendations, bpm, key, confidence = await loop.run_in_executor(None, analyze_beat, beat_path)
+        formatted_result, recommendations, bpm, key, confidence, spec_path = await loop.run_in_executor(None, analyze_beat, beat_path)
         # ---------------------------------------------------------
 
         tags = formatted_result.split(" / ")
@@ -342,7 +342,7 @@ async def background_youtube_worker(query: str, cache_key: str, username: str):
             loop = asyncio.get_running_loop()
             file_path = await loop.run_in_executor(None, _download_to_folder, query, task_folder)
             beat_path = await loop.run_in_executor(None, _separate_to_folder, file_path, task_folder)
-            formatted_result, recommendations, bpm, key, confidence = await loop.run_in_executor(None, analyze_beat, beat_path)
+            formatted_result, recommendations, bpm, key, confidence, spec_path = await loop.run_in_executor(None, analyze_beat, beat_path)
 
         tags = formatted_result.split(" / ")
 
@@ -409,18 +409,14 @@ def _download_to_folder(query: str, folder: str) -> str:
     return os.path.join(folder, "downloaded_song.mp3")
 
 def _separate_to_folder(input_path: str, folder: str) -> str:
-    import sys, subprocess
-    command = (
-        f'"{sys.executable}" -m demucs -n htdemucs --two-stems=vocals '
-        f'--mp3 --mp3-bitrate 320 "{input_path}" -o "{folder}"'
-    )
-    subprocess.run(command, shell=True)
-    base_name = os.path.splitext(os.path.basename(input_path))[0]
-    beat_path = os.path.join(folder, "htdemucs", base_name, "no_vocals.mp3")
-    if os.path.exists(beat_path):
-        return beat_path
-    else:
-        raise Exception(f"Source separation failed. Expected: {beat_path}")
+    """
+    Delegates to inference_engine.separate_audio, which runs Demucs without a shell,
+    checks the exit code and applies a timeout. This was a shell=True call that did
+    none of those: a Demucs crash surfaced later as a confusing "file not found", and
+    a hang blocked the worker forever.
+    """
+    from inference_engine import separate_audio
+    return separate_audio(input_path, out_folder=folder)
 
 @app.post("/analyze_youtube/")
 async def analyze_youtube_endpoint(

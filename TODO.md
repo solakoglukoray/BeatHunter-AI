@@ -159,21 +159,27 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
 
 ---
 
-## FAZ 3 — Performans, eşzamanlılık, temizlik (eğitim gerektirmez, paralel gidebilir)
+## FAZ 3 — Performans, eşzamanlılık, temizlik ✅ TAMAM (2026-07-28)
 
-- [ ] **3.1 — Inference'ı batch'le** — segment başına 2 ayrı `model.predict()` yerine
+**⚠️ 3.1'deki "~8-10x" tahmini YANLIŞTI.** Ölçüm: 8 segment için render (matplotlib)
+0.49s = toplamın **%6**'sı, tek batch predict 7.55s = **%94**. Darboğaz graph çağrı
+yükü değil, **CPU'daki forward pass**. Batch'leme 9.99s → 8.04s, yani **~%20**.
+Gerçek kaldıraç başka: Windows'ta TF'in GPU desteği yok (bkz. 3.6), serving'i WSL2'ye
+taşımak ölçülen farka göre ~9x olurdu.
+
+- [x] **3.1 — Inference'ı batch'le** — *2026-07-28* — segment başına 2 ayrı `model.predict()` yerine
   tek `(8,224,224,3)` batch çağrısı. `embed_model`'i cache'le (her istekte yeniden
   inşa edilmiyor). Beklenen kazanç ~8-10x.
-- [ ] **3.2 — BPM clamp'i while döngüsüne çevir** + hip-hop hedef aralığına (120-170)
+- [x] **3.2 — BPM clamp'i while döngüsüne çevir** — *2026-07-28* + hip-hop hedef aralığına (120-170)
   göre yarı-tempo/çift-tempo katlama mantığı ekle (140→70 algılama klasik hata).
-- [ ] **3.3 — Key tespiti** — `chroma_stft` yerine `librosa.effects.harmonic()` +
+- [x] **3.3 — Key tespiti** — *2026-07-28* — `chroma_stft` yerine `librosa.effects.harmonic()` +
   `chroma_cqt`.
-- [ ] **3.4 — Öneri sayısı garantisi** — `k=10` yerine `k=100` komşu çek, tekilleştirme
+- [x] **3.4 — Öneri sayısı garantisi** — *Faz 1.1'de çözüldü (track-level index)* — `k=10` yerine `k=100` komşu çek, tekilleştirme
   sonrası 5 öneri garantiye alınsın.
-- [ ] **3.5 — Eşzamanlılık** — sabit `temp_inference/temp_spec.png` ve
+- [x] **3.5 — Eşzamanlılık** — *2026-07-28* — sabit `temp_inference/temp_spec.png` ve
   `downloaded_song.mp3` yollarını istek/session bazlı yap. `subprocess.run(shell=True)`
   (Demucs) için returncode kontrolü + timeout ekle.
-- [ ] **3.6 — Küçük temizlik** — `time.sleep(0.3)` (data_processor.py:124, ~12dk boşa
+- [x] **3.6 — Küçük temizlik** — *2026-07-28* — `time.sleep(0.3)` (data_processor.py:124, ~12dk boşa
   gidiyor) kaldır; yanlış yorumları düzelt (`"22 worker"` → gerçek `cpu_count()//4`);
   kullanılmayan `compile_model(num_artists=...)` parametresini kaldır; ölü
   `img_to_array` importunu sil; `beathunter_users_old.db`'yi sil;
