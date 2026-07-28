@@ -40,6 +40,7 @@ Key changes from v1.x:
 
 import os
 import json
+import time
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -171,7 +172,115 @@ class TrainingMonitor(tf.keras.callbacks.Callback):
                 self.model.stop_training = True
 
 
-def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=False):
+# ============================================================
+# CRASH-SAFE CHECKPOINTING
+# ============================================================
+# This laptop travels daily and sometimes runs out of battery in a bag. Training takes
+# hours, so it WILL be killed mid-run without warning.
+#
+# ModelCheckpoint alone does not survive that. It writes only at epoch ends, and only
+# when the monitored metric improves, so a kill can cost a full epoch — and what it
+# writes carries no optimizer moments, no epoch counter and no phase, so a resume would
+# restart Adam from zero and re-run the learning-rate schedule from step 0.
+#
+# So: save the WHOLE model (weights + optimizer slots + LR schedule position, 46
+# optimizer variables measured) on a wall-clock timer from inside the epoch, plus a
+# small JSON recording which phase and epoch we were on.
+#
+# Ordering matters. The model is written first, the state second. A crash between them
+# leaves the state pointing at an older epoch than the weights, so the resume redoes a
+# little work — harmless. The reverse order would claim progress the weights do not
+# have and silently skip training.
+#
+# Both writes go to a temp file and are then os.replace()d, which is atomic on the same
+# filesystem: a kill mid-write leaves the previous checkpoint intact rather than a
+# half-written file.
+#
+# Resume granularity: the epoch counter comes from the last save, the weights from the
+# last timed save inside that epoch. Resuming therefore repeats part of an epoch with
+# weights that are already ahead. Data order is not restored — the training set is
+# reshuffled every epoch regardless, so there is nothing meaningful to restore.
+CKPT_MODEL_PATH = os.path.join(MODEL_DIR, "training_checkpoint.keras")
+CKPT_STATE_PATH = os.path.join(MODEL_DIR, "training_state.json")
+# 120s costs ~1.3% of runtime (a full save measured 1.5s / 70 MB) and caps the worst
+# case loss at two minutes of training. Lower it for testing; do not raise it.
+CKPT_INTERVAL_S = 120
+
+
+class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
+    """Timed, intra-epoch, atomic full-model checkpoint. See the note above."""
+
+    def __init__(self, phase, total_epochs, interval=CKPT_INTERVAL_S):
+        super().__init__()
+        self.phase = phase
+        self.total_epochs = total_epochs
+        self.interval = interval
+        self.epoch = 0
+        self._last = time.time()
+
+    def on_epoch_begin(self, epoch, logs=None):
+        self.epoch = epoch
+
+    def on_train_batch_end(self, batch, logs=None):
+        if time.time() - self._last >= self.interval:
+            self._save(reason=f"epoch {self.epoch+1} icinde")
+
+    def on_epoch_end(self, epoch, logs=None):
+        # Record the NEXT epoch to run, so resume does not repeat a finished one.
+        self.epoch = epoch + 1
+        self._save(reason=f"epoch {epoch+1} sonu")
+
+    def _save(self, reason=""):
+        t0 = time.time()
+        try:
+            tmp_model = CKPT_MODEL_PATH + ".tmp.keras"
+            self.model.save(tmp_model)
+            os.replace(tmp_model, CKPT_MODEL_PATH)      # atomic
+
+            state = {
+                "phase": self.phase,
+                "epoch": self.epoch,
+                "total_epochs": self.total_epochs,
+                "saved_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "reason": reason,
+            }
+            tmp_state = CKPT_STATE_PATH + ".tmp"
+            with open(tmp_state, "w") as f:
+                json.dump(state, f, indent=2)
+            os.replace(tmp_state, CKPT_STATE_PATH)      # atomic
+
+            self._last = time.time()
+            # self.epoch is the epoch to RESUME at (0-indexed), which mid-epoch is the
+            # current one — so report both, or "epoch 6" while inside epoch 7 reads
+            # like a bug.
+            print(f"\n  💾 checkpoint: faz {self.phase} — {reason}, "
+                  f"resume noktasi epoch {self.epoch + 1}/{self.total_epochs} "
+                  f"({time.time()-t0:.1f}s)", flush=True)
+        except Exception as e:
+            # A failed checkpoint must never kill a multi-hour run.
+            print(f"\n  ⚠️ checkpoint yazilamadi ({e}) — kosu devam ediyor", flush=True)
+
+
+def load_resume_state():
+    """Returns the saved state dict, or None if there is nothing to resume from."""
+    if not (os.path.exists(CKPT_MODEL_PATH) and os.path.exists(CKPT_STATE_PATH)):
+        return None
+    try:
+        with open(CKPT_STATE_PATH) as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"⚠️ checkpoint durumu okunamadi ({e}) — sifirdan baslanacak")
+        return None
+
+
+def clear_checkpoint():
+    for p in (CKPT_MODEL_PATH, CKPT_STATE_PATH):
+        if os.path.exists(p):
+            os.remove(p)
+
+
+def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=False,
+                   phase=None, total_epochs=None):
     """
     Callbacks that select on classification quality rather than on loss.
 
@@ -186,6 +295,8 @@ def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=Fal
         ModelCheckpoint(filepath=best_path, monitor='val_combined_accuracy', mode='max',
                         save_best_only=True, verbose=1),
     ]
+    if phase is not None:
+        cbs.append(CrashSafeCheckpoint(phase, total_epochs))
     if reduce_lr:
         cbs.append(ReduceLROnPlateau(monitor='val_combined_accuracy', mode='max',
                                      factor=0.5, patience=3, min_lr=1e-6, verbose=1))
@@ -440,9 +551,13 @@ def _summarise(label, history, n_genre, n_artist, n_mood):
     print()
 
 
-def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2=None):
+def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2=None,
+                resume=False):
     print("🚀 BeatHunter AI — Model Training v2.0 (EfficientNetB3 + Mixed Precision)\n")
     is_subset = bool(subset_artists or subset_per_artist)
+    resume_state = load_resume_state() if resume else None
+    if resume and not resume_state:
+        print('ℹ️  --resume verildi ama checkpoint yok — sifirdan baslaniyor')
     epochs_p1 = epochs_p1 or EPOCHS_P1
     epochs_p2 = epochs_p2 or EPOCHS_P2
 
@@ -547,30 +662,47 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
     print("PHASE 1 — Training heads only (EfficientNet frozen)")
     print("=" * 55)
 
-    model = build_efficientnet_multihead(
-        num_genres=len(genre_cols),
-        num_artists=len(artist_cols),
-        num_moods=len(mood_cols),
-        freeze_base=True
-    )
+    p1_initial_epoch = 0
+    model = None
 
-    model = compile_model(model, learning_rate=LR_PHASE1)
-    model.summary()
+    if resume_state and resume_state["phase"] == 1:
+        # Reload rather than rebuild+recompile: recompiling would discard the optimizer
+        # moments and reset the LR schedule to step 0, which is most of what makes a
+        # resume worth having.
+        print(f"⏩ RESUME: faz 1, epoch {resume_state['epoch']}/{resume_state['total_epochs']}"
+              f" (kayit: {resume_state['saved_at']})")
+        model = tf.keras.models.load_model(CKPT_MODEL_PATH)
+        p1_initial_epoch = resume_state["epoch"]
+
+    if model is None and not (resume_state and resume_state["phase"] == 2):
+        model = build_efficientnet_multihead(
+            num_genres=len(genre_cols),
+            num_artists=len(artist_cols),
+            num_moods=len(mood_cols),
+            freeze_base=True
+        )
+        model = compile_model(model, learning_rate=LR_PHASE1)
+        model.summary()
 
     # Phase 1 callbacks — select on accuracy, not loss (see TrainingMonitor)
     p1_callbacks = make_callbacks((SUBSET_CKPT_PATH if is_subset else BEST_CKPT_PATH), patience=5,
                                   n_genre=len(genre_cols), n_artist=len(artist_cols),
-                                  n_mood=len(mood_cols), reduce_lr=True)
+                                  n_mood=len(mood_cols), reduce_lr=True,
+                                  phase=1, total_epochs=epochs_p1)
 
-    print("\n🏋️ Phase 1 Training...\n")
-    history_p1 = model.fit(
-        train_ds,
-        validation_data=val_ds,
-        epochs=epochs_p1,
-        callbacks=p1_callbacks
-    )
-
-    _summarise("PHASE 1", history_p1, len(genre_cols), len(artist_cols), len(mood_cols))
+    if resume_state and resume_state["phase"] == 2:
+        print("⏩ RESUME: kesinti faz 2'deydi — faz 1 atlaniyor")
+        history_p1 = None
+    else:
+        print("\n🏋️ Phase 1 Training...\n")
+        history_p1 = model.fit(
+            train_ds,
+            validation_data=val_ds,
+            epochs=epochs_p1,
+            initial_epoch=p1_initial_epoch,
+            callbacks=p1_callbacks
+        )
+        _summarise("PHASE 1", history_p1, len(genre_cols), len(artist_cols), len(mood_cols))
 
     # ════════════════════════════════════════════════════════════
     # PHASE 2 — FINE-TUNING (Top 30 EfficientNet layers unfrozen)
@@ -586,22 +718,36 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
     # Keras uniquify the second build's layer names ('global_average_pooling2d_1'), which
     # is what silently broke inference_engine's hardcoded get_layer() lookup for months.
     # Mutating the existing model keeps one set of names and skips the copy entirely.
-    base = next(l for l in model.layers if l.name == 'efficientnetb3')
-    base.trainable = True
-    for layer in base.layers[:-30]:
-        layer.trainable = False
-    trainable_ct = sum(1 for l in base.layers if l.trainable)
-    print(f"   Unfroze the top {trainable_ct} backbone layers in place (no rebuild)")
+    p2_initial_epoch = 0
 
-    # Cosine decay: 1e-5 down to 1e-8 across all of phase 2. Predictable, unlike
-    # ReduceLROnPlateau's plateau hunting.
-    p2_steps = (len(train_df) // BATCH_SIZE) * EPOCHS_P2
-    p2_lr = tf.keras.optimizers.schedules.CosineDecay(
-        initial_learning_rate=1e-5,
-        decay_steps=p2_steps,
-        alpha=1e-8
-    )
-    model = compile_model(model, learning_rate=p2_lr)
+    if resume_state and resume_state["phase"] == 2:
+        # The checkpoint already holds the unfrozen model, its Adam moments and the
+        # CosineDecay position (carried in optimizer.iterations). Recompiling here would
+        # throw all three away, so we load and continue untouched.
+        print(f"⏩ RESUME: faz 2, epoch {resume_state['epoch']}/{resume_state['total_epochs']}"
+              f" (kayit: {resume_state['saved_at']})")
+        model = tf.keras.models.load_model(CKPT_MODEL_PATH)
+        p2_initial_epoch = resume_state["epoch"]
+        base = next(l for l in model.layers if l.name == 'efficientnetb3')
+        print(f"   {sum(1 for l in base.layers if l.trainable)} backbone katmani trainable "
+              f"(checkpoint'ten), optimizer adimi {int(model.optimizer.iterations.numpy()):,}")
+    else:
+        base = next(l for l in model.layers if l.name == 'efficientnetb3')
+        base.trainable = True
+        for layer in base.layers[:-30]:
+            layer.trainable = False
+        trainable_ct = sum(1 for l in base.layers if l.trainable)
+        print(f"   Unfroze the top {trainable_ct} backbone layers in place (no rebuild)")
+
+        # Cosine decay: 1e-5 down to 1e-8 across all of phase 2. Predictable, unlike
+        # ReduceLROnPlateau's plateau hunting.
+        p2_steps = (len(train_df) // BATCH_SIZE) * epochs_p2
+        p2_lr = tf.keras.optimizers.schedules.CosineDecay(
+            initial_learning_rate=1e-5,
+            decay_steps=p2_steps,
+            alpha=1e-8
+        )
+        model = compile_model(model, learning_rate=p2_lr)
 
     # Phase 2 callbacks — same accuracy-based selection, more patience
     p2_callbacks = make_callbacks((SUBSET_CKPT_PATH if is_subset else BEST_CKPT_PATH), patience=7,
@@ -642,6 +788,8 @@ if __name__ == "__main__":
     ap.add_argument("--per-artist", type=int, default=0, help="diagnostic subset: slices per artist")
     ap.add_argument("--epochs-p1",  type=int, default=None)
     ap.add_argument("--epochs-p2",  type=int, default=None)
+    ap.add_argument("--resume", action="store_true",
+                    help="son checkpoint'ten devam et (optimizer durumu + epoch + faz)")
     a = ap.parse_args()
     train_model(subset_artists=a.artists, subset_per_artist=a.per_artist,
-                epochs_p1=a.epochs_p1, epochs_p2=a.epochs_p2)
+                epochs_p1=a.epochs_p1, epochs_p2=a.epochs_p2, resume=a.resume)

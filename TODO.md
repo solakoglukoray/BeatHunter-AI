@@ -211,6 +211,41 @@ taşımak ölçülen farka göre ~9x olurdu.
 
 Şu an ertelendi (süre kısıtı). Eğitim mümkün olduğunda bu sırayla:
 
+- [x] **4.0a — Kesinti-toleranslı checkpoint/resume** — *2026-07-28*
+  **Kısıt:** laptop her gün stajdan eve taşınıyor, çantada şarj bitip kapanabiliyor.
+  Eğitim saatler sürüyor, yani **kesinti kesin** — termal değil, güç kaynaklı.
+  Staj bitimine ~1 ay, günde 7-8 saat açık kalabiliyor.
+
+  `ModelCheckpoint` tek başına yetmiyordu: sadece epoch sonunda ve sadece metrik
+  iyileşince yazıyor, üstelik optimizer momentlerini, epoch numarasını ve fazı
+  taşımıyor — resume Adam'ı sıfırdan, LR schedule'ı 0. adımdan başlatırdı.
+
+  `CrashSafeCheckpoint`: duvar saati bazlı (120s), **epoch İÇİNDE**, tam model
+  (46 optimizer değişkeni dahil) + faz/epoch JSON'u. Yazma sırası **model → durum**
+  (tersi, ağırlıkların sahip olmadığı ilerlemeyi iddia edip eğitimi atlardı). İkisi de
+  `tmp` + `os.replace` ile atomik.
+  `--resume`: checkpoint'i yükler, `initial_epoch` ile devam eder, faz 2'deyse faz 1'i
+  atlar ve **yeniden compile etmez** (compile optimizer momentlerini ve schedule
+  konumunu silerdi).
+
+  **SIGKILL ile kanıtlandı** (graceful shutdown yok, epoch 7 ortasında öldürüldü):
+
+  | | train artist |
+  |---|---|
+  | kesinti öncesi epoch 6 | %59.4 |
+  | **resume sonrası epoch 7** | **%64.9** |
+  | epoch 8 / 9 / 10 | %69.4 / %71.1 / %73.1 |
+
+  Sıfırdan başlasa %12.5 (şans) olurdu — ağırlıklar **ve** optimizer durumu korunmuş.
+
+  Maliyet: kayıt 1.5s / 70 MB, 120s aralıkta çalışma süresinin %1.3'ü, 8 saatte ~17 GB
+  yazma. En kötü kayıp: 2 dakika.
+
+  ⚠️ **Kapsam dürüstlüğü:** epoch sayacı son kayıttan, ağırlıklar epoch içindeki son
+  kayıttan gelir — yani resume, ilerlemiş ağırlıklarla epoch'un bir kısmını tekrar eder.
+  Veri sırası geri yüklenmez (zaten her epoch yeniden karılıyor). "Bit-exact devam"
+  değil, "saatlerce iş kaybetme" garantisi.
+
 - [ ] **4.0 — `[EĞİTİM GEREKİR]` ÖNCE: eğitimin neden başarısız olduğunu bul** ⚠️ *en öncelikli*
   Mevcut model sınıflandırma yapmıyor (CLAUDE.md 🚨 bölümü): head'ler başlangıç
   değerinde, gövde sıfıra büzülmüş, eğitim verisinde bile artist doğruluğu %0.5
