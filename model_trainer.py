@@ -24,11 +24,14 @@ Key changes from v1.x:
    - Shuffle buffer 5000 → RAM stays comfortable.
    - AUTOTUNE for all tf.data ops → CPU at ~60-70%, never maxed.
 
-5. Smarter Callbacks
-   - EarlyStopping patience reduced from 10 → 7 (stops sooner if stuck).
-   - ReduceLROnPlateau patience reduced from 4 → 3.
-   - Monitors val_loss instead of val_genre_out_accuracy (more stable signal).
-   - ModelCheckpoint saves only the best model during training.
+5. Callbacks select on ACCURACY, not loss
+   - EarlyStopping / ModelCheckpoint monitor val_combined_accuracy (mode='max').
+   - ⚠️ An earlier version monitored val_loss "as a more stable signal". That is
+     believed to be what cost the previous run: Keras folds L2 into the reported loss,
+     so shrinking weights lowers val_loss without learning anything, and
+     restore_best_weights then locked that in. Do not switch back.
+   - TrainingMonitor prints train AND val accuracy each epoch and aborts if the model
+     is still at chance after 5 epochs.
 
 6. Spectrogram parameter alignment
    - IMG_SIZE = (224, 224) — matches n_mels=256 output resized in inference_engine.py
@@ -44,6 +47,7 @@ from tensorflow.keras import layers, models, regularizers
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.applications import EfficientNetB3
 from sklearn.model_selection import GroupShuffleSplit
+import thermal_guard
 
 # ============================================================
 # GPU CONFIGURATION — Must run before any TF operations
@@ -69,6 +73,8 @@ IMG_DIR         = "dataset_processed/images"
 MODEL_DIR       = "models"
 MODEL_SAVE_PATH = os.path.join(MODEL_DIR, "beathunter_model.keras")
 BEST_CKPT_PATH  = os.path.join(MODEL_DIR, "best_checkpoint.keras")
+# Diagnostic subset runs must never touch the real checkpoint.
+SUBSET_CKPT_PATH = os.path.join(MODEL_DIR, "subset_diagnostic.keras")
 CLASSES_PATH    = os.path.join(MODEL_DIR, "classes.json")
 
 IMG_SIZE   = (224, 224)
@@ -110,6 +116,80 @@ if USE_MIXED_PRECISION:
     print("✅ Mixed Precision policy set: mixed_float16")
 else:
     print("ℹ️  Mixed precision disabled — running in float32")
+
+
+# ============================================================
+# TRAINING MONITOR
+# ============================================================
+# The previous run saved a model that predicts at chance, and nothing in the logs said
+# so — only val_loss was reported, and val_loss went down the whole time.
+#
+# It went down because Keras includes regularisation losses in it. Once the
+# classification signal gets hard, the cheapest way to reduce total loss is to shrink
+# weights and drop the L2 term. EarlyStopping and ModelCheckpoint were both monitoring
+# val_loss with restore_best_weights=True, so they rewarded exactly that, restored those
+# weights and saved them. The saved model's trunk sits at 0.03-0.06x its initialisation
+# with the heads still at init — the signature of that failure.
+#
+# So: monitor accuracy, not loss, and print both side by side every epoch. If the two
+# diverge — loss improving while accuracy does not — that is the failure happening, and
+# now it is visible while the run is still going.
+class TrainingMonitor(tf.keras.callbacks.Callback):
+    """Prints train vs val accuracy per epoch and aborts if training never leaves chance."""
+
+    def __init__(self, n_genre, n_artist, n_mood, chance_grace=5):
+        super().__init__()
+        self.chance = {'genre': 1.0 / n_genre, 'artist': 1.0 / n_artist, 'mood': 1.0 / n_mood}
+        self.chance_grace = chance_grace
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        heads = ('genre', 'artist', 'mood')
+
+        # Composite score so callbacks have a single classification metric to monitor.
+        val_accs = [logs.get(f'val_{h}_out_accuracy', 0.0) for h in heads]
+        logs['val_combined_accuracy'] = float(np.mean(val_accs))
+
+        print(f"\n  epoch {epoch+1}  val_loss={logs.get('val_loss', float('nan')):.4f}"
+              f"  (loss alone is NOT evidence of learning — compare the accuracies)")
+        for h in heads:
+            tr = logs.get(f'{h}_out_accuracy', 0.0)
+            va = logs.get(f'val_{h}_out_accuracy', 0.0)
+            ch = self.chance[h]
+            print(f"    {h:7s} train {tr*100:5.1f}%  val {va*100:5.1f}%  "
+                  f"(chance {ch*100:4.1f}% -> val is {va/ch if ch else 0:4.1f}x chance)")
+
+        # Tripwire: if the model is still at chance after a few epochs, stop. A full run
+        # costs hours; this costs one epoch of patience.
+        if epoch + 1 >= self.chance_grace:
+            tr_artist = logs.get('artist_out_accuracy', 0.0)
+            if tr_artist < 2 * self.chance['artist']:
+                print(f"\n  ⛔ TRAIN artist accuracy is {tr_artist*100:.2f}% after "
+                      f"{epoch+1} epochs — chance is {self.chance['artist']*100:.2f}%.")
+                print("     The model is not learning. Stopping rather than burning hours.")
+                print("     Run overfit_test.py to isolate the cause before retrying.")
+                self.model.stop_training = True
+
+
+def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=False):
+    """
+    Callbacks that select on classification quality rather than on loss.
+
+    monitor='val_combined_accuracy' (mode='max') — the mean of the three head
+    accuracies, injected by TrainingMonitor. Weight shrinkage cannot game it.
+    """
+    cbs = [
+        TrainingMonitor(n_genre, n_artist, n_mood),
+        thermal_guard.make_keras_callback(tf),
+        EarlyStopping(monitor='val_combined_accuracy', mode='max',
+                      patience=patience, restore_best_weights=True, verbose=1),
+        ModelCheckpoint(filepath=best_path, monitor='val_combined_accuracy', mode='max',
+                        save_best_only=True, verbose=1),
+    ]
+    if reduce_lr:
+        cbs.append(ReduceLROnPlateau(monitor='val_combined_accuracy', mode='max',
+                                     factor=0.5, patience=3, min_lr=1e-6, verbose=1))
+    return cbs
 
 
 # ============================================================
@@ -335,13 +415,54 @@ def compile_model(model, learning_rate):
     return model
 
 
-def train_model():
+def _summarise(label, history, n_genre, n_artist, n_mood):
+    """
+    Reports TRAIN alongside validation. Train accuracy is the one that reveals a model
+    that never learned — the previous run's summary showed only validation numbers,
+    which were inflated by the slice-level split anyway.
+    """
+    h = history.history
+    chance = {'genre': 100.0 / n_genre, 'artist': 100.0 / n_artist, 'mood': 100.0 / n_mood}
+
+    print(f"\n📊 {label} RESULTS (peak over epochs)")
+    print(f"   {'head':8s} {'train':>8s} {'val':>8s} {'chance':>8s} {'val/chance':>11s}")
+    for head in ('genre', 'artist', 'mood'):
+        tr = max(h.get(f'{head}_out_accuracy', [0])) * 100
+        va = max(h.get(f'val_{head}_out_accuracy', [0])) * 100
+        ch = chance[head]
+        print(f"   {head:8s} {tr:7.1f}% {va:7.1f}% {ch:7.2f}% {va/ch:10.1f}x")
+
+    tr_artist = max(h.get('artist_out_accuracy', [0])) * 100
+    if tr_artist < 2 * chance['artist']:
+        print(f"\n   ⛔ TRAIN artist accuracy peaked at {tr_artist:.2f}% against a "
+              f"{chance['artist']:.2f}% chance baseline.")
+        print("      This model did not learn. Do NOT ship it — run overfit_test.py.")
+    print()
+
+
+def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2=None):
     print("🚀 BeatHunter AI — Model Training v2.0 (EfficientNetB3 + Mixed Precision)\n")
+    is_subset = bool(subset_artists or subset_per_artist)
+    epochs_p1 = epochs_p1 or EPOCHS_P1
+    epochs_p2 = epochs_p2 or EPOCHS_P2
 
     os.makedirs(MODEL_DIR, exist_ok=True)
+    thermal_guard.start_monitor(os.path.expanduser("~/bench_out/temps_training.csv"))
 
     # ── 1. Load dataset ──────────────────────────────────────────
     df = pd.read_csv(CSV_PATH)
+
+    # Optional subset, for diagnostic runs that need to be minutes rather than hours.
+    # A subset run must NOT overwrite the real model or classes.json.
+    if subset_artists or subset_per_artist:
+        top = df['artist_type'].value_counts().head(subset_artists or 999).index
+        df = (df[df['artist_type'].isin(top)]
+              .groupby('artist_type', group_keys=False)
+              .apply(lambda g: g.head(subset_per_artist) if subset_per_artist else g,
+                     include_groups=True))
+        print(f"⚠️  SUBSET RUN — {len(df):,} slices / {df['artist_type'].nunique()} artists")
+        print("   Diagnostic only. Model and classes.json will NOT be written.\n")
+
     print(f"📊 Total spectrograms: {len(df):,}")
     print(f"   Genre classes:  {df['genre'].nunique()}")
     print(f"   Artist classes: {df['artist_type'].nunique()}")
@@ -410,9 +531,12 @@ def train_model():
         'artist': [c.replace('artist_', '') for c in artist_cols],
         'mood':   [c.replace('mood_',   '') for c in mood_cols]
     }
-    with open(CLASSES_PATH, 'w', encoding='utf-8') as f:
-        json.dump(class_names, f, indent=4, ensure_ascii=False)
-    print("💾 classes.json saved.\n")
+    if is_subset:
+        print("   (subset run — classes.json NOT written)\n")
+    else:
+        with open(CLASSES_PATH, 'w', encoding='utf-8') as f:
+            json.dump(class_names, f, indent=4, ensure_ascii=False)
+        print("💾 classes.json saved.\n")
 
     # ════════════════════════════════════════════════════════════
     # PHASE 1 — HEAD TRAINING (EfficientNet frozen)
@@ -433,44 +557,20 @@ def train_model():
     model = compile_model(model, learning_rate=LR_PHASE1)
     model.summary()
 
-    # Phase 1 callbacks — generous patience, let heads converge fully
-    p1_callbacks = [
-        EarlyStopping(
-            monitor='val_loss',
-            patience=5,
-            restore_best_weights=True,
-            mode='min',
-            verbose=1
-        ),
-        ReduceLROnPlateau(
-            monitor='val_loss',
-            factor=0.5,
-            patience=3,
-            min_lr=1e-6,
-            mode='min',
-            verbose=1
-        ),
-        ModelCheckpoint(
-            filepath=BEST_CKPT_PATH,
-            monitor='val_loss',
-            save_best_only=True,
-            mode='min',
-            verbose=1
-        )
-    ]
+    # Phase 1 callbacks — select on accuracy, not loss (see TrainingMonitor)
+    p1_callbacks = make_callbacks((SUBSET_CKPT_PATH if is_subset else BEST_CKPT_PATH), patience=5,
+                                  n_genre=len(genre_cols), n_artist=len(artist_cols),
+                                  n_mood=len(mood_cols), reduce_lr=True)
 
     print("\n🏋️ Phase 1 Training...\n")
     history_p1 = model.fit(
         train_ds,
         validation_data=val_ds,
-        epochs=EPOCHS_P1,
+        epochs=epochs_p1,
         callbacks=p1_callbacks
     )
 
-    p1_genre  = max(history_p1.history.get('val_genre_out_accuracy',  [0])) * 100
-    p1_mood   = max(history_p1.history.get('val_mood_out_accuracy',   [0])) * 100
-    p1_artist = max(history_p1.history.get('val_artist_out_accuracy', [0])) * 100
-    print(f"\n📊 Phase 1 Results — Genre: {p1_genre:.1f}% | Mood: {p1_mood:.1f}% | Artist: {p1_artist:.1f}%\n")
+    _summarise("PHASE 1", history_p1, len(genre_cols), len(artist_cols), len(mood_cols))
 
     # ════════════════════════════════════════════════════════════
     # PHASE 2 — FINE-TUNING (Top 30 EfficientNet layers unfrozen)
@@ -503,47 +603,45 @@ def train_model():
     )
     model = compile_model(model, learning_rate=p2_lr)
 
-    p2_callbacks = [
-        EarlyStopping(
-            monitor='val_loss',
-            patience=7,
-            restore_best_weights=True,
-            mode='min',
-            verbose=1
-        ),
-        ModelCheckpoint(
-            filepath=BEST_CKPT_PATH,
-            monitor='val_loss',
-            save_best_only=True,
-            mode='min',
-            verbose=1
-        )
-    ]
+    # Phase 2 callbacks — same accuracy-based selection, more patience
+    p2_callbacks = make_callbacks((SUBSET_CKPT_PATH if is_subset else BEST_CKPT_PATH), patience=7,
+                                  n_genre=len(genre_cols), n_artist=len(artist_cols),
+                                  n_mood=len(mood_cols))
 
     print("\n🔥 Phase 2 Fine-tuning...\n")
     history_p2 = model.fit(
         train_ds,
         validation_data=val_ds,
-        epochs=EPOCHS_P2,
+        epochs=epochs_p2,
         callbacks=p2_callbacks
     )
 
     # ── 9. Save final model ───────────────────────────────────────
-    model.save(MODEL_SAVE_PATH)
-    print(f"\n✅ Final model saved: {MODEL_SAVE_PATH}")
+    if is_subset:
+        print("\n(subset run — model NOT saved; this was a diagnostic)")
+    else:
+        model.save(MODEL_SAVE_PATH)
+        print(f"\n✅ Final model saved: {MODEL_SAVE_PATH}")
 
     # ── 10. Training summary ─────────────────────────────────────
-    best_genre  = max(history_p2.history.get('val_genre_out_accuracy',  [0])) * 100
-    best_mood   = max(history_p2.history.get('val_mood_out_accuracy',   [0])) * 100
-    best_artist = max(history_p2.history.get('val_artist_out_accuracy', [0])) * 100
+    thermal_guard.stop_monitor()
+    print(f"🌡️  {thermal_guard.summary()}")
+    if thermal_guard.state["abort"]:
+        print(f"   ⚠️ TERMAL IPTAL: {thermal_guard.state['reason']} — kosu eksik kaldi")
 
-    print("\n📊 FINAL PEAK VALIDATION METRICS:")
-    print(f"   Genre  Accuracy: {best_genre:.1f}%")
-    print(f"   Mood   Accuracy: {best_mood:.1f}%")
-    print(f"   Artist Accuracy: {best_artist:.1f}%")
-    print("\n💡 Target: Genre & Mood > 90%, Artist > 75%")
-    print("   If Artist is below 70%, consider reducing to 100 artists in config.py.")
+    _summarise("FINAL", history_p2, len(genre_cols), len(artist_cols), len(mood_cols))
+    print("💡 Target: Genre & Mood > 90%, Artist > 75%")
+    print("   Compare against the chance column above — a number that looks high but")
+    print("   sits near chance means the model has not learned anything.")
 
 
 if __name__ == "__main__":
-    train_model()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--artists",    type=int, default=0, help="diagnostic subset: top N artists")
+    ap.add_argument("--per-artist", type=int, default=0, help="diagnostic subset: slices per artist")
+    ap.add_argument("--epochs-p1",  type=int, default=None)
+    ap.add_argument("--epochs-p2",  type=int, default=None)
+    a = ap.parse_args()
+    train_model(subset_artists=a.artists, subset_per_artist=a.per_artist,
+                epochs_p1=a.epochs_p1, epochs_p2=a.epochs_p2)
