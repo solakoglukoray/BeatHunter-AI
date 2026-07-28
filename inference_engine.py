@@ -55,8 +55,13 @@ CLASSES_PATH  = "models/classes.json"
 
 PROCESSED_CSV    = "dataset_processed/metadata_processed.csv"
 IMG_DIR          = "dataset_processed/images"
-FAISS_INDEX_PATH = "models/vector_db.index"
-VECTOR_META_PATH = "models/vector_meta.csv"
+# Track-level index: one row per track (14,235), 1536-dim, ~87 MB.
+# Replaces the old slice-level pair (vector_db.index / vector_meta.csv), which was
+# built from a different model (d=256) against a different dataset snapshot
+# (214,506 rows vs. the current 873,924) and could not be queried at all.
+# The old files are left on disk untouched as a fallback.
+FAISS_INDEX_PATH = "models/vector_db_track.index"
+VECTOR_META_PATH = "models/vector_meta_track.csv"
 
 # ============================================================
 # MODULE-LEVEL CACHE
@@ -121,7 +126,13 @@ def _get_faiss():
 
 SAMPLE_RATE      = 22050
 SEGMENT_DURATION = 3
-NUM_SEGMENTS     = 8
+NUM_SEGMENTS     = 8    # classification (soft voting), skips intro/outro
+
+# Retrieval sampling — MUST equal the slices-per-track the FAISS index was built with.
+# The index was built with 4 slices per track at linspace over the full 3s grid.
+# Changing this without rebuilding the index silently destroys retrieval quality
+# (measured: aligned-4 → median self-match rank 1, aligned-8 → 186).
+RETRIEVAL_SEGMENTS = 4
 
 # --- SPECTROGRAM PARAMETERS ---
 # ⚠️ These mirror the code that ACTUALLY produced the 873K training images on disk
@@ -227,13 +238,56 @@ def audio_to_spectrogram_array(y_segment, sr):
     return np.expand_dims(img.numpy(), 0)
 
 
+def compute_retrieval_embedding(model, y_full, sr):
+    """
+    Builds the FAISS query vector using the SAME segment strategy the index was
+    built with: RETRIEVAL_SEGMENTS positions from linspace over the track's full
+    3-second grid — intro/outro included, no skipping.
+
+    ⚠️ This must mirror the index builder exactly. Measured self-match rank over
+    6 in-index tracks (1 = perfect, ~7,117 = random):
+
+        current classification sampling (skip 30s, 8 segments) : median 4,856
+        index-aligned, 4 segments                              : median     1
+        index-aligned, 8 segments                              : median   186
+
+    Note the third row: matching the *strategy* is not enough — the segment COUNT
+    must match too. Aligned-8 hits the same 4 positions plus 4 others, and the extra
+    positions dilute the mean away from the index entry. If the index is ever rebuilt
+    with a different slice count, change RETRIEVAL_SEGMENTS to match it.
+    """
+    spt      = int(SEGMENT_DURATION * sr)
+    n_slices = int(len(y_full) / spt)
+    if n_slices < 1:
+        return None
+
+    idxs        = np.unique(np.linspace(0, n_slices - 1, min(RETRIEVAL_SEGMENTS, n_slices)).astype(int))
+    embed_model = build_embedding_model(model)
+    vectors     = []
+
+    for i in idxs:
+        seg = y_full[i * spt:(i + 1) * spt]
+        if len(seg) < spt:
+            continue
+        vectors.append(embed_model.predict(audio_to_spectrogram_array(seg, sr), verbose=0)[0])
+
+    if not vectors:
+        return None
+    return np.mean(vectors, axis=0, keepdims=True)
+
+
 def predict_with_majority_voting(model, y_full, sr, class_names):
     """
     Extracts NUM_SEGMENTS uniformly from the usable portion of the track
     and determines labels via Soft Voting (summed softmax probabilities).
 
-    v2.0: Replaces Counter-based hard voting with probability accumulation.
+    Soft voting: probability vectors are summed across segments, then argmax.
     High-confidence segments naturally outweigh uncertain ones.
+
+    Classification deliberately skips the first/last 30s (intro/outro bias) and uses
+    NUM_SEGMENTS segments. Retrieval does NOT share this sampling — it needs to match
+    the FAISS index instead, so the query vector comes from
+    compute_retrieval_embedding(). See that function for the measurements.
     """
     samples_per_segment = int(SEGMENT_DURATION * sr)
     total_samples       = len(y_full)
@@ -252,10 +306,6 @@ def predict_with_majority_voting(model, y_full, sr, class_names):
     genre_probs  = None
     artist_probs = None
     mood_probs   = None
-    all_vectors  = []
-
-    # Build embedding sub-model once outside the loop
-    embed_model = build_embedding_model(model)
 
     print(f"🔍 Analyzing {len(starts)} segments (Soft Voting)...")
 
@@ -277,17 +327,12 @@ def predict_with_majority_voting(model, y_full, sr, class_names):
             artist_probs += preds[1][0]
             mood_probs   += preds[2][0]
 
-        vec = embed_model.predict(img_array, verbose=0)
-        all_vectors.append(vec[0])
-
     # Winner = argmax of accumulated probability sums
     predicted_genre  = class_names['genre'] [int(np.argmax(genre_probs))]
     predicted_artist = class_names['artist'][int(np.argmax(artist_probs))]
     predicted_mood   = class_names['mood']  [int(np.argmax(mood_probs))]
 
-    mean_vector = np.mean(all_vectors, axis=0, keepdims=True)
-
-    return predicted_genre, predicted_artist, predicted_mood, mean_vector
+    return predicted_genre, predicted_artist, predicted_mood
 
 
 def download_youtube_audio(song_name):
@@ -324,67 +369,27 @@ def separate_audio(input_path):
 
 def rebuild_vector_database_if_needed():
     """
-    Admin-only: Rebuilds the FAISS index if missing or outdated.
+    DISABLED — this built a SLICE-level index and would corrupt the current one.
 
-    Call this manually after retraining, NOT during inference:
-        python -c "from inference_engine import rebuild_vector_database_if_needed; rebuild_vector_database_if_needed()"
+    The active index is TRACK-level: one row per track (14,235 x 1536), with metadata
+    keyed by a 'track' column. This function produced one row per slice (873,924) with
+    a 'filename' column, so running it against the current FAISS_INDEX_PATH /
+    VECTOR_META_PATH would overwrite a working index with an incompatible one and
+    break analyze_beat's metadata lookup.
+
+    It also cannot run usefully on Windows: TensorFlow has no native Windows GPU
+    support past 2.10, so the forward pass measured ~10 img/s here versus ~90 img/s
+    under WSL2 with CUDA (5.8 hours vs. 10.7 minutes for the same work).
+
+    To rebuild, use the track-level builder under WSL2 — it samples
+    RETRIEVAL_SEGMENTS slices per track, streams per-track running sums (87 MB rather
+    than 1.4 GB), checkpoints every 60s, and throttles on GPU temperature.
+    See TODO.md 1.1 for the procedure.
     """
-    if os.path.exists(FAISS_INDEX_PATH):
-        model_time = os.path.getmtime(MODEL_PATH)
-        index_time = os.path.getmtime(FAISS_INDEX_PATH)
-        if model_time <= index_time:
-            print("✅ FAISS index is up-to-date.")
-            return
-        print("🔄 Model newer than index — rebuilding...")
-        os.remove(FAISS_INDEX_PATH)
-    else:
-        print("🧬 No index found — building from scratch...")
-
-    model = tf.keras.models.load_model(MODEL_PATH)
-    embed_model = build_embedding_model(model)
-
-    df        = pd.read_csv(PROCESSED_CSV)
-    vectors   = []
-    BATCH     = 256
-    img_paths = [os.path.join(IMG_DIR, f) for f in df['filename']]
-
-    def load_img_tf(path):
-        img = tf.io.read_file(path)
-        img = tf.image.decode_png(img, channels=3)
-        img = tf.image.resize(img, (224, 224))
-        return tf.cast(img, tf.float32)  # EfficientNetB3 expects [0, 255]
-
-    ds = (
-        tf.data.Dataset.from_tensor_slices(img_paths)
-        .map(load_img_tf, num_parallel_calls=tf.data.AUTOTUNE)
-        .batch(BATCH)
-        .prefetch(tf.data.AUTOTUNE)
+    raise NotImplementedError(
+        "Slice-level rebuild is disabled — it would overwrite the track-level index "
+        "with an incompatible one. Use the WSL2 track-level builder instead (TODO.md 1.1)."
     )
-
-    total = len(img_paths)
-    processed = 0
-    for batch in ds:
-        vecs = embed_model.predict(batch, verbose=0)
-        vectors.extend(vecs)
-        processed += len(batch)
-        if processed % 500 == 0:
-            print(f"   ⏳ {processed:,} / {total:,}")
-
-    vectors_np = np.array(vectors, dtype=np.float32)
-    faiss.normalize_L2(vectors_np)
-
-    index = faiss.IndexFlatIP(vectors_np.shape[1])
-    index.add(vectors_np)
-
-    faiss.write_index(index, FAISS_INDEX_PATH)
-    df.to_csv(VECTOR_META_PATH, index=False)
-
-    # Invalidate cache so next request picks up the fresh index
-    global _cached_faiss_index, _cached_faiss_meta
-    _cached_faiss_index = None
-    _cached_faiss_meta  = None
-
-    print("✅ FAISS index rebuilt successfully!")
 
 
 def analyze_beat(audio_path):
@@ -409,8 +414,13 @@ def analyze_beat(audio_path):
 
     bpm, key = extract_bpm_and_key(y_full, sr)
 
-    predicted_genre, predicted_artist, predicted_mood, mean_vector = \
+    predicted_genre, predicted_artist, predicted_mood = \
         predict_with_majority_voting(model, y_full, sr, class_names)
+
+    # Retrieval uses its own, index-aligned sampling — NOT the classification segments.
+    mean_vector = compute_retrieval_embedding(model, y_full, sr)
+    if mean_vector is None:
+        raise ValueError("Track too short to build a retrieval embedding.")
 
     formatted_output = f"{predicted_artist} Type / {predicted_mood} / {predicted_genre}"
 
@@ -425,25 +435,25 @@ def analyze_beat(audio_path):
     # Query FAISS (read-only, cached)
     index, db_meta = _get_faiss()
 
-    query_vector = np.array(mean_vector, dtype=np.float32)
+    # faiss.normalize_L2 mutates in place and requires float32 + C-contiguous.
+    query_vector = np.ascontiguousarray(mean_vector, dtype=np.float32)
     faiss.normalize_L2(query_vector)
 
-    distances, indices = index.search(query_vector, 10)
+    # The index is track-level: one row per track, so every hit is already a distinct
+    # track and no de-duplication is needed. (The old slice-level index returned many
+    # slices of the same song, which is why it often yielded fewer than 5 results.)
+    distances, indices = index.search(query_vector, 5)
 
     recommendations = []
-    seen = set()
-    for i, idx in enumerate(indices[0]):
-        raw_name = db_meta.iloc[idx]['filename'].split('_slice')[0]
-        if raw_name in seen:
+    for dist, idx in zip(distances[0], indices[0]):
+        if idx < 0:                     # FAISS returns -1 when fewer than k neighbours exist
             continue
+        row = db_meta.iloc[idx]
         recommendations.append({
-            "id":    raw_name,
-            "title": f"{db_meta.iloc[idx]['artist_type']} / {db_meta.iloc[idx]['mood']} / {db_meta.iloc[idx]['genre']}",
-            "score": float(distances[0][i] * 100)
+            "id":    row['track'],
+            "title": f"{row['artist_type']} / {row['mood']} / {row['genre']}",
+            "score": float(dist * 100)
         })
-        seen.add(raw_name)
-        if len(recommendations) == 5:
-            break
 
     return formatted_output, recommendations, int(bpm), str(key)
 

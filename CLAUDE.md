@@ -55,13 +55,23 @@ majority voting ile birleştirilir (intro/outro bias'ını önlemek için).
    (`global_average_pooling2d_1`). Artık `build_embedding_model()` katmanı **tipinden**
    buluyor. Yeniden eğitim sonrası ad yine değişebilir; isme geri dönme.
 
-3. **FAISS index / metadata farklı zamanlardan, boyut uyuşmuyor**
-   Index d=256 ama modelin GAP çıktısı 1536. `vector_meta.csv` (214,506 satır, 28 Şub)
-   ile `metadata_processed.csv` (873,924 satır, 8 Mart) ile model (13 Mart) üç ayrı
-   zaman diliminden. **Index'i yeniden inşa etmeden önce Tuzak 1 ve 2 düzeltilmiş
-   olmalı**, yoksa yanlış veriyle kalıcı hatalı bir index kurulur. Rebuild **track
-   seviyesinde** yapılmalı (slice değil) — hem boyut (5.37GB → 87MB), hem "5'ten az
-   öneri dönme" sorununu, hem sorgu/index temsil uyumunu çözüyor.
+3. **FAISS index (✅ DÜZELTİLDİ 2026-07-28)**
+   Eski index d=256 iken modelin GAP çıktısı 1536'ydı ve `analyze_beat` her istekte
+   `AssertionError` veriyordu. Artık **track seviyesinde** yeni bir index kullanılıyor:
+   `models/vector_db_track.index` + `vector_meta_track.csv` (14,235 × 1536, 87 MB).
+   Eski `vector_db.index` / `vector_meta.csv` fallback olarak duruyor, **silme**.
+   → ⚠️ **Retrieval embedding'i index-hizalı 4 segment kullanır**
+   (`compute_retrieval_embedding`: tüm 3s grid üzerinden `linspace`, 4 segment).
+   Sınıflandırma ise ayrı — 8 segment, intro/outro atlanarak. **İkisini birleştirme.**
+   Sorgu ve index örneklemesi birebir aynı olmalı; segment *sayısı* da dahil
+   (hizalı-4 → medyan self-match rank 1, hizalı-8 → 186, hizasız → 4,856).
+   Index farklı slice sayısıyla yeniden kurulursa `RETRIEVAL_SEGMENTS` de değişmeli.
+   → `rebuild_vector_database_if_needed()` **devre dışı** (slice seviyesinde index
+   üretiyordu). Rebuild WSL2'deki track-level builder ile yapılır, bkz. TODO.md 1.1.
+   → ⚠️ **D=%75 tavanı:** aynı şarkının farklı bölümleri arası embedding benzerliği
+   ~%75, rastgele parçalar %55±10. Öneri kalitesinin üst sınırı budur ve Tuzak 4/5'ten
+   gelir — **Faz 4'te yeniden eğitim yapılana kadar geçerli.** Retrieval "çalışır ama
+   zayıf" durumda; kod tarafında yapılacak bir şey kalmadı.
 
 4. **Train/val veri sızıntısı (eğitim gerektirir, şimdilik ERTELENDİ)**
    `model_trainer.py`'de `train_test_split` slice seviyesinde rastgele. Aynı şarkının
@@ -97,8 +107,12 @@ majority voting ile birleştirilir (intro/outro bias'ını önlemek için).
 - `beathunter_users_old.db` çöp, silinebilir.
 
 ## Şu anki durum
-Faz 0 tamam (Tuzak 1 ve 2 düzeltildi, 2026-07-27). Sınıflandırma yolu uçtan uca
-çalışıyor. `analyze_beat` hâlâ düşüyor ama artık **tek** noktada: FAISS
-`AssertionError` (index d=256 ≠ sorgu 1536) — Tuzak 3, yani sıradaki iş Faz 1.1
-(track-level FAISS rebuild). Sonra Faz 2.1 (joint decoding) → Faz 3
-(performans/eşzamanlılık/temizlik). Detaylar ve gerekçeler için `TODO.md`.
+Faz 0 ve Faz 1 tamam (Tuzak 1, 2, 3 düzeltildi). **`analyze_beat` uçtan uca çalışıyor**
+— 5 öneri dönüyor, self-match #1'de %90 ve ikinciyle arada ~20 puan var.
+
+Kalan zayıflık **sınıflandırmada**: model aynı birkaç sınıfa çöküyor (test edilen 6
+parçanın 3'ü "Philanthrope/Dark", 3'ü "MF DOOM/Dark") ve üç head birbiriyle çelişen,
+taksonomide **imkânsız** üçlüler üretebiliyor. Sıradaki iş bu yüzden Faz 2.1
+(joint decoding) — eğitim gerektirmeyen en yüksek etkili adım. Sonra Faz 3
+(performans/eşzamanlılık/temizlik). Gerçek çözüm Faz 4'te (Tuzak 4/5, yeniden eğitim).
+Detaylar ve gerekçeler için `TODO.md`.

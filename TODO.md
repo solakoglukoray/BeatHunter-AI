@@ -42,15 +42,57 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
 
 ## FAZ 1 — Öneri sistemini doğrula
 
-- [ ] **1.1 — FAISS index'i track seviyesinde yeniden inşa et**
+- [x] **1.1 — FAISS index'i track seviyesinde yeniden inşa et** — *2026-07-28*
   Slice değil, parça ortalaması (~14,235 track × 1536-dim, ~87MB). Forward pass
-  gerektirir (eğitim değil). Parça başına ~16 slice örneklemesi yeterli.
+  gerektirir (eğitim değil).
   *Ön koşul:* 0.1 ve 0.2 tamamlanmadan yapma — yanlış spektrogramlarla index kurmak
   hatayı kalıcılaştırır.
 
-- [ ] **1.2 — Index/metadata hizasızlığını doğrula**
-  Rebuild sonrası `vector_meta.csv` ve `metadata_processed.csv`'nin aynı çalıştırmadan
-  geldiğini teyit et.
+  **Not:** Windows'ta TF'in GPU desteği olmadığı için (bkz. 3.6) rebuild **WSL2'de**
+  yapıldı: 4 slice/parça → 56,940 görüntü, batch 64, 10.7 dk, ~89 gör/s.
+  Parça başına 16 yerine **4 slice** seçildi — termal kısıt (makine 96-97°C'de
+  kapanmıştı); index boyutu zaten parça sayısına bağlı olduğundan 87 MB değişmedi.
+  Builder script'i termal korumalı (80°C durakla / 70°C devam / 90°C iptal) ve
+  60s'de bir atomik checkpoint yazıyor — koşu sırasında 1 duraklama oldu (80→69°C,
+  65s), tepe 80°C.
+  Çıktı: `models/vector_db_track.index` + `models/vector_meta_track.csv`.
+  Eski `vector_db.index` / `vector_meta.csv` **silinmedi**, fallback olarak duruyor.
+
+  ⚠️ `rebuild_vector_database_if_needed()` devre dışı bırakıldı — slice seviyesinde
+  index üretiyordu, yeni yollara yazsa `analyze_beat`'in metadata lookup'ını bozardı.
+
+- [x] **1.2 — Index/metadata hizasızlığını doğrula** — *2026-07-28*
+  ntotal=14,235 = meta satır sayısı, d=1536 = modelin GAP çıktısı, normalizasyon
+  tam 1.0000, parça adları tekil. İkisi de aynı çalıştırmadan.
+
+  **Kritik bulgu — sorgu/index temsil uyumu.** Index doğru kurulmuştu ama ilk
+  doğrulamada *self-match başarısızdı*: index'te bulunan bir parça kendi sesinden
+  sorgulanınca ilk 10'a girmiyordu (medyan rank 4,856/14,235; rastgele ~7,117).
+  Kaybın ayrıştırması (aynı parça, 4 farklı yoldan embedding):
+
+  | Ölçüm | Sonuç | Anlamı |
+  |---|---|---|
+  | index'i kuran disk PNG'leri | **100.00%** | inşa kodu doğru, bug yok |
+  | canlı render, aynı zaman konumları | 78-90% | render paritesi kaybı (%10-22) |
+  | 8-segment sorgu yolu | 46-67% | **segment seçimi kaybı (%23-34)** |
+  | aynı parçanın başka slice'ları | ~75% | **modelin tavanı** (rastgele %55±10) |
+
+  Düzeltme: sorgu embedding'i index ile **birebir aynı** örneklemeyi kullanır oldu
+  (`compute_retrieval_embedding`, tüm 3s grid üzerinden linspace, 4 segment).
+  Sonuç — medyan self-match rank **4,856 → 1**, top-10 **0/6 → 6/6**.
+
+  ⚠️ Segment **sayısı** da eşleşmeli, sadece strateji değil: hizalı-8 medyan rank 186
+  veriyor (aynı 4 konumu içeriyor ama 4 fazlası ortalamayı sulandırıyor). Index farklı
+  bir slice sayısıyla yeniden kurulursa `RETRIEVAL_SEGMENTS` de değişmeli.
+
+  Render paritesi kaybı (%10-22) **kabul edildi** — hizalama sonrası benzerlik %78-90'a
+  çıkıyor ve top-1 için fazlasıyla yetiyor, dolayısıyla index'i canlı render'la kurmanın
+  ~1 saatlik CPU maliyetine değmiyor. (Kalan fark muhtemelen kütüphane sürüm kayması:
+  PNG'ler Mart'ta üretildi, bugünkü librosa 0.11 / matplotlib 3.10 biraz farklı render ediyor.)
+
+- [ ] **1.3 — Self-match doğrulamasını n=30-50 parçayla tekrarla**
+  Mevcut sonuç n=6 üzerinden. Etki büyüklüğü gürültü olamayacak kadar büyük
+  (4,856 → 1) ama örneklem küçük. Acil değil.
 
 ---
 
@@ -91,6 +133,26 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
   kullanılmayan `compile_model(num_artists=...)` parametresini kaldır; ölü
   `img_to_array` importunu sil; `beathunter_users_old.db`'yi sil;
   `requirements-backend.txt`'e sürüm pinle, eksik `mutagen`/`h5py` ekle.
+
+  **⚠️ TF sürüm uyuşmazlığı — üç ayrı sürüm (ölçüldü 2026-07-28):**
+
+  | Ortam | TF | Not |
+  |---|---|---|
+  | `requirements-backend.txt` | **2.15.0** (pinli) | hiçbir yerde kurulu değil |
+  | Windows (API/Streamlit çalıştığı yer) | **2.20.0** | `is_built_with_cuda()=False` → GPU **yok** |
+  | WSL2 `~/beathunter_env` (modelin eğitildiği yer) | **2.21.0** | CUDA build ✅, RTX 4080 görüyor |
+
+  Yani pin gerçeği yansıtmıyor ve iki çalışma ortamı da birbirinden farklı. Model
+  WSL2/2.21'de eğitildi, serving Windows/2.20'de yapılıyor — Keras 3 model formatı
+  şimdilik ikisinde de yükleniyor (yalnızca zararsız bir optimizer-değişkeni uyarısı
+  veriyor), ama bu garanti değil. Karar gerekiyor: pini gerçek serving ortamına göre
+  güncelle, yoksa serving'i de WSL2'ye taşı.
+  WSL2 diğer paketler: keras 3.13.2, numpy 2.4.3, librosa 0.11.0, faiss-cpu 1.13.2.
+
+  **Ek bulgu:** `~/BeatHunter/dataset` ve `~/BeatHunter/models` symlink'leri **kırık** —
+  `/mnt/c/.../Desktop/TypeSheat/...` gösteriyorlar ama proje
+  `Desktop/projeler/TypeSheat`'e taşınmış. `dataset_processed/` ise ext4'te gerçek
+  dizin ve 873,924 PNG içeriyor; Windows'taki kopyalarla md5 olarak **birebir aynı**.
 
 ---
 
