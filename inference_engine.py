@@ -52,6 +52,7 @@ import faiss
 TEMP_FOLDER   = "temp_inference"
 MODEL_PATH    = "models/beathunter_model.keras"
 CLASSES_PATH  = "models/classes.json"
+TAXONOMY_PATH = "models/taxonomy.json"   # artist -> {genre, mood}, for joint decoding
 
 PROCESSED_CSV    = "dataset_processed/metadata_processed.csv"
 IMG_DIR          = "dataset_processed/images"
@@ -74,6 +75,7 @@ _cached_model      = None
 _cached_class_names = None
 _cached_faiss_index = None
 _cached_faiss_meta  = None
+_cached_taxonomy    = None
 
 
 def _get_model():
@@ -88,6 +90,79 @@ def _get_model():
                     _cached_class_names = json.load(f)
                 print("✅ Model cache'e alındı.")
     return _cached_model, _cached_class_names
+
+
+def _get_taxonomy(class_names):
+    """
+    Loads artist -> (genre, mood) and returns it as index arrays aligned to
+    class_names, for joint decoding.
+
+    Every one of the 194 artists maps to exactly one genre and one mood in the
+    training data — genre and mood are functions of artist, not independent labels.
+    The three heads are therefore three noisy views of a single decision, and nothing
+    stops them from disagreeing: the model has been observed to emit
+    "Philanthrope / Dark / Alternative Hip-Hop" when Philanthrope is
+    Lofi Hip-Hop / Melancholic — a triple that does not exist in the data.
+
+    Returns (genre_of_artist, mood_of_artist): int arrays of len(class_names['artist']),
+    holding indices into class_names['genre'] and class_names['mood'].
+    """
+    global _cached_taxonomy
+    if _cached_taxonomy is None:
+        with _cache_lock:
+            if _cached_taxonomy is None:
+                with open(TAXONOMY_PATH, 'r', encoding='utf-8') as f:
+                    tax = json.load(f)
+
+                g_idx = {g: i for i, g in enumerate(class_names['genre'])}
+                m_idx = {m: i for i, m in enumerate(class_names['mood'])}
+
+                missing = [a for a in class_names['artist'] if a not in tax]
+                if missing:
+                    raise ValueError(
+                        f"{len(missing)} artist(s) in classes.json are absent from "
+                        f"{TAXONOMY_PATH}: {missing[:5]}. Regenerate the taxonomy from "
+                        "dataset_processed/metadata_processed.csv."
+                    )
+
+                _cached_taxonomy = (
+                    np.array([g_idx[tax[a]['genre']] for a in class_names['artist']], dtype=np.int32),
+                    np.array([m_idx[tax[a]['mood']]  for a in class_names['artist']], dtype=np.int32),
+                )
+    return _cached_taxonomy
+
+
+def joint_decode(genre_p, artist_p, mood_p, class_names, weights=(1.0, 1.0, 1.0)):
+    """
+    Picks the artist that best explains all three heads at once, then reads genre and
+    mood off the taxonomy:
+
+        score(a) = w_a·log P(artist=a) + w_g·log P(genre=G[a]) + w_m·log P(mood=M[a])
+
+    Because genre and mood are looked up rather than predicted, the returned triple is
+    always one the taxonomy actually contains — impossible combinations become
+    unrepresentable rather than merely unlikely. The genre and mood heads still get a
+    vote: they act as priors over groups of artists sharing that genre/mood.
+
+    Caveat: the three heads share a backbone, so they are not independent evidence and
+    summing their log-probs double-counts somewhat. `weights` is exposed for tuning;
+    equal weights are the untuned default.
+
+    This is a decode-time fix for a labelling problem (TODO.md 4.3), not a substitute
+    for it.
+    """
+    g_of_a, m_of_a = _get_taxonomy(class_names)
+    eps = 1e-12
+    wa, wg, wm = weights
+
+    scores = (wa * np.log(artist_p + eps)
+              + wg * np.log(genre_p + eps)[g_of_a]
+              + wm * np.log(mood_p + eps)[m_of_a])
+
+    best = int(np.argmax(scores))
+    return (class_names['genre'] [int(g_of_a[best])],
+            class_names['artist'][best],
+            class_names['mood']  [int(m_of_a[best])])
 
 
 def build_embedding_model(model):
@@ -276,13 +351,18 @@ def compute_retrieval_embedding(model, y_full, sr):
     return np.mean(vectors, axis=0, keepdims=True)
 
 
-def predict_with_majority_voting(model, y_full, sr, class_names):
+def predict_with_majority_voting(model, y_full, sr, class_names, joint=True):
     """
     Extracts NUM_SEGMENTS uniformly from the usable portion of the track
-    and determines labels via Soft Voting (summed softmax probabilities).
+    and determines labels via Soft Voting (averaged softmax probabilities).
 
-    Soft voting: probability vectors are summed across segments, then argmax.
+    Soft voting: probability vectors are summed across segments, then averaged.
     High-confidence segments naturally outweigh uncertain ones.
+
+    joint=True  → the three heads are resolved together via joint_decode(), so the
+                  returned triple is always taxonomy-consistent.
+    joint=False → independent argmax per head (the old behaviour), kept so the two
+                  can be compared.
 
     Classification deliberately skips the first/last 30s (intro/outro bias) and uses
     NUM_SEGMENTS segments. Retrieval does NOT share this sampling — it needs to match
@@ -327,12 +407,19 @@ def predict_with_majority_voting(model, y_full, sr, class_names):
             artist_probs += preds[1][0]
             mood_probs   += preds[2][0]
 
-    # Winner = argmax of accumulated probability sums
-    predicted_genre  = class_names['genre'] [int(np.argmax(genre_probs))]
-    predicted_artist = class_names['artist'][int(np.argmax(artist_probs))]
-    predicted_mood   = class_names['mood']  [int(np.argmax(mood_probs))]
+    n = max(1, len(starts))
+    genre_probs  = genre_probs  / n
+    artist_probs = artist_probs / n
+    mood_probs   = mood_probs   / n
 
-    return predicted_genre, predicted_artist, predicted_mood
+    if joint:
+        return joint_decode(genre_probs, artist_probs, mood_probs, class_names)
+
+    # Independent argmax per head — kept for A/B comparison against joint decoding.
+    # Can emit triples the taxonomy does not contain; see joint_decode().
+    return (class_names['genre'] [int(np.argmax(genre_probs))],
+            class_names['artist'][int(np.argmax(artist_probs))],
+            class_names['mood']  [int(np.argmax(mood_probs))])
 
 
 def download_youtube_audio(song_name):

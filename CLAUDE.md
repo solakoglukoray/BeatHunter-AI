@@ -31,6 +31,46 @@ majority voting ile birleştirilir (intro/outro bias'ını önlemek için).
 | `model_trainer.py` | CNN eğitim pipeline'ı |
 | `models/` | Kaydedilmiş model ağırlıkları — **elle değiştirme** |
 
+## 🚨 EN ÖNEMLİ: Kaydedilmiş model sınıflandırma yapmıyor (2026-07-28)
+
+`models/beathunter_model.keras` **kullanılabilir durumda değil.** Sınıflandırma
+head'leri hiç öğrenmemiş. Ölçümler (eğitim görüntülerinin **ta kendisi**, n=400):
+
+| | Model | Rastgele |
+|---|---|---|
+| artist | **%0.5** | %0.5 |
+| genre | **%2.2** | %1.5 |
+| mood | %25.0 | %16.7 (çoğunluk sınıfı %22) |
+
+Ortalama max softmax: genre 0.032, artist **0.014** (uniform = 0.005). Model neredeyse
+düzgün dağılım üretiyor. 400 görüntüde sadece **4 farklı sanatçı** tahmin edildi
+(gerçekte 164). Bunlar eğitim verisi — sızıntı (Tuzak 4) yüzünden ezberlenmiş olmalıydı.
+
+Ağırlık imzası:
+- **Backbone sağlam:** 208 katmanın 191'i taze ImageNet ile **birebir aynı**, 17'si
+  Faz 2'de ince ayarlanmış. → Retrieval'in kısmen çalışmasının sebebi bu: FAISS
+  **ImageNet doku özellikleri** üzerinde çalışıyor, öğrenilmiş müzik özellikleri değil.
+- **Gövde dense katmanları:** std Glorot'un **0.03-0.06 katı** → sıfıra büzülmüş
+- **Çıkış head'leri:** std Glorot'un 0.7-1.5 katı → **başlangıç değerinde**, öğrenmemiş
+
+→ ⚠️ **Decode-time hiçbir düzeltme bunu kurtaramaz** (joint decoding dahil).
+   Sınıflandırma çıktısına güvenme, kullanıcıya sunma.
+→ ⚠️ Ağırlıklar dosyadan **doğru yükleniyor** (birebir doğrulandı), yükleme hatası yok.
+   `best_checkpoint.keras` farklı bir dosya ama gövde ağırlıkları aynı
+   (EarlyStopping `restore_best_weights=True` ile tutarlı) — yedek değil.
+
+**Elenen nedenler** (tekrar araştırıp zaman harcama):
+- ~~BatchNorm `training=True` grafiğe gömülü~~ → config'de `training: false`,
+  çıktılar batch'ten bağımsız
+- ~~Faz 2'deki `set_weights` sırayı karıştırıyor~~ → iki build'in ağırlık sırası ve
+  şekilleri birebir aynı, sadece isimler farklı
+- ~~`mixed_float16` gradyan ölçekleme yok~~ → Keras 3 optimizer'ı otomatik
+  `LossScaleOptimizer`'a sarıyor (doğrulandı)
+
+Gerçek neden **bilinmiyor** ve tespiti bir eğitim koşusu gerektiriyor. Bir sonraki
+eğitim turunda **önce küçük bir alt kümede train accuracy'nin yükseldiğini doğrula** —
+bu model tam eğitim harcanmadan önce yakalanabilirdi.
+
 ## ⚠️ Bilinen Tuzaklar (kritik — yeni kod yazmadan önce oku)
 
 1. **Train/inference spektrogram uyuşmazlığı (KÖK NEDEN — ✅ DÜZELTİLDİ 2026-07-27)**
@@ -110,12 +150,15 @@ majority voting ile birleştirilir (intro/outro bias'ını önlemek için).
 - `beathunter_users_old.db` çöp, silinebilir.
 
 ## Şu anki durum
-Faz 0 ve Faz 1 tamam (Tuzak 1, 2, 3 düzeltildi). **`analyze_beat` uçtan uca çalışıyor**
-— 5 öneri dönüyor, self-match #1'de %90 ve ikinciyle arada ~20 puan var.
+Faz 0, 1 ve 2 tamam. Pipeline **mekanik olarak uçtan uca çalışıyor** — `analyze_beat`
+düşmüyor, 5 öneri dönüyor, çıktı üçlüsü artık taksonomiye uygun.
 
-Kalan zayıflık **sınıflandırmada**: model aynı birkaç sınıfa çöküyor (test edilen 6
-parçanın 3'ü "Philanthrope/Dark", 3'ü "MF DOOM/Dark") ve üç head birbiriyle çelişen,
-taksonomide **imkânsız** üçlüler üretebiliyor. Sıradaki iş bu yüzden Faz 2.1
-(joint decoding) — eğitim gerektirmeyen en yüksek etkili adım. Sonra Faz 3
-(performans/eşzamanlılık/temizlik). Gerçek çözüm Faz 4'te (Tuzak 4/5, yeniden eğitim).
-Detaylar ve gerekçeler için `TODO.md`.
+Ama **sınıflandırma işlevsel değil**: model eğitilmemiş (yukarıdaki 🚨 bölümü).
+Retrieval "çalışır ama zayıf" — top-1 %50 — ve bunu sağlayan şey ImageNet
+özellikleri, öğrenilmiş müzik temsili değil.
+
+Bu, kalan yol haritasını değiştiriyor: **kod tarafında yapılacak anlamlı bir kalite
+iyileştirmesi kalmadı.** Faz 3 (performans/eşzamanlılık/temizlik) hâlâ değerli ve
+eğitim gerektirmiyor, ama modeli düzeltmiyor. Gerçek blokaj **Faz 4 — yeniden eğitim**;
+ve o tur başlamadan önce eğitimin neden başarısız olduğu bulunmalı, yoksa aynı sonuç
+tekrarlanır. Detaylar ve gerekçeler için `TODO.md`.

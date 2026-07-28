@@ -116,7 +116,34 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
 
 ## FAZ 2 — Tutarlılık kazancı (eğitim gerektirmez)
 
-- [ ] **2.1 — Joint decoding**
+- [x] **2.1 — Joint decoding** — *2026-07-28* — **uygulandı, ama doğrulanamıyor**
+
+  `models/taxonomy.json` üretildi (194 sanatçı → genre+mood, determinizmi ve
+  `classes.json` ile birebir uyumu doğrulandı). `joint_decode()` eklendi,
+  `predict_with_majority_voting(..., joint=True)` varsayılan; `joint=False` eski
+  bağımsız argmax'ı koruyor (A/B için).
+
+  **A/B sonucu (n=60, eğitim setinden):**
+
+  | | genre | artist | mood | 3'ü birden |
+  |---|---|---|---|---|
+  | bağımsız argmax | %1.7 | **%0.0** | %28.3 | %0.0 |
+  | joint decoding | %1.7 | %1.7 | %18.3 | %1.7 |
+
+  İmkânsız üçlü: bağımsız **60/60 (%100)** → joint **0/60** (yapısal olarak üretilemez).
+  Çeşitlilik: 60 parça için bağımsız 3 farklı artist, joint 4 (gerçekte 51).
+
+  ⚠️ **Bu sayılar joint decoding hakkında bir şey söylemiyor** — model sınıflandırma
+  yapmıyor (bkz. CLAUDE.md'deki "Kaydedilmiş model sınıflandırma yapmıyor").
+  Birleştirilecek sinyal yok. Joint decoding doğru uygulandı ve taksonomi tutarlılığını
+  garanti ediyor; **faydası ancak model yeniden eğitildikten sonra ölçülebilir.**
+  Mood'daki −10 puan da anlamlı değil (bağımsız argmax orada sadece çoğunluk sınıfını
+  söylüyordu, %22 taban).
+
+  *Faz 2.1'in özgün gerekçesi ("anında gözle görülür iyileşme") **geçersiz** — sorunun
+  taksonomi değil, eğitilmemiş model olduğu ancak bu ölçümle anlaşıldı.*
+
+- [ ] ~~**2.1 — Joint decoding**~~ *(özgün madde, referans için)*
   `skor(a) = log P(artist=a) + log P(genre=G[a]) + log P(mood=M[a])`. Üç head'in
   çıktısını tek tutarlı karara birleştirir, imkânsız kombinasyonları (ör. "Wu-Tang /
   Trap / Aggressive") engeller. Taksonomi sorununa (Faz 4) kalıcı çözüm değil ama
@@ -177,6 +204,26 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
 ## FAZ 4 — Bir sonraki eğitim turu `[EĞİTİM GEREKİR]`
 
 Şu an ertelendi (süre kısıtı). Eğitim mümkün olduğunda bu sırayla:
+
+- [ ] **4.0 — `[EĞİTİM GEREKİR]` ÖNCE: eğitimin neden başarısız olduğunu bul** ⚠️ *en öncelikli*
+  Mevcut model sınıflandırma yapmıyor (CLAUDE.md 🚨 bölümü): head'ler başlangıç
+  değerinde, gövde sıfıra büzülmüş, eğitim verisinde bile artist doğruluğu %0.5
+  (= rastgele). **Bu bulunmadan yeniden eğitim aynı sonucu verir.**
+
+  Elenen nedenler (tekrar bakma): BatchNorm `training=True`, `set_weights` sıra
+  karışması, `mixed_float16` gradyan ölçekleme — üçü de ölçümle çürütüldü.
+
+  Bir sonraki turda uygulanacak yöntem:
+  1. **Önce ~2000 görüntülük bir alt kümede aşırı-öğrenme (overfit) testi yap.**
+     Model küçük bir kümeyi ezberleyemiyorsa sorun veride/pipeline'da değil,
+     eğitim kurulumunda. Bu test dakikalar sürer ve tam eğitimi harcamadan yakalar.
+  2. Faz 1'in kendisi çalışıyor mu ayrı doğrula (mevcut checkpoint Faz 2'den, Faz 1
+     hakkında bilgi vermiyor).
+  3. L2 (0.0005) + label smoothing kombinasyonunu sorgula — gövde ağırlıklarının
+     Glorot'un 0.03-0.06 katına inmesi, kaybın regularizasyon terimine hâkim olduğuna
+     işaret ediyor olabilir.
+  4. Her epoch'ta **train** accuracy'yi de logla — sadece val değil. Train accuracy
+     düşük kalıyorsa öğrenme hiç başlamamış demektir.
 
 - [ ] **4.1 — `[EĞİTİM GEREKİR]` Train/val sızıntısını düzelt**
   `train_test_split` → `GroupShuffleSplit`, grup anahtarı `filename.split('_slice')[0]`.
