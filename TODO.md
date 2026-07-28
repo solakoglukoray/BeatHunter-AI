@@ -245,7 +245,33 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
   *"Monitors val_loss instead of val_genre_out_accuracy (more stable signal)"*. Ölümcül
   olan değişiklik bu olabilir.
 
-  **Sıradaki adım — Tur 2 (henüz çalıştırılmadı):** overfit testi ile gerçek eğitim
+  **✅ TUR 2 ÇALIŞTIRILDI (2026-07-28) — düzeltilmiş trainer, 30 sanatçı × 500 slice
+  (15,000 görüntü), 12+12 epoch, GroupShuffleSplit + sample weight + accuracy-based
+  callback'ler.**
+
+  | head | train | val | şans | val/şans |
+  |---|---|---|---|---|
+  | genre | %45.8 | %24.3 | %5.00 | **4.9x** |
+  | artist | %42.7 | %21.1 | %3.33 | **6.3x** |
+  | mood | %55.6 | %31.0 | %16.67 | 1.9x |
+
+  Karşılaştırma: kaydedilmiş üretim modeli kendi **eğitim** görüntülerinde artist
+  %0.5 = **1.0x şans**. Yani düzeltilmiş pipeline gerçekten öğreniyor.
+  Termal: tepe 83°C, 11 duraklama, guard çalıştı.
+
+  ⚠️ **Ama `val_loss` hipotezi DOĞRULANMADI.** Accuracy-based callback'ler hata modunu
+  en baştan engellediği için ıraksamayı (loss düşerken doğruluk sabit) gözlemleyemedik;
+  görünen epoch'larda ikisi de plato yapmış. Yani "düzeltme işe yaradı" diyebiliriz ama
+  "sebep buydu" diyemeyiz. Özgün başarısızlığın kesin nedeni **hâlâ bilinmiyor**.
+
+  ⚠️ **Ölçek farkı duruyor:** bu koşu 30 sanatçı / 15K görüntü. Gerçek koşu 194 sanatçı /
+  873K görüntü — şans tabanı %3.33 değil %0.5. Başarısızlık o ölçekte hâlâ mümkün.
+  Tam koşuda `TrainingMonitor`'ün epoch çıktısı ve tripwire'ı bunu yakalayacak.
+
+  train %42.7 vs val %21.1 arasındaki 2x fark gerçek aşırı-öğrenme — ve artık
+  ölçülebilir, çünkü grup bazlı ayrım sızıntıyı kaldırdı.
+
+  **Tur 3 (opsiyonel, gerekirse):** overfit testi ile gerçek eğitim
   arasındaki farkları kapat ve hangisinin kırdığını bul. Farklar: (a) tek head vs
   3 head + `loss_weights`, (b) augmentation yok vs var, (c) 8 dengeli sınıf vs
   194/65/6 ve 28x/46x dengesizlik, (d) **callback'ler yok vs `val_loss` izleyen
