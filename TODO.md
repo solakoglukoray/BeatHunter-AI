@@ -79,7 +79,8 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
 
   Düzeltme: sorgu embedding'i index ile **birebir aynı** örneklemeyi kullanır oldu
   (`compute_retrieval_embedding`, tüm 3s grid üzerinden linspace, 4 segment).
-  Sonuç — medyan self-match rank **4,856 → 1**, top-10 **0/6 → 6/6**.
+  Sonuç — medyan self-match rank **4,856 → 1.5**, top-10 **%0 → %70**.
+  (Buradaki n=6 sayıları iyimserdi; güvenilir ölçüm için bkz. **1.3**.)
 
   ⚠️ Segment **sayısı** da eşleşmeli, sadece strateji değil: hizalı-8 medyan rank 186
   veriyor (aynı 4 konumu içeriyor ama 4 fazlası ortalamayı sulandırıyor). Index farklı
@@ -90,9 +91,26 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
   ~1 saatlik CPU maliyetine değmiyor. (Kalan fark muhtemelen kütüphane sürüm kayması:
   PNG'ler Mart'ta üretildi, bugünkü librosa 0.11 / matplotlib 3.10 biraz farklı render ediyor.)
 
-- [ ] **1.3 — Self-match doğrulamasını n=30-50 parçayla tekrarla**
-  Mevcut sonuç n=6 üzerinden. Etki büyüklüğü gürültü olamayacak kadar büyük
-  (4,856 → 1) ama örneklem küçük. Acil değil.
+- [x] **1.3 — Self-match doğrulamasını n=40 parçayla tekrarla** — *2026-07-28*
+
+  **n=6 iyimserdi.** Gerçek sayılar (index içinden rastgele 40 parça):
+
+  | | n=6 | **n=40** | hizasız (referans) |
+  |---|---|---|---|
+  | medyan rank | 1 | **1.5** | 4,856 |
+  | top-1 | 67% | **50%** | 0% |
+  | top-10 | 100% | **70%** | 0% |
+  | top-100 | 100% | **80%** | 17% |
+  | en kötü rank | — | **1,894** | 9,980 |
+
+  self benzerlik: ort %83.2 (min %69.7, max %95.3) — rastgele %55±10'a karşı ~2.8σ.
+  Top-1 olduğunda ikinciyle fark **ortalama 4.4 puan** (ilk testteki 20 puanlık örnek
+  istisnaymış) → sıralama kırılgan, küçük girdi değişimleri sırayı değiştirebilir.
+
+  **Yorum:** hizalama düzeltmesi gerçek ve büyük (medyan 4,856 → 1.5, ~3,200x), ama
+  sistem güvenilir değil: **parçaların yarısında** aynı şarkı 1. sırada bile çıkmıyor,
+  **%20'sinde ilk 100'e girmiyor**. Bu, D=%75 tavanıyla tutarlı — embedding zayıf
+  ayırt edici. Kod tarafında yapılacak bir şey kalmadı; asıl çözüm Faz 4.1/4.3.
 
 ---
 

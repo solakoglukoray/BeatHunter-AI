@@ -64,14 +64,17 @@ majority voting ile birleştirilir (intro/outro bias'ını önlemek için).
    (`compute_retrieval_embedding`: tüm 3s grid üzerinden `linspace`, 4 segment).
    Sınıflandırma ise ayrı — 8 segment, intro/outro atlanarak. **İkisini birleştirme.**
    Sorgu ve index örneklemesi birebir aynı olmalı; segment *sayısı* da dahil
-   (hizalı-4 → medyan self-match rank 1, hizalı-8 → 186, hizasız → 4,856).
+   (hizalı-4 → medyan self-match rank 1.5, hizalı-8 → 186, hizasız → 4,856).
    Index farklı slice sayısıyla yeniden kurulursa `RETRIEVAL_SEGMENTS` de değişmeli.
    → `rebuild_vector_database_if_needed()` **devre dışı** (slice seviyesinde index
    üretiyordu). Rebuild WSL2'deki track-level builder ile yapılır, bkz. TODO.md 1.1.
+   → ⚠️ **Retrieval çalışıyor ama güvenilir değil** (n=40 ölçümü, TODO.md 1.3):
+   medyan rank 1.5, ama **top-1 sadece %50**, top-10 %70, %20'si ilk 100'e bile
+   girmiyor. Top-1 iken ikinciyle fark ortalama 4.4 puan — sıralama kırılgan.
    → ⚠️ **D=%75 tavanı:** aynı şarkının farklı bölümleri arası embedding benzerliği
    ~%75, rastgele parçalar %55±10. Öneri kalitesinin üst sınırı budur ve Tuzak 4/5'ten
-   gelir — **Faz 4'te yeniden eğitim yapılana kadar geçerli.** Retrieval "çalışır ama
-   zayıf" durumda; kod tarafında yapılacak bir şey kalmadı.
+   gelir — **Faz 4'te yeniden eğitim yapılana kadar geçerli.** Kod tarafında
+   yapılacak bir şey kalmadı; öneri sayılarını kullanıcıya kesinlik gibi sunma.
 
 4. **Train/val veri sızıntısı (eğitim gerektirir, şimdilik ERTELENDİ)**
    `model_trainer.py`'de `train_test_split` slice seviyesinde rastgele. Aynı şarkının
