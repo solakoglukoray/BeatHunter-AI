@@ -213,7 +213,45 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
   Elenen nedenler (tekrar bakma): BatchNorm `training=True`, `set_weights` sıra
   karışması, `mixed_float16` gradyan ölçekleme — üçü de ölçümle çürütüldü.
 
-  **Araçlar hazır (2026-07-28), çalıştırılmadı:** `overfit_test.py` yazıldı — 8 varyantı
+  **✅ OVERFIT TESTİ ÇALIŞTIRILDI (2026-07-28) — kurulum küçük ölçekte SAĞLAM.**
+
+  | varyant | ep1 | ep20 | sonuç |
+  |---|---|---|---|
+  | baseline | %56.0 | **%97.5** | ÖĞRENİYOR |
+  | no_mixed_precision | %54.2 | %97.0 | ÖĞRENİYOR |
+  | no_l2 | %54.1 | %97.7 | ÖĞRENİYOR |
+  | no_label_smoothing | %55.2 | %95.0 | ÖĞRENİYOR |
+  | no_dropout | %72.0 | %98.9 | ÖĞRENİYOR |
+  | higher_lr (1e-2) | %35.0 | %82.7 | kısmen |
+  | lower_lr (1e-4) | %29.1 | %93.8 | ÖĞRENİYOR |
+  | unfrozen_base | %28.9 | %99.6 | ÖĞRENİYOR |
+
+  Yani **hiçbir hiperparametre tek başına suçlu değil.** Mimari, veri, spektrogramlar
+  ve etiketler öğrenilebilir durumda. Sorun ölçeğe bağlı. GPU tepe 80°C, 4 termal
+  duraklama (guard çalıştı).
+
+  **🎯 ÖNCELİKLİ HİPOTEZ — `val_loss` izlemek ağırlık büzülmesini ödüllendiriyor.**
+  Keras'ın raporladığı `loss`/`val_loss` **L2 regularizasyon terimini içerir.**
+  `EarlyStopping` ve `ModelCheckpoint` ikisi de `val_loss` izliyor ve
+  `restore_best_weights=True` kullanıyor. Sınıflandırma sinyali zorlaştığında toplam
+  kaybı düşürmenin en ucuz yolu ağırlıkları küçültmektir — L2 terimi düşer, `val_loss`
+  "iyileşir", callback'ler bunu ödüllendirip o ağırlıkları geri yükler ve kaydeder.
+
+  Gözlenen ağırlık imzası bununla **birebir örtüşüyor**: gövde 0.03-0.06x init'e
+  büzülmüş, head'ler init'te kalmış. Küçük ölçekte görünmüyor çünkü sınıflandırma
+  kolay ve CCE terimi baskın; 873K görüntü + 40 epoch'ta değil.
+
+  Dikkat: `model_trainer.py` docstring'i bunu **bilinçli bir tercih** olarak anlatıyor —
+  *"Monitors val_loss instead of val_genre_out_accuracy (more stable signal)"*. Ölümcül
+  olan değişiklik bu olabilir.
+
+  **Sıradaki adım — Tur 2 (henüz çalıştırılmadı):** overfit testi ile gerçek eğitim
+  arasındaki farkları kapat ve hangisinin kırdığını bul. Farklar: (a) tek head vs
+  3 head + `loss_weights`, (b) augmentation yok vs var, (c) 8 dengeli sınıf vs
+  194/65/6 ve 28x/46x dengesizlik, (d) **callback'ler yok vs `val_loss` izleyen
+  EarlyStopping/ModelCheckpoint**. (d) önce test edilmeli.
+
+  **Araçlar:** `overfit_test.py` — 8 varyantı
   (baseline, mixed precision kapalı, L2 yok, label smoothing yok, dropout yok, LR
   yüksek/düşük, backbone çözülmüş) ~2000 görüntüde deneyip hangisinin öğrendiğini
   raporluyor. Her varyant baseline'dan **tek bir ayarı** değiştiriyor, böylece öğrenen

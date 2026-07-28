@@ -37,7 +37,7 @@ A healthy run reaches >90% train accuracy on this subset within ~20 epochs.
                              or the phase-1 → phase-2 transition)
 """
 
-import os, sys, json, time, argparse
+import os, sys, json, time, threading, subprocess, argparse
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -47,6 +47,96 @@ from tensorflow.keras.applications import EfficientNetB3
 CSV_PATH = "dataset_processed/metadata_processed.csv"
 IMG_DIR  = "dataset_processed/images"
 IMG_SIZE = (224, 224)
+
+# ============================================================
+# THERMAL GUARD
+# ============================================================
+# Same thresholds as the FAISS rebuild script. This machine thermally shut down at
+# 96-97C earlier, and a soak test showed the GPU still climbing 4-6 C/min after three
+# minutes at only 58W — cooling is marginal, so sustained load needs supervision.
+#
+# CPU temperature is NOT readable (WSL2 exposes no thermal_zone, and the Windows WMI
+# thermal class needs admin), so this guards on GPU temperature only.
+ABORT_C, COOL_C, RESUME_C = 90, 80, 70
+COOL_TIMEOUT = 600
+TEMP_LOG = os.path.expanduser("~/bench_out/temps_overfit.csv")
+
+_therm = {"gpu": None, "max": 0, "abort": False, "reason": None, "pauses": 0}
+_stop_monitor = threading.Event()
+
+
+def read_gpu():
+    try:
+        o = subprocess.run(
+            ["nvidia-smi", "--query-gpu=temperature.gpu,power.draw,clocks.sm",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=5).stdout.strip().split(",")
+        return int(o[0]), float(o[1]), float(o[2])
+    except Exception:
+        return None, None, None
+
+
+def _monitor():
+    """Polls every 2s so the training loop only ever reads a cached value."""
+    os.makedirs(os.path.dirname(TEMP_LOG), exist_ok=True)
+    with open(TEMP_LOG, "w") as f:
+        f.write("t,gpu_temp_c,gpu_power_w,gpu_clock_mhz\n")
+        t0 = time.time()
+        while not _stop_monitor.is_set():
+            t, p, c = read_gpu()
+            if t is not None:
+                f.write(f"{time.time()-t0:.1f},{t},{p},{c}\n"); f.flush()
+                _therm["gpu"] = t
+                _therm["max"] = max(_therm["max"], t)
+                if t >= ABORT_C:
+                    _therm["abort"] = True
+                    _therm["reason"] = f"GPU {t}C >= {ABORT_C}C abort esigi"
+            _stop_monitor.wait(2)
+
+
+class ThermalGuard(tf.keras.callbacks.Callback):
+    """
+    Pauses training when the GPU gets hot and stops it outright if it gets dangerous.
+
+    Reads the cached temperature rather than shelling out to nvidia-smi, so the
+    per-batch cost is a dict lookup. Checked every `every` batches and at each epoch
+    end; the pause blocks inside the callback, which idles the GPU without losing state.
+    """
+
+    def __init__(self, every=20):
+        super().__init__()
+        self.every = every
+
+    def _check(self):
+        if _therm["abort"]:
+            self.model.stop_training = True
+            return
+        t = _therm["gpu"]
+        if t is None or t < COOL_C:
+            return
+
+        _therm["pauses"] += 1
+        print(f"\n  ~ GPU {t}C >= {COOL_C}C — duraklatildi, <{RESUME_C}C bekleniyor...",
+              flush=True)
+        waited = 0
+        while True:
+            time.sleep(5); waited += 5
+            t = _therm["gpu"]
+            if t is None or t < RESUME_C:
+                print(f"  ~ devam ({t}C, {waited}s duraklama)", flush=True)
+                return
+            if t >= ABORT_C or waited > COOL_TIMEOUT:
+                _therm["abort"] = True
+                _therm["reason"] = f"soguma basarisiz (GPU {t}C, {waited}s)"
+                self.model.stop_training = True
+                return
+
+    def on_train_batch_end(self, batch, logs=None):
+        if batch % self.every == 0:
+            self._check()
+
+    def on_epoch_end(self, epoch, logs=None):
+        self._check()
 
 # Each variant = the current settings with ONE field overridden.
 BASE = dict(mixed_precision=True, l2=0.0005, label_smoothing=0.05,
@@ -115,19 +205,29 @@ def run(name, cfg, paths, labels, n_classes, epochs, batch):
     # Same data for fit and eval — memorisation is the whole point.
     ds = make_ds(paths, labels, batch, shuffle=True)
     t0 = time.time()
-    hist = model.fit(ds, epochs=epochs, verbose=2)
+    hist = model.fit(ds, epochs=epochs, verbose=2, callbacks=[ThermalGuard()])
     took = time.time() - t0
 
     acc   = hist.history['accuracy']
     final = acc[-1]
     best  = max(acc)
-    verdict = "OGRENIYOR" if best > 0.90 else ("KISMEN" if best > 0.40 else "OGRENMIYOR")
+
+    if _therm["abort"]:
+        verdict = "IPTAL(termal)"
+    elif len(acc) < epochs:
+        verdict = "EKSIK(termal)"          # stop_training fired before the last epoch
+    else:
+        verdict = "OGRENIYOR" if best > 0.90 else ("KISMEN" if best > 0.40 else "OGRENMIYOR")
+
     print(f"  -> train acc: baslangic {acc[0]*100:.1f}%  son {final*100:.1f}%  "
-          f"en iyi {best*100:.1f}%  ({took/60:.1f} dk)")
+          f"en iyi {best*100:.1f}%  ({took/60:.1f} dk, {len(acc)}/{epochs} epoch)")
+    print(f"  -> GPU tepe {_therm['max']}C, {_therm['pauses']} duraklama")
     print(f"  -> SONUC: {verdict}", flush=True)
 
     return {"variant": name, "changed": changed, "final_acc": float(final),
             "best_acc": float(best), "verdict": verdict,
+            "epochs_done": len(acc), "epochs_target": epochs,
+            "gpu_peak_c": _therm["max"], "pauses": _therm["pauses"],
             "acc_curve": [round(float(a), 4) for a in acc], "minutes": round(took / 60, 2)}
 
 
@@ -169,8 +269,18 @@ def main():
     if unknown:
         sys.exit(f"bilinmeyen varyant: {unknown}\nmevcut: {list(VARIANTS)}")
 
+    t, _, _ = read_gpu()
+    print(f"baslangic GPU: {t}C | termal guard: {COOL_C}C durakla / {RESUME_C}C devam / {ABORT_C}C iptal")
+    threading.Thread(target=_monitor, daemon=True).start()
+    time.sleep(2)   # monitor'un ilk okumayi yapmasini bekle
+
     results = []
     for n in names:
+        if _therm["abort"]:
+            print(f"\n!! TERMAL IPTAL: {_therm['reason']} — kalan varyantlar atlandi", flush=True)
+            results.append({"variant": n, "verdict": "ATLANDI(termal)"})
+            json.dump(results, open(args.out, "w"), indent=2)
+            break
         cfg = {**BASE, **VARIANTS[n]}
         try:
             results.append(run(n, cfg, paths, labels, len(classes), args.epochs, args.batch))
@@ -187,9 +297,16 @@ def main():
         acc = f"{r['best_acc']*100:.1f}%" if 'best_acc' in r else "-"
         print(f"{r['variant']:22s} {acc:>17s}  {r['verdict']}")
 
+    _stop_monitor.set()
+    print(f"\nGPU tepe {_therm['max']}C | toplam {_therm['pauses']} termal duraklama")
+    print(f"sicaklik logu: {TEMP_LOG}")
+
     ok   = [r['variant'] for r in results if r.get('verdict') == "OGRENIYOR"]
     base = next((r for r in results if r['variant'] == 'baseline'), None)
     print()
+    if _therm["abort"]:
+        print(f"⚠️ TERMAL IPTAL: {_therm['reason']}")
+        print("   Sonuclar eksik — asagidaki teshis guvenilir olmayabilir.")
     if base and base.get('verdict') != "OGRENIYOR" and ok:
         print(f"TESHIS: baseline ogrenmiyor ama {ok} ogreniyor.")
         print("        -> farki yaratan ayar suclu. model_trainer.py'de onu duzelt.")
