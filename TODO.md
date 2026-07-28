@@ -213,6 +213,12 @@ head çıktıları (65 / 194 / 6) — `classes.json` ile birebir uyumlu.
   Elenen nedenler (tekrar bakma): BatchNorm `training=True`, `set_weights` sıra
   karışması, `mixed_float16` gradyan ölçekleme — üçü de ölçümle çürütüldü.
 
+  **Araçlar hazır (2026-07-28), çalıştırılmadı:** `overfit_test.py` yazıldı — 8 varyantı
+  (baseline, mixed precision kapalı, L2 yok, label smoothing yok, dropout yok, LR
+  yüksek/düşük, backbone çözülmüş) ~2000 görüntüde deneyip hangisinin öğrendiğini
+  raporluyor. Her varyant baseline'dan **tek bir ayarı** değiştiriyor, böylece öğrenen
+  varyant doğrudan suçluyu gösteriyor. WSL2'de çalıştırılmalı (Windows'ta GPU yok).
+
   Bir sonraki turda uygulanacak yöntem:
   1. **Önce ~2000 görüntülük bir alt kümede aşırı-öğrenme (overfit) testi yap.**
      Model küçük bir kümeyi ezberleyemiyorsa sorun veride/pipeline'da değil,
