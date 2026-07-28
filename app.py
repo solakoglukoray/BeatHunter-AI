@@ -39,7 +39,8 @@ if "api_response" not in st.session_state:
 async def wait_for_analysis_ws(task_id):
     import urllib.parse
     encoded_task_id = urllib.parse.quote(task_id, safe="")
-    ws_url = API_URL.replace("http", "ws") + f"/ws/{encoded_task_id}"
+    # Replace protocol precisely — "https://" → "wss://", "http://" → "ws://"
+    ws_url = API_URL.replace("https://", "wss://").replace("http://", "ws://") + f"/ws/{encoded_task_id}"
     try:
         async with websockets.connect(ws_url) as websocket:
             message = await websocket.recv()
@@ -431,13 +432,55 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     st.divider()
     st.header("🎯 Analysis Report")
 
-    # 5-column metrics
+    # Style / Mood / Genre come from the classifier, which is currently NOT trustworthy:
+    # the saved model scores at chance level even on its own training images. Tempo and
+    # Key are computed by librosa and are unaffected, so they are always shown.
+    # The backend reports per-head confidence; conf["reliable"] is False whenever a
+    # prediction is not meaningfully better than a random guess.
+    conf     = analysis.get("classification_confidence") or {}
+    reliable = conf.get("reliable", False)
+
+    if not reliable:
+        st.warning(
+            "⚠️ **Style, Mood and Genre are experimental and currently unverified.** "
+            "The classification model is known to be under-trained — on this build its "
+            "predictions are close to random, so they are hidden below rather than shown "
+            "as results. **Tempo and Key are not affected** (they are measured from the "
+            "audio signal, not predicted by the model), and similar-beat recommendations "
+            "still work, though they are weaker than intended."
+        )
+
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.info(f"🎧 **Style:**\n### {analysis['artist_type']} Type")
-    c2.warning(f"🎭 **Mood:**\n### {analysis['mood']}")
-    c3.success(f"🎹 **Genre:**\n### {analysis['genre']}")
+    if reliable:
+        c1.info(f"🎧 **Style:**\n### {analysis['artist_type']} Type")
+        c2.warning(f"🎭 **Mood:**\n### {analysis['mood']}")
+        c3.success(f"🎹 **Genre:**\n### {analysis['genre']}")
+    else:
+        for col, icon, name in ((c1, "🎧", "Style"), (c2, "🎭", "Mood"), (c3, "🎹", "Genre")):
+            col.info(f"{icon} **{name}:**\n### —\nunavailable")
+
     c4.error(f"⏱️ **Tempo:**\n### {analysis['bpm']} BPM")
     c5.info(f"🎵 **Key:**\n### {analysis['key']}")
+
+    if not reliable and conf:
+        with st.expander("Why are Style / Mood / Genre hidden?"):
+            st.markdown(
+                "A prediction is shown only when it beats a random guess by at least "
+                f"**{conf.get('min_ratio_required', 5):.0f}x**. "
+                "The ratio below is the predicted class's probability divided by what "
+                "pure chance would give (`1 / number of classes`), so **1.0x means the "
+                "model is doing no better than guessing.**"
+            )
+            rows = [
+                {
+                    "Head": head.capitalize(),
+                    "Would have predicted": conf[head]["label"],
+                    "Probability": f"{conf[head]['probability']*100:.2f}%",
+                    "vs. chance": f"{conf[head]['ratio_vs_chance']:.1f}x",
+                }
+                for head in ("artist", "mood", "genre") if head in conf
+            ]
+            st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -446,9 +489,9 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     with col_img:
         st.image("temp_inference/temp_spec.png", use_container_width=True, caption="Mel-Spectrogram")
 
-        # Audio preview
+        # Audio preview — her iki source türü de response'dan path alır
         if st.session_state.api_response.get("source") == "local_file":
-            audio_path = "temp_inference/api_uploaded_song.mp3"
+            audio_path = st.session_state.api_response.get("file_path", "")
         else:
             audio_path = st.session_state.api_response.get("beat_path", "")
 

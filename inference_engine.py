@@ -151,6 +151,12 @@ def joint_decode(genre_p, artist_p, mood_p, class_names, weights=(1.0, 1.0, 1.0)
     This is a decode-time fix for a labelling problem (TODO.md 4.3), not a substitute
     for it.
     """
+    gi, ai, mi = joint_decode_indices(genre_p, artist_p, mood_p, class_names, weights)
+    return class_names['genre'][gi], class_names['artist'][ai], class_names['mood'][mi]
+
+
+def joint_decode_indices(genre_p, artist_p, mood_p, class_names, weights=(1.0, 1.0, 1.0)):
+    """joint_decode(), but returning (genre_idx, artist_idx, mood_idx)."""
     g_of_a, m_of_a = _get_taxonomy(class_names)
     eps = 1e-12
     wa, wg, wm = weights
@@ -160,9 +166,41 @@ def joint_decode(genre_p, artist_p, mood_p, class_names, weights=(1.0, 1.0, 1.0)
               + wm * np.log(mood_p + eps)[m_of_a])
 
     best = int(np.argmax(scores))
-    return (class_names['genre'] [int(g_of_a[best])],
-            class_names['artist'][best],
-            class_names['mood']  [int(m_of_a[best])])
+    return int(g_of_a[best]), best, int(m_of_a[best])
+
+
+# A prediction counts as reliable only if its probability beats a uniform guess by at
+# least this factor. Normalising by class count makes the three heads comparable:
+# 194 artists, 65 genres, 6 moods have very different uniform baselines.
+#
+# The currently saved model scores roughly 2.7x (artist), 2.1x (genre) and 1.4x (mood)
+# — i.e. barely distinguishable from guessing, which matches its measured accuracy of
+# 0.5% / 2.2% / 25.0% on its OWN training images. A working model should sit far above
+# this threshold, so it gates today's output without capping a retrained one.
+CONFIDENCE_MIN_RATIO = 5.0
+
+
+def _head_confidence(probs, idx, label):
+    p = float(probs[idx])
+    return {"label": label, "probability": p, "ratio_vs_chance": p * len(probs)}
+
+
+def classification_confidence(genre_p, artist_p, mood_p, gi, ai, mi, class_names):
+    """
+    Per-head confidence for the chosen labels, plus an overall `reliable` flag.
+
+    `ratio_vs_chance` is P(chosen) / (1/n_classes): 1.0 means "no better than guessing".
+    Consumers should treat reliable=False as "do not present this as a result".
+    """
+    heads = {
+        "genre":  _head_confidence(genre_p,  gi, class_names['genre'][gi]),
+        "artist": _head_confidence(artist_p, ai, class_names['artist'][ai]),
+        "mood":   _head_confidence(mood_p,   mi, class_names['mood'][mi]),
+    }
+    heads["reliable"] = all(h["ratio_vs_chance"] >= CONFIDENCE_MIN_RATIO
+                            for h in heads.values() if isinstance(h, dict))
+    heads["min_ratio_required"] = CONFIDENCE_MIN_RATIO
+    return heads
 
 
 def build_embedding_model(model):
@@ -413,13 +451,19 @@ def predict_with_majority_voting(model, y_full, sr, class_names, joint=True):
     mood_probs   = mood_probs   / n
 
     if joint:
-        return joint_decode(genre_probs, artist_probs, mood_probs, class_names)
+        gi, ai, mi = joint_decode_indices(genre_probs, artist_probs, mood_probs, class_names)
+    else:
+        # Independent argmax per head — kept for A/B comparison against joint decoding.
+        # Can emit triples the taxonomy does not contain; see joint_decode().
+        gi = int(np.argmax(genre_probs))
+        ai = int(np.argmax(artist_probs))
+        mi = int(np.argmax(mood_probs))
 
-    # Independent argmax per head — kept for A/B comparison against joint decoding.
-    # Can emit triples the taxonomy does not contain; see joint_decode().
-    return (class_names['genre'] [int(np.argmax(genre_probs))],
-            class_names['artist'][int(np.argmax(artist_probs))],
-            class_names['mood']  [int(np.argmax(mood_probs))])
+    confidence = classification_confidence(
+        genre_probs, artist_probs, mood_probs, gi, ai, mi, class_names)
+
+    return (class_names['genre'][gi], class_names['artist'][ai],
+            class_names['mood'][mi], confidence)
 
 
 def download_youtube_audio(song_name):
@@ -501,7 +545,7 @@ def analyze_beat(audio_path):
 
     bpm, key = extract_bpm_and_key(y_full, sr)
 
-    predicted_genre, predicted_artist, predicted_mood = \
+    predicted_genre, predicted_artist, predicted_mood, confidence = \
         predict_with_majority_voting(model, y_full, sr, class_names)
 
     # Retrieval uses its own, index-aligned sampling — NOT the classification segments.
@@ -542,7 +586,10 @@ def analyze_beat(audio_path):
             "score": float(dist * 100)
         })
 
-    return formatted_output, recommendations, int(bpm), str(key)
+    # confidence is returned separately so callers can decide whether the genre/artist/
+    # mood triple is fit to show. BPM and key are NOT affected — they come from librosa,
+    # not the model, and stay trustworthy regardless.
+    return formatted_output, recommendations, int(bpm), str(key), confidence
 
 
 if __name__ == "__main__":

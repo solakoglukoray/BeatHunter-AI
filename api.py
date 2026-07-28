@@ -65,8 +65,8 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={
             "status": "failed",
             "error": "An unexpected system error occurred.",
-            "details": error_message,
             "path": request.url.path
+            # details intentionally omitted — don't leak internals to client
         }
     )
 
@@ -119,7 +119,7 @@ MAX_REQUESTS_PER_MINUTE = 3
 
 def check_rate_limit(current_user: auth.User = Depends(auth.get_current_user)):
     username = current_user.username
-    if username.lower() == "admin":
+    if current_user.is_admin:
         return current_user
 
     current_time = time.time()
@@ -274,8 +274,10 @@ async def analyze_file_endpoint(
 
         await file.seek(0)
         os.makedirs(TEMP_FOLDER, exist_ok=True)
-        file_path = os.path.join(TEMP_FOLDER, "api_uploaded_song.mp3")
-        
+        # Unique filename per request — prevents race condition when multiple users upload simultaneously
+        upload_id = uuid.uuid4().hex[:8]
+        file_path = os.path.join(TEMP_FOLDER, f"upload_{upload_id}.mp3")
+
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
@@ -283,7 +285,7 @@ async def analyze_file_endpoint(
         # 🚀 THE FIX: RUN HEAVY ML TASKS IN BACKGROUND THREADS
         # This prevents FastAPI from freezing and dropping the connection!
         # ---------------------------------------------------------
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         
         if not skip_demucs:
             # Run Demucs in a separate thread
@@ -292,7 +294,7 @@ async def analyze_file_endpoint(
             beat_path = file_path
 
         # Run Vector Inference in a separate thread
-        formatted_result, recommendations, bpm, key = await loop.run_in_executor(None, analyze_beat, beat_path)
+        formatted_result, recommendations, bpm, key, confidence = await loop.run_in_executor(None, analyze_beat, beat_path)
         # ---------------------------------------------------------
 
         tags = formatted_result.split(" / ")
@@ -302,12 +304,17 @@ async def analyze_file_endpoint(
             "user": current_user.username,
             "source": "local_file",
             "filename": file.filename,
+            "file_path": file_path,
             "analysis": {
                 "artist_type": tags[0].replace(" Type", ""),
                 "mood": tags[1],
                 "genre": tags[2],
                 "bpm": bpm,
-                "key": key
+                "key": key,
+                # Only genre/artist/mood are model predictions and can be unreliable.
+                # bpm/key come from librosa and are unaffected. See inference_engine
+                # .classification_confidence().
+                "classification_confidence": confidence
             },
             "recommendations": recommendations
         }
@@ -332,10 +339,10 @@ async def background_youtube_worker(query: str, cache_key: str, username: str):
         api_cache.set(cache_key, {"status": "processing", "query": query}, expire=3600)
 
         async with worker_semaphore:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             file_path = await loop.run_in_executor(None, _download_to_folder, query, task_folder)
             beat_path = await loop.run_in_executor(None, _separate_to_folder, file_path, task_folder)
-            formatted_result, recommendations, bpm, key = await loop.run_in_executor(None, analyze_beat, beat_path)
+            formatted_result, recommendations, bpm, key, confidence = await loop.run_in_executor(None, analyze_beat, beat_path)
 
         tags = formatted_result.split(" / ")
 
@@ -350,7 +357,9 @@ async def background_youtube_worker(query: str, cache_key: str, username: str):
                 "mood": tags[1],
                 "genre": tags[2],
                 "bpm": bpm,
-                "key": key
+                "key": key,
+                # See the note in analyze_file_endpoint — bpm/key are unaffected.
+                "classification_confidence": confidence
             },
             "recommendations": recommendations
         }
@@ -504,14 +513,14 @@ def remove_favorite(task_id: str, db: Session = Depends(auth.get_db), current_us
 # ==========================================
 @app.get("/admin/users", tags=["Admin"])
 def get_all_users(current_user: auth.User = Depends(auth.get_current_user), db: Session = Depends(auth.get_db)):
-    if current_user.username.lower() != "admin":
+    if not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Forbidden: Admins only.")
     users = db.query(auth.User).all()
     return [{"ID": u.id, "Username": u.username, "Email": u.email, "Active": u.is_active} for u in users]
 
 @app.get("/admin/stats", tags=["Admin"])
 async def get_admin_stats(current_user: auth.User = Depends(auth.get_current_user)):
-    if current_user.username.lower() != "admin":
+    if not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Forbidden: Admins only.")
 
     all_keys = [key for key in api_cache.iterkeys() if key.startswith("yt_")]
@@ -543,7 +552,7 @@ async def get_admin_stats(current_user: auth.User = Depends(auth.get_current_use
 
 @app.delete("/admin/cache", tags=["Admin"])
 async def clear_system_cache(current_user: auth.User = Depends(auth.get_current_user)):
-    if current_user.username.lower() != "admin":
+    if not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Forbidden: Admins only.")
     api_cache.clear()
     return {"status": "success", "message": "Cache completely cleared."}
