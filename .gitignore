@@ -49,3 +49,8 @@ beathunter_users.db
 # FAISS
 models/*.index
 *.index
+# Training checkpoint state (transient, regenerated every run)
+models/training_checkpoint.keras
+models/training_state.json
+models/subset_*.keras
+models/subset_*.json

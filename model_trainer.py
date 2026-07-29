@@ -118,9 +118,25 @@ EPOCHS_P2  = 40     # Phase 2: fine-tune top layers (EarlyStopping will stop thi
 #
 # These four are the remaining suspects, hoisted here so the overfit test's verdict can
 # be applied in one place:
-L2_REG          = 0.0005   # trunk collapsed toward zero — regularisation may dominate
+# NOTE for whoever revisits CNN training: mid-run weights suggested this is too high.
+# The shared trunk sat at 0.12-0.35x its Glorot initialisation — shrinking toward zero —
+# while artist_out ballooned to 13.69x trying to amplify what little signal reached it
+# (genre_out 2.00x, mood_out 1.03x): regularisation squeezes the features, the head
+# grows to compensate. Same direction as the earlier broken model, whose trunk ended at
+# 0.03-0.06x, and the overfit diagnostic's no_l2 variant learned fine at 97.7%.
+#
+# Left at 5e-4 deliberately. Lowering it was not pursued because the whole CNN path was
+# measured against a classical-features baseline and lost badly (artist 0.8x vs 16.7x
+# chance on identical held-out tracks), so tuning it would have been optimising the
+# wrong thing. Revisit only alongside a redesigned input representation.
+L2_REG          = 0.0005
 LABEL_SMOOTHING = 0.05     # artist head used 0.08
 LR_PHASE1       = 1e-3
+# Phase 2 fine-tunes the backbone. Kept low to avoid wrecking the ImageNet weights;
+# the CosineLR callback decays it from here. alpha=1e-3 leaves a floor of 1e-8 rather
+# than the 1e-13 the old schedule produced (alpha there was a FRACTION of the initial
+# rate, not an absolute floor — an easy misreading of the Keras API).
+LR_PHASE2       = 1e-5
 USE_MIXED_PRECISION = True
 
 # Reverses the time axis. Rhythm direction is meaningful in music, so this augmentation
@@ -369,6 +385,56 @@ class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
             self._last = time.time()
 
 
+class CosineLR(tf.keras.callbacks.Callback):
+    """
+    Cosine learning-rate decay driven by a callback rather than by the optimizer.
+
+    keras.optimizers.schedules.CosineDecay does not survive save/load: reloading a
+    checkpoint gives back learning_rate as a plain EagerTensor and iterations as 0
+    (measured on keras 3.13.2). So a resumed phase 2 silently ran at a flat initial LR
+    with no decay at all, and there was no way to notice from the logs.
+
+    Recompiling on resume would restore the schedule but discard Adam's moments, which
+    is most of the point of resuming. Tracking the step here instead sidesteps both: the
+    counter is a plain integer, it goes in the checkpoint state like anything else, and
+    the LR is assigned as a float, which a loaded optimizer accepts without recompiling.
+    """
+
+    def __init__(self, initial_lr, decay_steps, alpha=0.0, start_step=0, update_every=50):
+        super().__init__()
+        self.initial_lr = initial_lr
+        self.decay_steps = max(1, decay_steps)
+        self.alpha = alpha
+        self.step = start_step
+        self.update_every = update_every
+
+    def current_lr(self):
+        p = min(1.0, self.step / self.decay_steps)
+        cosine = 0.5 * (1.0 + math.cos(math.pi * p))
+        return self.initial_lr * ((1.0 - self.alpha) * cosine + self.alpha)
+
+    def _apply(self):
+        opt = self.model.optimizer
+        inner = getattr(opt, "inner_optimizer", opt)
+        try:
+            inner.learning_rate.assign(self.current_lr())
+        except Exception:
+            inner.learning_rate = self.current_lr()
+
+    def on_train_begin(self, logs=None):
+        self._apply()
+        print(f"📉 CosineLR: adim {self.step:,}/{self.decay_steps:,} "
+              f"-> LR {self.current_lr():.3e} (baslangic {self.initial_lr:.1e})")
+
+    def on_epoch_begin(self, epoch, logs=None):
+        self._apply()
+
+    def on_train_batch_end(self, batch, logs=None):
+        self.step += 1
+        if self.step % self.update_every == 0:
+            self._apply()
+
+
 class RestoreCallbackState(tf.keras.callbacks.Callback):
     """
     Puts "best so far" back into ModelCheckpoint and EarlyStopping after a resume.
@@ -437,7 +503,7 @@ def clear_checkpoint():
 
 def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=False,
                    phase=None, total_epochs=None, resume_callback_state=None,
-                   ckpt_paths=None):
+                   ckpt_paths=None, cosine_lr=None):
     """
     Callbacks that select on classification quality rather than on loss.
 
@@ -449,6 +515,8 @@ def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=Fal
     ckpt  = ModelCheckpoint(filepath=best_path, monitor=SELECTION_METRIC,
                             mode='max', save_best_only=True, verbose=1)
     tracked = {"checkpoint": ckpt, "early_stopping": early}
+    if cosine_lr is not None:
+        tracked["cosine_lr"] = cosine_lr
 
     cbs = [
         TrainingMonitor(n_genre, n_artist, n_mood),
@@ -913,15 +981,15 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
         trainable_ct = sum(1 for l in base.layers if l.trainable)
         print(f"   Unfroze the top {trainable_ct} backbone layers in place (no rebuild)")
 
-        # Cosine decay: 1e-5 down to 1e-8 across all of phase 2. Predictable, unlike
-        # ReduceLROnPlateau's plateau hunting.
-        p2_steps = (len(train_df) // BATCH_SIZE) * epochs_p2
-        p2_lr = tf.keras.optimizers.schedules.CosineDecay(
-            initial_learning_rate=1e-5,
-            decay_steps=p2_steps,
-            alpha=1e-8
-        )
-        model = compile_model(model, learning_rate=p2_lr)
+        # Compile with a plain float. The decay is driven by the CosineLR callback
+        # below, not by an optimizer schedule — schedules do not survive save/load.
+        model = compile_model(model, learning_rate=LR_PHASE2)
+
+    # Cosine decay across all of phase 2, resumed from wherever the checkpoint left off.
+    p2_steps = (len(train_df) // BATCH_SIZE) * epochs_p2
+    resumed_cb = _resume_cb_state(resume_state, 2) or {}
+    cosine_lr = CosineLR(initial_lr=LR_PHASE2, decay_steps=p2_steps, alpha=1e-3,
+                         start_step=int(resumed_cb.get("lr_step", 0)))
 
     # Phase 2 callbacks — same accuracy-based selection, more patience
     p2_callbacks = make_callbacks((SUBSET_CKPT_PATH if is_subset else BEST_CKPT_PATH), patience=7,
@@ -929,7 +997,8 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
                                   n_mood=len(mood_cols),
                                   phase=2, total_epochs=epochs_p2,
                                   resume_callback_state=_resume_cb_state(resume_state, 2),
-                                  ckpt_paths=checkpoint_paths(is_subset))
+                                  ckpt_paths=checkpoint_paths(is_subset),
+                                  cosine_lr=cosine_lr)
 
     print("\n🔥 Phase 2 Fine-tuning...\n")
     history_p2 = model.fit(
