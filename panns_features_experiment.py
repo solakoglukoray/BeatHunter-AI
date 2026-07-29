@@ -107,11 +107,177 @@ def evaluate(X, y_idx, n_classes, label, results):
                       "dim": int(X.shape[1])}
 
 
+PANNS_CACHE = "models/panns_features.npz"
+
+
+def extract_full(device, batch=16, save_every=1000):
+    """
+    All 14,235 tracks, checkpointed. Roughly 32 minutes.
+
+    Partial results are written every save_every tracks and reloaded on restart, so a
+    power cut costs minutes rather than the whole run — this laptop travels and has died
+    mid-job before.
+    """
+    meta = pd.read_csv(TRACK_META)
+    meta["path"] = meta["track"].map(lambda t: f"dataset/audio/{t}.mp3")
+    meta = meta[meta["path"].map(os.path.exists)].reset_index(drop=True)
+
+    done_tracks, done_emb = {}, []
+    if os.path.exists(PANNS_CACHE):
+        z = np.load(PANNS_CACHE, allow_pickle=True)
+        done_tracks = {t: i for i, t in enumerate(z["tracks"])}
+        done_emb = list(z["X"])
+        print(f"resuming: {len(done_tracks):,} tracks already embedded", flush=True)
+
+    todo = meta[~meta["track"].isin(done_tracks)].reset_index(drop=True)
+    print(f"to extract: {len(todo):,} of {len(meta):,}", flush=True)
+    if len(todo) == 0:
+        z = np.load(PANNS_CACHE, allow_pickle=True)
+        return z["X"], z["tracks"]
+
+    model = load_panns(device)
+    tracks_out = list(done_tracks.keys())
+    emb_out = done_emb
+    buf, buf_tracks, t0 = [], [], time.time()
+
+    def flush():
+        if not buf:
+            return
+        n = max(len(w) for w in buf)
+        x = np.zeros((len(buf), n), dtype=np.float32)
+        for i, w in enumerate(buf):
+            x[i, :len(w)] = w
+        with torch.no_grad():
+            e = model(torch.from_numpy(x).to(device))["embedding"].cpu().numpy()
+        emb_out.extend(e); tracks_out.extend(buf_tracks)
+        buf.clear(); buf_tracks.clear()
+
+    def save():
+        tmp = PANNS_CACHE + ".tmp.npz"
+        np.savez_compressed(tmp, X=np.stack(emb_out).astype(np.float32),
+                            tracks=np.array(tracks_out))
+        os.replace(tmp, PANNS_CACHE)      # atomic
+
+    for i, (t, p) in enumerate(zip(todo["track"], todo["path"]), 1):
+        try:
+            y, _ = librosa.load(p, sr=PANNS_SR, duration=DURATION)
+            if len(y) >= PANNS_SR * 5:
+                buf.append(y); buf_tracks.append(t)
+        except Exception:
+            pass
+        if len(buf) >= batch:
+            flush()
+        if i % 200 == 0:
+            el = time.time() - t0
+            print(f"  {i:,}/{len(todo):,}  {el:.0f}s  eta {el/i*(len(todo)-i):.0f}s", flush=True)
+        if i % save_every == 0:
+            flush(); save()
+            print(f"  [checkpoint: {len(tracks_out):,} tracks saved]", flush=True)
+
+    flush(); save()
+    print(f"extraction done: {len(tracks_out):,} tracks ({time.time()-t0:.0f}s)", flush=True)
+    return np.stack(emb_out).astype(np.float32), np.array(tracks_out)
+
+
+def production_split(tracks):
+    """The exact held-out tracks the 16.7x / 9.7x production numbers were measured on."""
+    from sklearn.model_selection import GroupShuffleSplit
+    sl = pd.read_csv("dataset_processed/metadata_processed.csv")
+    sl["track"] = sl["filename"].str.split("_slice").str[0]
+    _, va = next(GroupShuffleSplit(n_splits=1, test_size=0.2,
+                                   random_state=42).split(sl, groups=sl["track"]))
+    val = set(sl.iloc[va]["track"].unique())
+    return np.array([t in val for t in tracks])
+
+
+def evaluate_production(X, df, label, results, taxonomy=None):
+    """Same protocol as train_classic.py: production split, LogReg, joint-decoded genre."""
+    is_val = production_split(df["track"].to_numpy())
+    sc = StandardScaler().fit(X[~is_val])
+    Xs = sc.transform(X)
+
+    artists = np.sort(df["artist_type"].unique())
+    genres = np.sort(df["genre"].unique())
+    a_idx = {a: i for i, a in enumerate(artists)}
+    g_idx = {g: i for i, g in enumerate(genres)}
+    ya = df["artist_type"].map(a_idx).to_numpy()
+    yg = df["genre"].map(g_idx).to_numpy()
+
+    clf_a = LogisticRegression(max_iter=1000, n_jobs=-1).fit(Xs[~is_val], ya[~is_val])
+    clf_g = LogisticRegression(max_iter=1000, n_jobs=-1).fit(Xs[~is_val], yg[~is_val])
+    Pa = clf_a.predict_proba(Xs[is_val]); Pg = clf_g.predict_proba(Xs[is_val])
+    ta, tg = ya[is_val], yg[is_val]
+
+    ch_a = float((pd.Series(ta).value_counts(normalize=True) ** 2).sum())
+    ch_g = float((pd.Series(tg).value_counts(normalize=True) ** 2).sum())
+
+    a_top1 = float((clf_a.classes_[Pa.argmax(1)] == ta).mean())
+    a_top5 = float(np.mean([ta[i] in clf_a.classes_[np.argsort(-Pa[i])[:5]]
+                            for i in range(len(ta))]))
+    g_top1 = float((clf_g.classes_[Pg.argmax(1)] == tg).mean())
+
+    # joint decoding, as production does it
+    g_joint = None
+    if taxonomy is not None:
+        g_of_a = np.array([g_idx[taxonomy[a]["genre"]] for a in artists])
+        logPg = np.full((len(ta), len(genres)), -30.0)
+        logPg[:, clf_g.classes_] = np.log(Pg + 1e-12)
+        joint = np.log(Pa + 1e-12) + logPg[:, g_of_a[clf_a.classes_]]
+        g_joint = float((g_of_a[clf_a.classes_[joint.argmax(1)]] == tg).mean())
+
+    print(f"  {label:22s} artist top1 %{a_top1*100:5.2f} ({a_top1/ch_a:5.1f}x) "
+          f"top5 %{a_top5*100:5.2f} | genre %{g_top1*100:5.2f} ({g_top1/ch_g:4.1f}x)"
+          + (f" joint %{g_joint*100:5.2f}" if g_joint else ""), flush=True)
+    results[label] = {"artist_top1": a_top1, "artist_top5": a_top5,
+                      "artist_lift": a_top1 / ch_a, "genre_top1": g_top1,
+                      "genre_lift": g_top1 / ch_g, "genre_joint": g_joint,
+                      "dim": int(X.shape[1]), "n_val": int(is_val.sum())}
+
+
+def run_full():
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"device: {device} | torch {torch.__version__}\n")
+
+    Xp, tracks = extract_full(device)
+    z = np.load(CLASSIC_NPZ, allow_pickle=True)
+    cls_map = {t: i for i, t in enumerate(z["tracks"])}
+
+    keep = [i for i, t in enumerate(tracks) if t in cls_map]
+    Xp = Xp[keep]; tracks = tracks[keep]
+    Xc = z["X"][[cls_map[t] for t in tracks]]
+
+    meta = pd.read_csv(TRACK_META).set_index("track")
+    df = pd.DataFrame({"track": tracks,
+                       "artist_type": meta.loc[tracks, "artist_type"].to_numpy(),
+                       "genre": meta.loc[tracks, "genre"].to_numpy()})
+    taxonomy = json.load(open("models/taxonomy.json", encoding="utf-8"))
+
+    print(f"\n{len(df):,} tracks | PANNs {Xp.shape} | classical {Xc.shape}")
+    print(f"{df['artist_type'].nunique()} artists, {df['genre'].nunique()} genres\n")
+    print("=" * 88)
+    print("FULL SCALE — production split (GroupShuffleSplit by track, random_state=42)")
+    print("=" * 88)
+    results = {}
+    evaluate_production(Xc, df, "classical 102-dim", results, taxonomy)
+    evaluate_production(Xp, df, "PANNs 2048-dim", results, taxonomy)
+    print(f"\nheld-out tracks: {results['PANNs 2048-dim']['n_val']:,}")
+    print("production reference: artist 16.7x (top-1 9.45%), genre 9.7x (17.32% joint)")
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    json.dump(results, open(OUT.replace(".json", "_full.json"), "w"), indent=2)
+    print(f"\nresults: {OUT.replace('.json', '_full.json')}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--artists", type=int, default=20)
     ap.add_argument("--per-artist", type=int, default=20)
+    ap.add_argument("--full", action="store_true",
+                    help="all 14,235 tracks, production split, ~32 min (checkpointed)")
     a = ap.parse_args()
+
+    if a.full:
+        run_full()
+        return
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"cihaz: {device} | torch {torch.__version__}\n")
