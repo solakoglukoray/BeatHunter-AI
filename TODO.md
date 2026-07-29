@@ -343,7 +343,32 @@ taşımak ölçülen farka göre ~9x olurdu.
   Eğer gerçekten n_mels=256'ya geçmek isteniyorsa (Faz 0'da geçici olarak 128'e
   dönüldü), 873K spektrogramı yeniden üret + yeniden eğit. 4.1 ile aynı eğitim turunda
   birleştir.
-- [ ] **4.3 — `[EĞİTİM GEREKİR]` Taksonomi kararı**
+- [x] **4.3a — Etiket kalitesi ölçüldü** — *2026-07-29* — **mood hedef olmaktan çıkarılmalı**
+
+  Üç bağımsız ölçüm, üçü de aynı yeri gösteriyor:
+
+  | | artist | genre | **mood** |
+  |---|---|---|---|
+  | Cohen d (eğitilmemiş model embedding'i) | +0.239 | +0.195 | **+0.023** |
+  | Cohen d (model-bağımsız MFCC) | +0.392 | +0.310 | **+0.094** |
+  | k-NN doğruluk / şans | 6.0x | 4.1x | **1.4x** |
+  | eğitilmiş CNN, val, parça sev. / şans | 0.8x | 0.7x | 1.6x |
+
+  Cohen d ~0.1 "etki yok" demek. **Mood etiketi sesle ilişkili değil** — beklenen bir
+  sonuç, çünkü `config.py`'de sanatçı başına elle atanmış, sesten türetilmemiş.
+  Modelin mood'da 1.6x yapması da öğrenme değil: sınıf önselini ve kaba enerji
+  karakteristiğini yakalaması yeterli.
+
+  **Karar: mood bir sınıflandırma hedefi olmaktan çıkarılsın.** Üç head yerine iki
+  (ya da Tuzak 5'teki gibi tek artist head + lookup). Mood etiketi kullanıcıya
+  gösterilecekse taksonomiden türetilsin, tahmin edilmesin.
+
+  ⚠️ Aynı ölçümün ikinci yarısı daha önemli: **tavan veride değil.** Veri artist'te
+  en az 6.0x sinyal taşıyor (91 saniyede, CPU'da, eğitim olmadan). Eğitilmiş
+  EfficientNetB3 aynı val parçalarında **0.8x** — şansın altında, naif baseline'ın
+  7 katı gerisinde. Sorun etiketlerde değil, modelde/temsilde.
+
+- [ ] **4.3 — `[EĞİTİM GEREKİR]` Taksonomi kararı (kalan kısım)**
   Mood'u sesten türetmek mi (librosa özellikleri / yeniden etiketleme), yoksa tek head
   (artist) + genre/mood'u lookup ile türetmek mi — bu bir mimari karar, Faz 2'deki
   joint decoding yeterli görülürse ertelenebilir.
