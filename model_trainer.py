@@ -25,7 +25,8 @@ Key changes from v1.x:
    - AUTOTUNE for all tf.data ops → CPU at ~60-70%, never maxed.
 
 5. Callbacks select on ACCURACY, not loss
-   - EarlyStopping / ModelCheckpoint monitor val_combined_accuracy (mode='max').
+   - EarlyStopping / ModelCheckpoint monitor SELECTION_METRIC
+     (val_artist_out_accuracy, mode='max').
    - ⚠️ An earlier version monitored val_loss "as a more stable signal". That is
      believed to be what cost the previous run: Keras folds L2 into the reported loss,
      so shrinking weights lowers val_loss without learning anything, and
@@ -80,7 +81,22 @@ CLASSES_PATH    = os.path.join(MODEL_DIR, "classes.json")
 
 IMG_SIZE   = (224, 224)
 BATCH_SIZE = 64
-EPOCHS_P1  = 15     # Phase 1: heads only (EfficientNet frozen)
+# Phase 1 saturates within a SINGLE epoch at full scale and must not be run longer.
+# The full training split is 696,515 slices = 10,883 steps per epoch. Phase 1 freezes
+# the backbone, so only the dense trunk and heads learn, and ~11k steps is far more than
+# that capacity needs. A real run showed exactly this:
+#
+#   train accuracy   epoch 1   epoch 3   epoch 4   epoch 5
+#   genre             76.1%     76.0%     75.7%     75.2%
+#   artist            46.0%     46.4%     45.9%     44.8%
+#   mood              70.9%     70.8%     70.5%     70.1%
+#
+# Flat from epoch 1, then drifting down. Not a failure to learn — artist at 46% against
+# a 0.5% baseline is 92x chance — but a ceiling, and 15 epochs here meant 163,245 steps
+# spent going nowhere while delaying phase 2, which is the part that can actually help.
+# ImageNet features describe photographs; spectrograms are not photographs, so the gain
+# has to come from fine-tuning the backbone, not from drilling the heads.
+EPOCHS_P1  = 2      # Phase 1: heads only (frozen backbone) — saturates in ~1 epoch
 EPOCHS_P2  = 40     # Phase 2: fine-tune top layers (EarlyStopping will stop this early)
 
 # ============================================================
@@ -109,6 +125,26 @@ USE_MIXED_PRECISION = True
 # Reverses the time axis. Rhythm direction is meaningful in music, so this augmentation
 # is questionable; disabled pending evidence it helps (TODO.md 4.5).
 AUGMENT_TIME_FLIP = False
+
+# Which metric EarlyStopping and ModelCheckpoint select on.
+#
+# NOT val_combined_accuracy (the plain mean of the three head accuracies). Mood has 6
+# classes and sits near 70%, artist has 194 and sits near 1% on unseen tracks, so the
+# mean is dominated by the easy head: a model that got meaningfully better at artist
+# would barely move it, and could lose to one that got luckier on mood.
+#
+# Artist is the right target anyway. In this taxonomy every artist maps to exactly one
+# genre and one mood (see inference_engine.joint_decode), so genre and mood are lookups
+# of artist — artist accuracy IS the signal, and the other two follow from it.
+SELECTION_METRIC = 'val_artist_out_accuracy'
+
+# Class weights are damped with a square root and capped. Raw inverse-frequency weights
+# at full scale run 0.44-28.27 for artist and 0.46-21.26 for genre; at 28x, a handful of
+# rare examples dominate the gradient, and accuracy — which is measured over the
+# frequent classes — pays for it. sqrt damping keeps the direction of the correction
+# while pulling the extremes in.
+CLASS_WEIGHT_POWER = 0.5    # 1.0 = raw inverse frequency, 0.0 = no weighting
+CLASS_WEIGHT_CAP   = 5.0
 
 # float16 compute with float32 variables: ~2x faster, ~50% less VRAM on the RTX 4080.
 # Keras 3 wraps the optimizer in LossScaleOptimizer automatically (verified).
@@ -350,9 +386,9 @@ def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=Fal
     monitor='val_combined_accuracy' (mode='max') — the mean of the three head
     accuracies, injected by TrainingMonitor. Weight shrinkage cannot game it.
     """
-    early = EarlyStopping(monitor='val_combined_accuracy', mode='max',
+    early = EarlyStopping(monitor=SELECTION_METRIC, mode='max',
                           patience=patience, restore_best_weights=True, verbose=1)
-    ckpt  = ModelCheckpoint(filepath=best_path, monitor='val_combined_accuracy',
+    ckpt  = ModelCheckpoint(filepath=best_path, monitor=SELECTION_METRIC,
                             mode='max', save_best_only=True, verbose=1)
     tracked = {"checkpoint": ckpt, "early_stopping": early}
 
@@ -367,7 +403,7 @@ def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=Fal
     # Last: has to overwrite what EarlyStopping.on_train_begin just reset.
     cbs.append(RestoreCallbackState(tracked, resume_callback_state))
     if reduce_lr:
-        cbs.append(ReduceLROnPlateau(monitor='val_combined_accuracy', mode='max',
+        cbs.append(ReduceLROnPlateau(monitor=SELECTION_METRIC, mode='max',
                                      factor=0.5, patience=3, min_lr=1e-6, verbose=1))
     return cbs
 
@@ -688,7 +724,14 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
         counts = train_df[col].value_counts()
         n, k = len(train_df), len(counts)
         names = [c.split('_', 1)[1] for c in cols]
-        return {i: n / (k * counts.get(name, 1)) for i, name in enumerate(names)}
+        raw = np.array([n / (k * counts.get(name, 1)) for name in names], dtype=np.float64)
+
+        # Damp, cap, then renormalise so the mean weight is 1 — otherwise damping also
+        # rescales the effective learning rate.
+        w = np.power(raw, CLASS_WEIGHT_POWER)
+        w = np.minimum(w, CLASS_WEIGHT_CAP)
+        w = w / w.mean()
+        return {i: float(x) for i, x in enumerate(w)}
 
     class_weights = {
         'genre_out':  weights_for('genre',       genre_cols),
