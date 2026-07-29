@@ -210,13 +210,27 @@ CKPT_INTERVAL_S = 120
 class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
     """Timed, intra-epoch, atomic full-model checkpoint. See the note above."""
 
-    def __init__(self, phase, total_epochs, interval=CKPT_INTERVAL_S):
+    def __init__(self, phase, total_epochs, interval=CKPT_INTERVAL_S, tracked=None):
         super().__init__()
         self.phase = phase
         self.total_epochs = total_epochs
         self.interval = interval
+        # ModelCheckpoint / EarlyStopping instances whose "best so far" has to survive a
+        # restart — see RestoreCallbackState.
+        self.tracked = tracked or {}
         self.epoch = 0
         self._last = time.time()
+
+    def _callback_state(self):
+        out = {}
+        mc, es = self.tracked.get("checkpoint"), self.tracked.get("early_stopping")
+        if mc is not None and np.isfinite(mc.best):
+            out["checkpoint_best"] = float(mc.best)
+        if es is not None:
+            if np.isfinite(es.best):
+                out["early_stopping_best"] = float(es.best)
+            out["early_stopping_wait"] = int(es.wait)
+        return out
 
     def on_epoch_begin(self, epoch, logs=None):
         self.epoch = epoch
@@ -243,6 +257,7 @@ class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
                 "total_epochs": self.total_epochs,
                 "saved_at": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "reason": reason,
+                "callback_state": self._callback_state(),
             }
             tmp_state = CKPT_STATE_PATH + ".tmp"
             with open(tmp_state, "w") as f:
@@ -259,6 +274,54 @@ class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
         except Exception as e:
             # A failed checkpoint must never kill a multi-hour run.
             print(f"\n  ⚠️ checkpoint yazilamadi ({e}) — kosu devam ediyor", flush=True)
+
+
+class RestoreCallbackState(tf.keras.callbacks.Callback):
+    """
+    Puts "best so far" back into ModelCheckpoint and EarlyStopping after a resume.
+
+    Both are rebuilt from scratch on every run, so their `best` starts at -inf. Without
+    this, the first epoch after a resume always looks like an improvement
+    ("improved from None"), and ModelCheckpoint overwrites a genuinely better saved
+    model with a worse one. EarlyStopping's `wait` resets too, so patience silently
+    restarts and a stalled run gets extra epochs it should not have.
+
+    Must run LAST in the callback list: EarlyStopping.on_train_begin resets `best` and
+    `wait`, and callbacks fire in list order, so this has to come after it to win.
+    """
+
+    def __init__(self, tracked, saved):
+        super().__init__()
+        self.tracked = tracked
+        self.saved = saved or {}
+
+    def on_train_begin(self, logs=None):
+        if not self.saved:
+            return
+        mc, es = self.tracked.get("checkpoint"), self.tracked.get("early_stopping")
+
+        if mc is not None and "checkpoint_best" in self.saved:
+            mc.best = self.saved["checkpoint_best"]
+            print(f"⏩ RESUME: ModelCheckpoint 'best' geri yuklendi: {mc.best:.5f} "
+                  f"(bu deger asilmadikca kaydedilmis model korunur)")
+        if es is not None:
+            if "early_stopping_best" in self.saved:
+                es.best = self.saved["early_stopping_best"]
+            if "early_stopping_wait" in self.saved:
+                es.wait = self.saved["early_stopping_wait"]
+                print(f"⏩ RESUME: EarlyStopping best={es.best:.5f} wait={es.wait} "
+                      f"geri yuklendi (patience bastan baslamiyor)")
+
+
+def _resume_cb_state(resume_state, phase):
+    """
+    Callback state is only valid for the phase it was saved in. Phase 2 recompiles with
+    a different learning-rate schedule and trains different layers, so a phase-1 "best"
+    would gate it against a score from a different setup.
+    """
+    if not resume_state or resume_state.get("phase") != phase:
+        return None
+    return resume_state.get("callback_state")
 
 
 def load_resume_state():
@@ -280,23 +343,29 @@ def clear_checkpoint():
 
 
 def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=False,
-                   phase=None, total_epochs=None):
+                   phase=None, total_epochs=None, resume_callback_state=None):
     """
     Callbacks that select on classification quality rather than on loss.
 
     monitor='val_combined_accuracy' (mode='max') — the mean of the three head
     accuracies, injected by TrainingMonitor. Weight shrinkage cannot game it.
     """
+    early = EarlyStopping(monitor='val_combined_accuracy', mode='max',
+                          patience=patience, restore_best_weights=True, verbose=1)
+    ckpt  = ModelCheckpoint(filepath=best_path, monitor='val_combined_accuracy',
+                            mode='max', save_best_only=True, verbose=1)
+    tracked = {"checkpoint": ckpt, "early_stopping": early}
+
     cbs = [
         TrainingMonitor(n_genre, n_artist, n_mood),
         thermal_guard.make_keras_callback(tf),
-        EarlyStopping(monitor='val_combined_accuracy', mode='max',
-                      patience=patience, restore_best_weights=True, verbose=1),
-        ModelCheckpoint(filepath=best_path, monitor='val_combined_accuracy', mode='max',
-                        save_best_only=True, verbose=1),
+        early,
+        ckpt,
     ]
     if phase is not None:
-        cbs.append(CrashSafeCheckpoint(phase, total_epochs))
+        cbs.append(CrashSafeCheckpoint(phase, total_epochs, tracked=tracked))
+    # Last: has to overwrite what EarlyStopping.on_train_begin just reset.
+    cbs.append(RestoreCallbackState(tracked, resume_callback_state))
     if reduce_lr:
         cbs.append(ReduceLROnPlateau(monitor='val_combined_accuracy', mode='max',
                                      factor=0.5, patience=3, min_lr=1e-6, verbose=1))
@@ -688,7 +757,8 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
     p1_callbacks = make_callbacks((SUBSET_CKPT_PATH if is_subset else BEST_CKPT_PATH), patience=5,
                                   n_genre=len(genre_cols), n_artist=len(artist_cols),
                                   n_mood=len(mood_cols), reduce_lr=True,
-                                  phase=1, total_epochs=epochs_p1)
+                                  phase=1, total_epochs=epochs_p1,
+                                  resume_callback_state=_resume_cb_state(resume_state, 1))
 
     if resume_state and resume_state["phase"] == 2:
         print("⏩ RESUME: kesinti faz 2'deydi — faz 1 atlaniyor")
@@ -752,7 +822,9 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
     # Phase 2 callbacks — same accuracy-based selection, more patience
     p2_callbacks = make_callbacks((SUBSET_CKPT_PATH if is_subset else BEST_CKPT_PATH), patience=7,
                                   n_genre=len(genre_cols), n_artist=len(artist_cols),
-                                  n_mood=len(mood_cols))
+                                  n_mood=len(mood_cols),
+                                  phase=2, total_epochs=epochs_p2,
+                                  resume_callback_state=_resume_cb_state(resume_state, 2))
 
     print("\n🔥 Phase 2 Fine-tuning...\n")
     history_p2 = model.fit(
