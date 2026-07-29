@@ -307,8 +307,7 @@ async def analyze_file_endpoint(
             "file_path": file_path,
             "analysis": {
                 "artist_type": tags[0].replace(" Type", ""),
-                "mood": tags[1],
-                "genre": tags[2],
+                "genre": tags[1],
                 "bpm": bpm,
                 "key": key,
                 # Only genre/artist/mood are model predictions and can be unreliable.
@@ -354,8 +353,7 @@ async def background_youtube_worker(query: str, cache_key: str, username: str):
             "beat_path": beat_path,
             "analysis": {
                 "artist_type": tags[0].replace(" Type", ""),
-                "mood": tags[1],
-                "genre": tags[2],
+                "genre": tags[1],
                 "bpm": bpm,
                 "key": key,
                 # See the note in analyze_file_endpoint — bpm/key are unaffected.

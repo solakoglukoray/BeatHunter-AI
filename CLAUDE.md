@@ -1,13 +1,15 @@
 # BeatHunter AI — Proje Bağlamı
 
 ## Ne yapıyor
-Ses girdisi alır → Demucs ile vokal ayırır → mel-spektrogram çıkarır (Librosa) →
-özel Multi-Head CNN (EfficientNetB3 backbone) ile genre/mood/sonic-brand sınıflandırır →
-128-dim (gerçekte 1536-dim, bkz. Bilinen Tuzaklar) latent vektör çıkarır →
-FAISS ile ~14K track'lik veritabanından cosine similarity ile benzer beat önerir.
+Ses girdisi alır → Demucs ile vokal ayırır → **klasik akustik özellikler** çıkarır
+(MFCC + delta, spectral contrast, centroid/rolloff/ZCR/RMS — 102 boyut) →
+LogisticRegression ile artist/genre sınıflandırır (joint decoding ile tutarlı çift) →
+aynı 102-boyutlu vektörle 14,235 parçalık katalogda kosinüs benzerliği ile
+benzer beat önerir. BPM ve key librosa'dan (modelden bağımsız).
 
-Segment bazlı çıkarım: track 8 eşit segmente bölünür, her segment ayrı analiz edilip
-majority voting ile birleştirilir (intro/outro bias'ını önlemek için).
+**⚠️ CNN yolu emekliye ayrıldı (2026-07-29).** EfficientNetB3, görülmemiş parçalarda
+şansın *altında* kalıyordu (artist 0.8x, genre 0.7x); klasik özellikler aynı held-out
+parçalarda **16.7x / 9.7x** veriyor. Detaylar aşağıda.
 
 ## Stack
 - Backend: FastAPI + Uvicorn
@@ -31,45 +33,33 @@ majority voting ile birleştirilir (intro/outro bias'ını önlemek için).
 | `model_trainer.py` | CNN eğitim pipeline'ı |
 | `models/` | Kaydedilmiş model ağırlıkları — **elle değiştirme** |
 
-## 🚨 EN ÖNEMLİ: Kaydedilmiş model sınıflandırma yapmıyor (2026-07-28)
+## 🚨 EN ÖNEMLİ: CNN yolu ölçümle elendi (2026-07-29)
 
-`models/beathunter_model.keras` **kullanılabilir durumda değil.** Sınıflandırma
-head'leri hiç öğrenmemiş. Ölçümler (eğitim görüntülerinin **ta kendisi**, n=400):
+Aynı held-out parçalarda (`GroupShuffleSplit`, track bazlı, `random_state=42`):
 
-| | Model | Rastgele |
+| | artist | genre |
 |---|---|---|
-| artist | **%0.5** | %0.5 |
-| genre | **%2.2** | %1.5 |
-| mood | %25.0 | %16.7 (çoğunluk sınıfı %22) |
+| EfficientNetB3 (saatlerce GPU, 700K dilim) | **0.8x şans** | **0.7x şans** |
+| 102 klasik özellik + LogReg (15 sn CPU) | **16.7x** | **9.7x** |
 
-Ortalama max softmax: genre 0.032, artist **0.014** (uniform = 0.005). Model neredeyse
-düzgün dağılım üretiyor. 400 görüntüde sadece **4 farklı sanatçı** tahmin edildi
-(gerçekte 164). Bunlar eğitim verisi — sızıntı (Tuzak 4) yüzünden ezberlenmiş olmalıydı.
+CNN **şansın altındaydı** ve soft voting hiçbir şey eklemiyordu (dilim ve parça
+seviyesi aynı) — yani seyreltilen bir sinyal yoktu, sinyal hiç yoktu.
 
-Ağırlık imzası:
-- **Backbone sağlam:** 208 katmanın 191'i taze ImageNet ile **birebir aynı**, 17'si
-  Faz 2'de ince ayarlanmış. → Retrieval'in kısmen çalışmasının sebebi bu: FAISS
-  **ImageNet doku özellikleri** üzerinde çalışıyor, öğrenilmiş müzik özellikleri değil.
-- **Gövde dense katmanları:** std Glorot'un **0.03-0.06 katı** → sıfıra büzülmüş
-- **Çıkış head'leri:** std Glorot'un 0.7-1.5 katı → **başlangıç değerinde**, öğrenmemiş
+Elenen açıklamalar (tekrar araştırma):
+- ~~Veri/etiket tavanı~~ → veri artist'te en az 6.0x sinyal taşıyor (91 saniyede,
+  eğitim olmadan, MFCC k-NN ile ölçüldü)
+- ~~Eğitim kurulumu bozuk~~ → `overfit_test.py` 8 varyantın hepsinde %95+ train
+  accuracy verdi; mimari küçük ölçekte sorunsuz öğreniyor
+- ~~BatchNorm / set_weights / mixed_float16~~ → üçü de ayrı ayrı ölçülüp çürütüldü
 
-→ ⚠️ **Decode-time hiçbir düzeltme bunu kurtaramaz** (joint decoding dahil).
-   Sınıflandırma çıktısına güvenme, kullanıcıya sunma.
-→ ⚠️ Ağırlıklar dosyadan **doğru yükleniyor** (birebir doğrulandı), yükleme hatası yok.
-   `best_checkpoint.keras` farklı bir dosya ama gövde ağırlıkları aynı
-   (EarlyStopping `restore_best_weights=True` ile tutarlı) — yedek değil.
+Kalan hipotez (**doğrulanmadı**): 3 saniyelik dilim → viridis PNG → 224×224 →
+ImageNet backbone zinciri fazla bilgi kaybediyor, ve ağır augmentation (spec_augment
+%60 frekans + %60 zaman maskeleme) MFCC'nin koruduğu tınısal ipuçlarını siliyor.
+Bu, "spektrogram CNN'leri çalışmaz" demek **değil** — bu pipeline'ın naif bir
+baseline'ın altında kaldığı demek.
 
-**Elenen nedenler** (tekrar araştırıp zaman harcama):
-- ~~BatchNorm `training=True` grafiğe gömülü~~ → config'de `training: false`,
-  çıktılar batch'ten bağımsız
-- ~~Faz 2'deki `set_weights` sırayı karıştırıyor~~ → iki build'in ağırlık sırası ve
-  şekilleri birebir aynı, sadece isimler farklı
-- ~~`mixed_float16` gradyan ölçekleme yok~~ → Keras 3 optimizer'ı otomatik
-  `LossScaleOptimizer`'a sarıyor (doğrulandı)
-
-Gerçek neden **bilinmiyor** ve tespiti bir eğitim koşusu gerektiriyor. Bir sonraki
-eğitim turunda **önce küçük bir alt kümede train accuracy'nin yükseldiğini doğrula** —
-bu model tam eğitim harcanmadan önce yakalanabilirdi.
+→ `model_trainer.py` duruyor ve çalışır durumda (Faz B için). `inference_engine.py`
+  artık onu kullanmıyor.
 
 ## ⚠️ Bilinen Tuzaklar (kritik — yeni kod yazmadan önce oku)
 
@@ -95,26 +85,15 @@ bu model tam eğitim harcanmadan önce yakalanabilirdi.
    (`global_average_pooling2d_1`). Artık `build_embedding_model()` katmanı **tipinden**
    buluyor. Yeniden eğitim sonrası ad yine değişebilir; isme geri dönme.
 
-3. **FAISS index (✅ DÜZELTİLDİ 2026-07-28)**
-   Eski index d=256 iken modelin GAP çıktısı 1536'ydı ve `analyze_beat` her istekte
-   `AssertionError` veriyordu. Artık **track seviyesinde** yeni bir index kullanılıyor:
-   `models/vector_db_track.index` + `vector_meta_track.csv` (14,235 × 1536, 87 MB).
-   Eski `vector_db.index` / `vector_meta.csv` fallback olarak duruyor, **silme**.
-   → ⚠️ **Retrieval embedding'i index-hizalı 4 segment kullanır**
-   (`compute_retrieval_embedding`: tüm 3s grid üzerinden `linspace`, 4 segment).
-   Sınıflandırma ise ayrı — 8 segment, intro/outro atlanarak. **İkisini birleştirme.**
-   Sorgu ve index örneklemesi birebir aynı olmalı; segment *sayısı* da dahil
-   (hizalı-4 → medyan self-match rank 1.5, hizalı-8 → 186, hizasız → 4,856).
-   Index farklı slice sayısıyla yeniden kurulursa `RETRIEVAL_SEGMENTS` de değişmeli.
-   → `rebuild_vector_database_if_needed()` **devre dışı** (slice seviyesinde index
-   üretiyordu). Rebuild WSL2'deki track-level builder ile yapılır, bkz. TODO.md 1.1.
-   → ⚠️ **Retrieval çalışıyor ama güvenilir değil** (n=40 ölçümü, TODO.md 1.3):
-   medyan rank 1.5, ama **top-1 sadece %50**, top-10 %70, %20'si ilk 100'e bile
-   girmiyor. Top-1 iken ikinciyle fark ortalama 4.4 puan — sıralama kırılgan.
-   → ⚠️ **D=%75 tavanı:** aynı şarkının farklı bölümleri arası embedding benzerliği
-   ~%75, rastgele parçalar %55±10. Öneri kalitesinin üst sınırı budur ve Tuzak 4/5'ten
-   gelir — **Faz 4'te yeniden eğitim yapılana kadar geçerli.** Kod tarafında
-   yapılacak bir şey kalmadı; öneri sayılarını kullanıcıya kesinlik gibi sunma.
+3. **Retrieval artık FAISS değil (2026-07-29)**
+   `models/classic_catalog.npz` (14,235 × 102, 5.6 MB) + düz numpy kosinüs, sorgu
+   **0.04 ms**. Eski `vector_db_track.index` (87 MB) ve CNN embedding'leri
+   kullanılmıyor.
+   → ⚠️ **Katalog ve sorgu aynı fonksiyonu kullanmalı:** `audio_features.extract_features`.
+   Bu kural Tuzak 1'in dersi — orada eğitim ve inference ayrı kod bloklarıydı, birbirinden
+   uzaklaştılar ve aylarca fark edilmedi. `FEATURE_DIM` değişirse hem katalog hem
+   sınıflandırıcı yeniden üretilmeli (`train_classic.py --extract`); kod bunu yükleme
+   sırasında kontrol edip hata veriyor.
 
 4. **Train/val veri sızıntısı (eğitim gerektirir, şimdilik ERTELENDİ)**
    `model_trainer.py`'de `train_test_split` slice seviyesinde rastgele. Aynı şarkının
@@ -122,12 +101,13 @@ bu model tam eğitim harcanmadan önce yakalanabilirdi.
    yanıltıcı yüksek. Düzeltme: `GroupShuffleSplit`, grup anahtarı `filename.split('_slice')[0]`.
    **Bir sonraki eğitim turuna kadar bu val accuracy sayılarına güvenme.**
 
-5. **Etiket taksonomisi dejenere (eğitim gerektirir, şimdilik ERTELENDİ)**
-   194 sanatçının hepsi tek bir genre + tek bir mood'a sahip — genre/mood head'leri
-   pratikte artist head'inin birebir lookup'ı, bağımsız bir şey öğrenmiyor. Mood etiketi
-   sesten değil `config.py` içinde elle atanmış. Kısa vadeli çözüm (eğitim gerektirmez):
-   **joint decoding** — `skor(a) = log P(artist=a) + log P(genre=G[a]) + log P(mood=M[a])`,
-   üç head'i tutarlı tek karara birleştirir, imkânsız kombinasyonları engeller.
+5. **Mood hedef olmaktan çıkarıldı (✅ 2026-07-29)**
+   Üç bağımsız ölçüm: Cohen d +0.023 (CNN embedding), +0.094 (MFCC), k-NN 1.4x şans.
+   Mood sesle ilişkili değil — `config.py`'de sanatçı başına elle atanmış.
+   `analyze_beat` artık mood döndürmüyor, API ve UI'da da yok.
+   → Genre hâlâ tahmin ediliyor ama **joint decoding** ile: `skor(a) = log P(artist=a)
+   + log P(genre=G[a])`. Ölçüldü — doğrudan tahminden iyi (%17.32 vs %16.37) ve
+   taksonomide var olmayan çift üretemiyor.
 
 6. **Sınıf dengesizliği** — class_weight yok, genre'de 46x, artist'te 28x oran var.
    Nadir sınıflar pratikte hiç tahmin edilmiyor. (Eğitim gerektirir, ertelendi.)
@@ -150,15 +130,18 @@ bu model tam eğitim harcanmadan önce yakalanabilirdi.
 - `beathunter_users_old.db` çöp, silinebilir.
 
 ## Şu anki durum
-Faz 0, 1 ve 2 tamam. Pipeline **mekanik olarak uçtan uca çalışıyor** — `analyze_beat`
-düşmüyor, 5 öneri dönüyor, çıktı üçlüsü artık taksonomiye uygun.
+**Klasik özellik yolu üretimde** (2026-07-29). `analyze_beat` uçtan uca çalışıyor:
+artist/genre sınıflandırma, 5 öneri, BPM/key. GPU'ya hiç ihtiyaç yok — bu aynı zamanda
+"Windows'ta TF GPU desteği yok" sorununu tamamen ortadan kaldırdı.
 
-Ama **sınıflandırma işlevsel değil**: model eğitilmemiş (yukarıdaki 🚨 bölümü).
-Retrieval "çalışır ama zayıf" — top-1 %50 — ve bunu sağlayan şey ImageNet
-özellikleri, öğrenilmiş müzik temsili değil.
+Ölçülen (held-out, track bazlı split): artist top-1 %9.45 / top-5 %24.13 (16.7x şans),
+genre top-1 %17.32 (9.7x). Öncesi: CNN, şansın altında.
 
-Bu, kalan yol haritasını değiştiriyor: **kod tarafında yapılacak anlamlı bir kalite
-iyileştirmesi kalmadı.** Faz 3 (performans/eşzamanlılık/temizlik) hâlâ değerli ve
-eğitim gerektirmiyor, ama modeli düzeltmiyor. Gerçek blokaj **Faz 4 — yeniden eğitim**;
-ve o tur başlamadan önce eğitimin neden başarısız olduğu bulunmalı, yoksa aynı sonuç
-tekrarlanır. Detaylar ve gerekçeler için `TODO.md`.
+⚠️ **Mutlak seviye hâlâ düşük.** Top-1 %9.45 çözülmüş bir problem değil. UI bunu
+saklamıyor: tek isim ancak **100x şans** eşiğini geçince gösteriliyor (parçaların
+~%9'u, o dilimde doğruluk %26), aksi halde top-5 aday listesi sunuluyor. Eşik
+ölçülmüş doğruluk tablosundan seçildi, tahminle değil.
+
+**Sıradaki karar Faz B:** temsili yeniden tasarlayıp (uzun segment, PNG round-trip yok,
+hafif augmentation) CNN'e dönmek mantıklı mı? Klasik yol artık **16.7x'lik bir taban**
+kuruyor — B'nin başarı ölçütü bu. Detaylar `TODO.md`.

@@ -54,3 +54,6 @@ models/training_checkpoint.keras
 models/training_state.json
 models/subset_*.keras
 models/subset_*.json
+
+# Classical-feature extraction cache (regenerable: train_classic.py --extract, ~14 min)
+models/classic_features.npz

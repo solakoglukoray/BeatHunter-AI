@@ -207,6 +207,72 @@ taşımak ölçülen farka göre ~9x olurdu.
 
 ---
 
+## FAZ A — Klasik özellik yolu ✅ TAMAM (2026-07-29)
+
+CNN'in yerine geçti. Aynı held-out parçalarda (`GroupShuffleSplit`, track bazlı,
+`random_state=42` — CNN'in ölçüldüğü split):
+
+| | artist | genre |
+|---|---|---|
+| EfficientNetB3 | 0.8x şans | 0.7x şans |
+| **102 özellik + LogReg** | **16.7x** (top-1 %9.45, top-5 %24.13) | **9.7x** (%17.32) |
+
+- [x] **A.1 — `audio_features.py`** — özellik çıkarımı için **tek kaynak**. Katalog ve
+  sorgu ikisi de burayı çağırır; Tuzak 1'in (train/inference kod ikizleşmesi) tekrarını
+  yapısal olarak engeller. `FEATURE_DIM` uyuşmazlığı yüklemede hata veriyor.
+- [x] **A.2 — `train_classic.py`** — sınıflandırıcı + katalog üretir, 15 sn CPU.
+  Genre için üç strateji **ölçüldü**, varsayılmadı:
+
+  | strateji | artist | genre | tutarlı? |
+  |---|---|---|---|
+  | direkt (bağımsız) | %9.45 | %16.37 | hayır |
+  | artist → taksonomi | %9.45 | %16.40 | evet |
+  | **joint decoding** | %9.41 | **%17.32** | **evet** |
+
+  Joint decoding seçildi — hem en iyi genre hem tutarlılık, artist'te kayıp ihmal
+  edilebilir.
+- [x] **A.3 — `inference_engine.py` yeniden yazıldı** — CNN/FAISS çıktı, klasik yol
+  girdi. BPM/key değişmedi (zaten librosa). Mood kaldırıldı.
+- [x] **A.4 — Güven eşiği ölçümle kalibre edildi** — 3x değil **100x**:
+
+  | eşik | gösterilen parça | top-1 doğruluk |
+  |---|---|---|
+  | ≥3x | %100 | %9.4 |
+  | ≥50x | %30.8 | %17.5 |
+  | **≥100x** | **%8.7** | **%26.1** |
+  | ≥150x | %2.4 | %44.1 |
+
+  Güven gerçekten öngörücü (doğruluk monoton artıyor) ama mutlak seviye düşük.
+  100x, tek bir ismin söylenmeye değer olduğu nokta; altında top-5 aday listesi
+  gösteriliyor (%24.13 isabet).
+
+**Üretim maliyeti:** model 127 MB → **225 KB**, katalog 87 MB → **5.6 MB**,
+benzerlik sorgusu **0.04 ms**, özellik çıkarımı **345 ms/parça** (tek çekirdek).
+GPU bağımlılığı yok.
+
+⚠️ **Ölçülmemiş:** yakın-kopya sızıntısı. Toplayıcı MD5 ile birebir kopyaları eliyor
+ama aynı beat'in farklı yüklemeleri split'in iki yanına düşebilir. CNN uzayında
+≥0.95 benzerlikte ~90 çift bulunmuştu (14,235 içinde); bu özellik uzayında ölçülmedi.
+
+---
+
+## FAZ B — Temsili yeniden tasarla `[EĞİTİM GEREKİR]` (opsiyonel)
+
+Klasik yol artık **16.7x'lik bir taban** kuruyor. B'ye girmenin tek gerekçesi bunu
+geçmek; geçemeyecekse girmeye değmez.
+
+Doğrulanmamış hipotez: CNN'i öldüren şey mimari değil **girdi temsili** —
+3 saniyelik dilim → viridis PNG → 224×224 → ImageNet backbone zinciri ve ağır
+augmentation (spec_augment %60/%60). Denenecekler: uzun segment (15-30s),
+PNG round-trip'i kaldır (log-mel'i doğrudan tensor ver), augmentation'ı hafiflet,
+daha fazla mel bin.
+
+`model_trainer.py` bunun için duruyor ve çalışır durumda: GroupShuffleSplit,
+sample weight'ler, accuracy tabanlı callback'ler, epoch başına train/val/şans oranı,
+şans seviyesi tripwire, termal koruma, kesinti-toleranslı checkpoint/resume.
+
+---
+
 ## FAZ 4 — Bir sonraki eğitim turu `[EĞİTİM GEREKİR]`
 
 Şu an ertelendi (süre kısıtı). Eğitim mümkün olduğunda bu sırayla:

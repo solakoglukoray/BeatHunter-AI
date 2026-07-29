@@ -432,54 +432,54 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     st.divider()
     st.header("🎯 Analysis Report")
 
-    # Style / Mood / Genre come from the classifier, which is currently NOT trustworthy:
-    # the saved model scores at chance level even on its own training images. Tempo and
-    # Key are computed by librosa and are unaffected, so they are always shown.
-    # The backend reports per-head confidence; conf["reliable"] is False whenever a
-    # prediction is not meaningfully better than a random guess.
+    # Artist/genre come from the classical-feature classifier. Measured on held-out
+    # tracks it reaches 16.7x chance for artist and 9.7x for genre — far better than the
+    # CNN it replaced, which scored BELOW chance — but top-1 is still only 9.45%, so a
+    # single name is not a fact. Top-5 hits 24.13%, which is why it leads here.
+    #
+    # Tempo and Key are measured from the signal by librosa and are always shown.
+    # Mood is gone: three independent measurements found it is not audio-linked.
     conf     = analysis.get("classification_confidence") or {}
     reliable = conf.get("reliable", False)
+    top5     = conf.get("artist_top5") or []
 
-    if not reliable:
-        st.warning(
-            "⚠️ **Style, Mood and Genre are experimental and currently unverified.** "
-            "The classification model is known to be under-trained — on this build its "
-            "predictions are close to random, so they are hidden below rather than shown "
-            "as results. **Tempo and Key are not affected** (they are measured from the "
-            "audio signal, not predicted by the model), and similar-beat recommendations "
-            "still work, though they are weaker than intended."
-        )
-
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4 = st.columns(4)
     if reliable:
-        c1.info(f"🎧 **Style:**\n### {analysis['artist_type']} Type")
-        c2.warning(f"🎭 **Mood:**\n### {analysis['mood']}")
-        c3.success(f"🎹 **Genre:**\n### {analysis['genre']}")
+        c1.success(f"🎧 **Closest style:**\n### {analysis['artist_type']} Type")
     else:
-        for col, icon, name in ((c1, "🎧", "Style"), (c2, "🎭", "Mood"), (c3, "🎹", "Genre")):
-            col.info(f"{icon} **{name}:**\n### —\nunavailable")
+        c1.info("🎧 **Closest style:**\n### see candidates")
+    c2.success(f"🎹 **Genre:**\n### {analysis['genre']}")
+    c3.error(f"⏱️ **Tempo:**\n### {analysis['bpm']} BPM")
+    c4.info(f"🎵 **Key:**\n### {analysis['key']}")
 
-    c4.error(f"⏱️ **Tempo:**\n### {analysis['bpm']} BPM")
-    c5.info(f"🎵 **Key:**\n### {analysis['key']}")
+    if top5:
+        st.markdown("**Sounds closest to:**")
+        st.dataframe(
+            pd.DataFrame([{"Artist": d["label"],
+                           "Confidence": f"{d['probability']*100:.1f}%"} for d in top5]),
+            hide_index=True, use_container_width=True)
 
-    if not reliable and conf:
-        with st.expander("Why are Style / Mood / Genre hidden?"):
+    st.caption(
+        "Style and genre are estimates, not identifications. Measured on unseen tracks "
+        "the top guess is right about 1 time in 10, and the correct artist is somewhere "
+        "in the five above about 1 time in 4 — useful as a starting point, not as an "
+        "answer. Tempo and key are measured from the audio and are not estimates."
+    )
+
+    if conf and not reliable:
+        with st.expander("Why is there no single style shown?"):
             st.markdown(
-                "A prediction is shown only when it beats a random guess by at least "
-                f"**{conf.get('min_ratio_required', 5):.0f}x**. "
-                "The ratio below is the predicted class's probability divided by what "
-                "pure chance would give (`1 / number of classes`), so **1.0x means the "
-                "model is doing no better than guessing.**"
+                "A single name is shown only when confidence passes a "
+                f"**{conf.get('min_ratio_required', 100):.0f}x**-chance bar, which happens "
+                "for roughly 9% of tracks. That bar comes from measured accuracy: below "
+                "it the top guess is wrong more than four times out of five, so the "
+                "candidate list above is the honest answer instead."
             )
-            rows = [
-                {
-                    "Head": head.capitalize(),
-                    "Would have predicted": conf[head]["label"],
-                    "Probability": f"{conf[head]['probability']*100:.2f}%",
-                    "vs. chance": f"{conf[head]['ratio_vs_chance']:.1f}x",
-                }
-                for head in ("artist", "mood", "genre") if head in conf
-            ]
+            rows = [{"Field": k.capitalize(),
+                     "Best guess": conf[k]["label"],
+                     "Confidence": f"{conf[k]['probability']*100:.2f}%",
+                     "vs. chance": f"{conf[k]['ratio_vs_chance']:.0f}x"}
+                    for k in ("artist", "genre") if k in conf]
             st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
