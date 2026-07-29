@@ -41,6 +41,7 @@ Key changes from v1.x:
 
 import os
 import json
+import math
 import time
 import numpy as np
 import pandas as pd
@@ -238,6 +239,16 @@ class TrainingMonitor(tf.keras.callbacks.Callback):
 # reshuffled every epoch regardless, so there is nothing meaningful to restore.
 CKPT_MODEL_PATH = os.path.join(MODEL_DIR, "training_checkpoint.keras")
 CKPT_STATE_PATH = os.path.join(MODEL_DIR, "training_state.json")
+# Subset diagnostics get their own crash-checkpoint pair. They previously shared these
+# paths with real runs, so a short diagnostic silently overwrote the resume point of a
+# multi-hour job — the exact failure this whole mechanism exists to prevent.
+SUBSET_CKPT_MODEL_PATH = os.path.join(MODEL_DIR, "subset_training_checkpoint.keras")
+SUBSET_CKPT_STATE_PATH = os.path.join(MODEL_DIR, "subset_training_state.json")
+
+
+def checkpoint_paths(is_subset):
+    return ((SUBSET_CKPT_MODEL_PATH, SUBSET_CKPT_STATE_PATH) if is_subset
+            else (CKPT_MODEL_PATH, CKPT_STATE_PATH))
 # 120s costs ~1.3% of runtime (a full save measured 1.5s / 70 MB) and caps the worst
 # case loss at two minutes of training. Lower it for testing; do not raise it.
 CKPT_INTERVAL_S = 120
@@ -246,7 +257,8 @@ CKPT_INTERVAL_S = 120
 class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
     """Timed, intra-epoch, atomic full-model checkpoint. See the note above."""
 
-    def __init__(self, phase, total_epochs, interval=CKPT_INTERVAL_S, tracked=None):
+    def __init__(self, phase, total_epochs, interval=CKPT_INTERVAL_S, tracked=None,
+                 model_path=CKPT_MODEL_PATH, state_path=CKPT_STATE_PATH):
         super().__init__()
         self.phase = phase
         self.total_epochs = total_epochs
@@ -254,18 +266,43 @@ class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
         # ModelCheckpoint / EarlyStopping instances whose "best so far" has to survive a
         # restart — see RestoreCallbackState.
         self.tracked = tracked or {}
+        self.model_path = model_path
+        self.state_path = state_path
         self.epoch = 0
+        self._failures = 0
         self._last = time.time()
+
+    @staticmethod
+    def _finite(value):
+        """
+        Returns value as a float, or None if there is nothing worth saving.
+
+        Keras 3.13 initialises ModelCheckpoint.best and EarlyStopping.best to None, not
+        to -inf, and `np.isfinite(None)` raises "ufunc 'isfinite' not supported for the
+        input types". Any checkpoint attempted before the first epoch ends therefore
+        died here. float() also normalises numpy scalars and 0-d tensors, which is what
+        Keras actually stores once training is under way.
+        """
+        try:
+            f = float(value)
+        except (TypeError, ValueError):
+            return None
+        return f if math.isfinite(f) else None
 
     def _callback_state(self):
         out = {}
         mc, es = self.tracked.get("checkpoint"), self.tracked.get("early_stopping")
-        if mc is not None and np.isfinite(mc.best):
-            out["checkpoint_best"] = float(mc.best)
+        if mc is not None:
+            best = self._finite(getattr(mc, "best", None))
+            if best is not None:
+                out["checkpoint_best"] = best
         if es is not None:
-            if np.isfinite(es.best):
-                out["early_stopping_best"] = float(es.best)
-            out["early_stopping_wait"] = int(es.wait)
+            best = self._finite(getattr(es, "best", None))
+            if best is not None:
+                out["early_stopping_best"] = best
+            wait = getattr(es, "wait", None)
+            if wait is not None:
+                out["early_stopping_wait"] = int(wait)
         return out
 
     def on_epoch_begin(self, epoch, logs=None):
@@ -283,10 +320,9 @@ class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
     def _save(self, reason=""):
         t0 = time.time()
         try:
-            tmp_model = CKPT_MODEL_PATH + ".tmp.keras"
-            self.model.save(tmp_model)
-            os.replace(tmp_model, CKPT_MODEL_PATH)      # atomic
-
+            # Build the metadata BEFORE the expensive save. It is cheap, and it is where
+            # the bugs live — if it raises, we have not already burned ~1.5s writing a
+            # model whose state file will never be written to match it.
             state = {
                 "phase": self.phase,
                 "epoch": self.epoch,
@@ -295,12 +331,17 @@ class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
                 "reason": reason,
                 "callback_state": self._callback_state(),
             }
-            tmp_state = CKPT_STATE_PATH + ".tmp"
+
+            tmp_model = self.model_path + ".tmp.keras"
+            self.model.save(tmp_model)
+            os.replace(tmp_model, self.model_path)      # atomic
+
+            tmp_state = self.state_path + ".tmp"
             with open(tmp_state, "w") as f:
                 json.dump(state, f, indent=2)
-            os.replace(tmp_state, CKPT_STATE_PATH)      # atomic
+            os.replace(tmp_state, self.state_path)      # atomic
 
-            self._last = time.time()
+            self._failures = 0
             # self.epoch is the epoch to RESUME at (0-indexed), which mid-epoch is the
             # current one — so report both, or "epoch 6" while inside epoch 7 reads
             # like a bug.
@@ -308,8 +349,24 @@ class CrashSafeCheckpoint(tf.keras.callbacks.Callback):
                   f"resume noktasi epoch {self.epoch + 1}/{self.total_epochs} "
                   f"({time.time()-t0:.1f}s)", flush=True)
         except Exception as e:
-            # A failed checkpoint must never kill a multi-hour run.
-            print(f"\n  ⚠️ checkpoint yazilamadi ({e}) — kosu devam ediyor", flush=True)
+            # A failed checkpoint must never kill a multi-hour run — but it must not be
+            # silent either. A previous version reported the same failure on every batch
+            # while still paying for a full model.save() each time, which is why step
+            # times ballooned.
+            self._failures += 1
+            if self._failures <= 3 or self._failures % 25 == 0:
+                print(f"\n  ⚠️ checkpoint yazilamadi ({self._failures}. kez): {e}",
+                      flush=True)
+                if self._failures == 3:
+                    print("     (bundan sonra her 25 basarisizlikta bir raporlanacak)",
+                          flush=True)
+                print("     ⛔ KESINTI KORUMASI SU AN ETKISIZ — kurtarilacak checkpoint yok.",
+                      flush=True)
+        finally:
+            # ALWAYS reset the timer, success or failure. Leaving it unset on failure
+            # made the interval check true on every subsequent batch, so a broken
+            # checkpoint turned into one full model save per step.
+            self._last = time.time()
 
 
 class RestoreCallbackState(tf.keras.callbacks.Callback):
@@ -379,7 +436,8 @@ def clear_checkpoint():
 
 
 def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=False,
-                   phase=None, total_epochs=None, resume_callback_state=None):
+                   phase=None, total_epochs=None, resume_callback_state=None,
+                   ckpt_paths=None):
     """
     Callbacks that select on classification quality rather than on loss.
 
@@ -399,7 +457,9 @@ def make_callbacks(best_path, patience, n_genre, n_artist, n_mood, reduce_lr=Fal
         ckpt,
     ]
     if phase is not None:
-        cbs.append(CrashSafeCheckpoint(phase, total_epochs, tracked=tracked))
+        mp, sp = ckpt_paths or (CKPT_MODEL_PATH, CKPT_STATE_PATH)
+        cbs.append(CrashSafeCheckpoint(phase, total_epochs, tracked=tracked,
+                                       model_path=mp, state_path=sp))
     # Last: has to overwrite what EarlyStopping.on_train_begin just reset.
     cbs.append(RestoreCallbackState(tracked, resume_callback_state))
     if reduce_lr:
@@ -660,7 +720,7 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
                 resume=False):
     print("🚀 BeatHunter AI — Model Training v2.0 (EfficientNetB3 + Mixed Precision)\n")
     is_subset = bool(subset_artists or subset_per_artist)
-    resume_state = load_resume_state() if resume else None
+    resume_state = load_resume_state(is_subset) if resume else None
     if resume and not resume_state:
         print('ℹ️  --resume verildi ama checkpoint yok — sifirdan baslaniyor')
     epochs_p1 = epochs_p1 or EPOCHS_P1
@@ -783,7 +843,7 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
         # resume worth having.
         print(f"⏩ RESUME: faz 1, epoch {resume_state['epoch']}/{resume_state['total_epochs']}"
               f" (kayit: {resume_state['saved_at']})")
-        model = tf.keras.models.load_model(CKPT_MODEL_PATH)
+        model = tf.keras.models.load_model(checkpoint_paths(is_subset)[0])
         p1_initial_epoch = resume_state["epoch"]
 
     if model is None and not (resume_state and resume_state["phase"] == 2):
@@ -801,7 +861,8 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
                                   n_genre=len(genre_cols), n_artist=len(artist_cols),
                                   n_mood=len(mood_cols), reduce_lr=True,
                                   phase=1, total_epochs=epochs_p1,
-                                  resume_callback_state=_resume_cb_state(resume_state, 1))
+                                  resume_callback_state=_resume_cb_state(resume_state, 1),
+                                  ckpt_paths=checkpoint_paths(is_subset))
 
     if resume_state and resume_state["phase"] == 2:
         print("⏩ RESUME: kesinti faz 2'deydi — faz 1 atlaniyor")
@@ -839,7 +900,7 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
         # throw all three away, so we load and continue untouched.
         print(f"⏩ RESUME: faz 2, epoch {resume_state['epoch']}/{resume_state['total_epochs']}"
               f" (kayit: {resume_state['saved_at']})")
-        model = tf.keras.models.load_model(CKPT_MODEL_PATH)
+        model = tf.keras.models.load_model(checkpoint_paths(is_subset)[0])
         p2_initial_epoch = resume_state["epoch"]
         base = next(l for l in model.layers if l.name == 'efficientnetb3')
         print(f"   {sum(1 for l in base.layers if l.trainable)} backbone katmani trainable "
@@ -867,7 +928,8 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
                                   n_genre=len(genre_cols), n_artist=len(artist_cols),
                                   n_mood=len(mood_cols),
                                   phase=2, total_epochs=epochs_p2,
-                                  resume_callback_state=_resume_cb_state(resume_state, 2))
+                                  resume_callback_state=_resume_cb_state(resume_state, 2),
+                                  ckpt_paths=checkpoint_paths(is_subset))
 
     print("\n🔥 Phase 2 Fine-tuning...\n")
     history_p2 = model.fit(
