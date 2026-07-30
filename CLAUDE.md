@@ -39,9 +39,15 @@ transfer ediyor.
 | `data_collector.py` | YouTube veri madenciliği (yt-dlp) |
 | `data_processor.py` | Ses → spektrogram pipeline (eğitim tarafı) |
 | `data_validator.py` | Dataset doğrulama |
-| `inference_engine.py` | Çıkarım + majority voting (inference tarafı) |
-| `model_trainer.py` | CNN eğitim pipeline'ı |
-| `models/` | Kaydedilmiş model ağırlıkları — **elle değiştirme** |
+| `audio_features.py` | **Temsil — TEK KAYNAK.** PANNs embedding + klasik fallback |
+| `train_classic.py` | Sınıflandırıcı + katalog + eşik kalibrasyonu üretir |
+| `inference_engine.py` | Çıkarım: sınıflandırma, benzerlik, BPM/key |
+| `model_trainer.py` | EfficientNetB3 eğitimi — **emekli**, yeniden denenirse duruyor |
+| `overfit_test.py` | Eğitim kurulumu teşhisi (tam koşudan önce çalıştır) |
+| `thermal_guard.py` | GPU sıcaklık koruması (uzun koşular) |
+| `panns_features_experiment.py` | PANNs vs klasik karşılaştırma deneyi |
+| `pca_sweep_experiment.py` | PCA boyut taraması (negatif sonuç, kayıtlı) |
+| `models/` | Ağırlıklar ve artefaktlar — **elle değiştirme** |
 
 ## 🚨 EN ÖNEMLİ: iki temsil elendi, üçüncüsü üretimde
 
@@ -65,6 +71,23 @@ hem gelecek temsillerin geçmesi gereken ucuz referans. Silme.
 2048 boyut ~11K eğitim parçasına karşı sınıflandırıcının gürültüye oturmasına izin
 veriyor; projeksiyon düzenlileştiriyor. İki özellik setini birleştirmeyi de geçiyor.
 PCA yalnızca eğitim split'inde fit edilir ve model bundle'ında saklanır.
+
+→ ✅ **Boyut taraması yapıldı (2026-07-30) — 128 kalıyor, TEKRAR TARAMA.**
+Seçim, held-out'a dokunmadan train'den ayrılan inner-val'de yapıldı (7 aday arasından
+test setinde seçmek kazananı şişirir). Held-out sonuçları:
+
+| boyut | artist top-1 | top-5 | genre joint |
+|---|---|---|---|
+| 64 | %12.89 | %33.37 | %22.97 |
+| 96 *(inner-val'de seçilen)* | %13.17 | %32.81 | %23.78 |
+| **128** *(üretimde)* | %12.96 | %32.03 | **%24.17** |
+| 256 | %11.10 | %28.21 | %20.58 |
+| 384 | %10.57 | %26.27 | %19.85 |
+
+96 vs 128 = +0.21p, SE ~0.89p → **0.2 SE, ayrıştırılamaz**; genre'de 128 daha iyi.
+`PCA_DIM` değiştirilmedi — model/katalog/eşiği ölçüm gürültüsü için yeniden üretmek
+maliyeti hak etmiyor. **64-128 geniş bir plato**, bu eksende kazanç bitmiş; daha ince
+tarama (80, 112) zaman kaybı. Boyutla düşüş ise gerçek: 384 vs 96 arası 2.6p (~2.9 SE).
 
 → `model_trainer.py` duruyor ve çalışır durumda (CNN yolunu yeniden denemek istenirse).
   `inference_engine.py` artık TensorFlow import etmiyor.
@@ -119,17 +142,22 @@ PCA yalnızca eğitim split'inde fit edilir ve model bundle'ında saklanır.
 6. **Sınıf dengesizliği** — class_weight yok, genre'de 46x, artist'te 28x oran var.
    Nadir sınıflar pratikte hiç tahmin edilmiyor. (Eğitim gerektirir, ertelendi.)
 
-7. **Eşzamanlılık riskleri** — sabit `temp_inference/temp_spec.png` ve
-   `downloaded_song.mp3` yolları (paralel istekler birbirini eziyor); `plt`/pyplot
-   global state thread-safe değil ama `run_in_executor` ile thread'de çağrılıyor;
-   `subprocess.run(shell=True)` (Demucs) returncode/timeout kontrolsüz.
+7. **Eşzamanlılık (✅ DÜZELTİLDİ 2026-07-28)**
+   Spektrogram görseli istek başına benzersiz yola yazılıyor (eskiden sabit yol →
+   eşzamanlı iki analiz birbirini eziyor, kullanıcıya başkasının görseli
+   gösterilebiliyordu). Demucs `shell=True` olmadan, returncode kontrollü, 15 dk
+   timeout'lu. Render `pyplot` yerine `Figure` nesnesi kullanıyor.
+
+8. **Güven eşiği modele özel, KOPYALANAMAZ**
+   `train_classic.py` her eğitimde ölçüp bundle'a yazıyor, `inference_engine` oradan
+   okuyor. Klasik modelde 100x %26.1 hassasiyet veriyordu; PANNs modelinde 100x %25.9
+   ve %35 barajı için 150x gerekiyor. Eşiği kodda sabitleme.
 
 ## Kurallar
-- **Şu an eğitim yapılamıyor** (süre kısıtı) — eğitim gerektiren değişiklikleri
-  (`model_trainer.py`, dataset yeniden üretimi, taksonomi değişikliği) bir sonraki
-  eğitim turuna kadar sadece **planla, uygulama**.
+- **CNN eğitimi emekli** — `model_trainer.py` duruyor ama üretim yolunda değil.
+  Yeniden denenecekse önce `overfit_test.py`, ve başarı ölçütü PANNs'in 22.9x'i.
 - Veri dosyaları ve model ağırlıkları proje klasörünün içinde — büyük/binary
-  dosyaları (spektrogram PNG'leri, `.h5`/`.keras` ağırlıklar, FAISS index) elle
+  dosyaları (spektrogram PNG'leri, `.keras` ağırlıklar, PANNs `.pth`, katalog `.npz`) elle
   düzenlemeye çalışma, sadece üreten kodu düzelt.
 - Bir dosyayı "v2.0" / güncellenmiş olarak işaretlemek yetmez — **üretilen veri
   (spektrogramlar, index) fiilen yeniden üretilmediyse kod ile veri arasında sessiz
@@ -148,6 +176,8 @@ tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %6.8'i, o
 doğruluk %38.7), aksi halde top-5 aday listesi (%32.03 isabet) sunuluyor. Eşik her
 eğitimde yeniden ölçülüyor.
 
-**Sıradaki fikirler** (hiçbiri ölçülmedi): PANNs'i fine-tune etmek (şu an donmuş
-encoder), daha uzun/çoklu pencere, daha büyük PANNs varyantı, ya da PCA boyutunu
-taramak (128 > 256 çıkması boyut seçiminin duyarlı olduğunu gösteriyor).
+**Sıradaki fikirler** (hiçbiri ölçülmedi): PANNs'i fine-tune etmek (şu an encoder
+donmuş), daha uzun veya çoklu pencere, daha büyük PANNs varyantı.
+
+~~PCA boyut taraması~~ → **yapıldı, kazanç yok** (yukarıdaki tablo, 64-128 platosu).
+Tekrar denemeye değmez.
