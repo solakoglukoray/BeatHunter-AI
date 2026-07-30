@@ -432,10 +432,11 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     st.divider()
     st.header("🎯 Analysis Report")
 
-    # Artist/genre come from the classical-feature classifier. Measured on held-out
-    # tracks it reaches 16.7x chance for artist and 9.7x for genre — far better than the
-    # CNN it replaced, which scored BELOW chance — but top-1 is still only 9.45%, so a
-    # single name is not a fact. Top-5 hits 24.13%, which is why it leads here.
+    # Artist/genre come from the PANNs classifier. Measured on held-out tracks it reaches
+    # 22.9x chance for artist and 14.4x for genre — against 16.7x/9.7x for the classical
+    # features it replaced, and 0.8x (below chance) for the EfficientNetB3 before that.
+    # Top-1 is still only 12.96%, so a single name is not a fact; top-5 hits 32.03%,
+    # which is why it leads here.
     #
     # Tempo and Key are measured from the signal by librosa and are always shown.
     # Mood is gone: three independent measurements found it is not audio-linked.
@@ -461,8 +462,8 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
 
     st.caption(
         "Style and genre are estimates, not identifications. Measured on unseen tracks "
-        "the top guess is right about 1 time in 10, and the correct artist is somewhere "
-        "in the five above about 1 time in 4 — useful as a starting point, not as an "
+        "the top guess is right about 1 time in 8, and the correct artist is somewhere "
+        "in the five above about 1 time in 3 — useful as a starting point, not as an "
         "answer. Tempo and key are measured from the audio and are not estimates."
     )
 
@@ -470,9 +471,9 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
         with st.expander("Why is there no single style shown?"):
             st.markdown(
                 "A single name is shown only when confidence passes a "
-                f"**{conf.get('min_ratio_required', 100):.0f}x**-chance bar, which happens "
-                "for roughly 9% of tracks. That bar comes from measured accuracy: below "
-                "it the top guess is wrong more than four times out of five, so the "
+                f"**{conf.get('min_ratio_required', 150):.0f}x**-chance bar, which happens "
+                "for roughly 7% of tracks. That bar is re-measured whenever the model is "
+                "retrained: below it the top guess is wrong about three times in four, so the "
                 "candidate list above is the honest answer instead."
             )
             rows = [{"Field": k.capitalize(),

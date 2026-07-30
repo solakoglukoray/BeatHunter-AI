@@ -1,23 +1,33 @@
 # BeatHunter AI — Proje Bağlamı
 
 ## Ne yapıyor
-Ses girdisi alır → Demucs ile vokal ayırır → **klasik akustik özellikler** çıkarır
-(MFCC + delta, spectral contrast, centroid/rolloff/ZCR/RMS — 102 boyut) →
-LogisticRegression ile artist/genre sınıflandırır (joint decoding ile tutarlı çift) →
-aynı 102-boyutlu vektörle 14,235 parçalık katalogda kosinüs benzerliği ile
-benzer beat önerir. BPM ve key librosa'dan (modelden bağımsız).
+Ses girdisi alır → Demucs ile vokal ayırır → **PANNs embedding'i** çıkarır
+(AudioSet üzerinde önceden eğitilmiş CNN, 2048 → PCA-128) → LogisticRegression ile
+artist/genre sınıflandırır (joint decoding ile tutarlı çift) → aynı 128-boyutlu
+vektörle 14,235 parçalık katalogda kosinüs benzerliği ile benzer beat önerir.
+BPM ve key librosa'dan (modelden bağımsız).
 
-**⚠️ CNN yolu emekliye ayrıldı (2026-07-29).** EfficientNetB3, görülmemiş parçalarda
-şansın *altında* kalıyordu (artist 0.8x, genre 0.7x); klasik özellikler aynı held-out
-parçalarda **16.7x / 9.7x** veriyor. Detaylar aşağıda.
+**Ölçülen (2,847 held-out parça, `GroupShuffleSplit` track bazlı, `random_state=42` —
+projedeki her sayı bu split'ten):**
+
+| temsil | artist top-1 | oran | top-5 | genre (joint) |
+|---|---|---|---|---|
+| EfficientNetB3 (ImageNet) | ~%0.7 | 0.8x | — | ~%1.3 |
+| klasik MFCC 102-dim | %9.45 | 16.7x | %24.13 | %17.32 |
+| **PANNs PCA-128** | **%12.96** | **22.9x** | **%32.03** | **%24.17** |
+
+Bu üç satırın dersi **kapasite değil domain**: EfficientNetB3 üçünün en büyüğü ve
+şansın altında kaldı, çünkü fotoğraftan transfer ediyor. PANNs 2M ses klibinden
+transfer ediyor.
 
 ## Stack
 - Backend: FastAPI + Uvicorn
 - Frontend: Streamlit
-- ML: TensorFlow 2.15 (GPU), Librosa, Demucs, Scikit-learn, FAISS
+- Serving ML: PyTorch + PANNs (AudioSet), scikit-learn, Librosa, Demucs
+- Eğitim ML (emekli CNN yolu): TensorFlow — serving artık import etmiyor
 - Auth: Custom JWT (`auth.py`)
 - Deploy: Docker Compose (NVIDIA GPU support)
-- Training: WSL2 + RTX 4080 Laptop
+- Training: WSL2 + RTX 4080 (yalnızca CNN yolu için; PANNs Windows'ta CUDA ile çalışır)
 
 ## Dosya haritası
 | Dosya | Görev |
@@ -33,33 +43,31 @@ parçalarda **16.7x / 9.7x** veriyor. Detaylar aşağıda.
 | `model_trainer.py` | CNN eğitim pipeline'ı |
 | `models/` | Kaydedilmiş model ağırlıkları — **elle değiştirme** |
 
-## 🚨 EN ÖNEMLİ: CNN yolu ölçümle elendi (2026-07-29)
+## 🚨 EN ÖNEMLİ: iki temsil elendi, üçüncüsü üretimde
 
-Aynı held-out parçalarda (`GroupShuffleSplit`, track bazlı, `random_state=42`):
-
-| | artist | genre |
-|---|---|---|
-| EfficientNetB3 (saatlerce GPU, 700K dilim) | **0.8x şans** | **0.7x şans** |
-| 102 klasik özellik + LogReg (15 sn CPU) | **16.7x** | **9.7x** |
-
-CNN **şansın altındaydı** ve soft voting hiçbir şey eklemiyordu (dilim ve parça
-seviyesi aynı) — yani seyreltilen bir sinyal yoktu, sinyal hiç yoktu.
+**1. EfficientNetB3 (ImageNet) — şansın altında.** Soft voting hiçbir şey eklemiyordu
+(dilim ve parça seviyesi aynı), yani seyreltilen bir sinyal yoktu.
 
 Elenen açıklamalar (tekrar araştırma):
-- ~~Veri/etiket tavanı~~ → veri artist'te en az 6.0x sinyal taşıyor (91 saniyede,
-  eğitim olmadan, MFCC k-NN ile ölçüldü)
-- ~~Eğitim kurulumu bozuk~~ → `overfit_test.py` 8 varyantın hepsinde %95+ train
-  accuracy verdi; mimari küçük ölçekte sorunsuz öğreniyor
-- ~~BatchNorm / set_weights / mixed_float16~~ → üçü de ayrı ayrı ölçülüp çürütüldü
+- ~~Veri/etiket tavanı~~ → veri artist'te en az 6.0x sinyal taşıyor (MFCC k-NN, eğitim yok)
+- ~~Eğitim kurulumu bozuk~~ → `overfit_test.py` 8 varyantın hepsinde %95+ train accuracy
+- ~~BatchNorm / set_weights / mixed_float16~~ → üçü de ölçülüp çürütüldü
+- ~~L2 / LR ayarı~~ → 7 katlık farkı kapatmaz, denenmedi
 
-Kalan hipotez (**doğrulanmadı**): 3 saniyelik dilim → viridis PNG → 224×224 →
-ImageNet backbone zinciri fazla bilgi kaybediyor, ve ağır augmentation (spec_augment
-%60 frekans + %60 zaman maskeleme) MFCC'nin koruduğu tınısal ipuçlarını siliyor.
-Bu, "spektrogram CNN'leri çalışmaz" demek **değil** — bu pipeline'ın naif bir
-baseline'ın altında kaldığı demek.
+**2. Klasik MFCC 102-dim — çalıştı ama aşıldı.** 16.7x. `audio_features.py` içinde
+`extract_classical_features` olarak **duruyor** — PyTorch gerektirmiyor, hem fallback
+hem gelecek temsillerin geçmesi gereken ucuz referans. Silme.
 
-→ `model_trainer.py` duruyor ve çalışır durumda (Faz B için). `inference_engine.py`
-  artık onu kullanmıyor.
+**3. PANNs PCA-128 — üretimde.** 22.9x. Klasik tabana karşı +3.51p artist top-1
+(4.2 SE), +7.90p top-5 (6.7 SE), +6.85p genre (6.4 SE).
+
+→ ⚠️ **PCA-128, ham 2048'i her metrikte geçiyor** (2048: %11.52 / 20.3x / %28.13).
+2048 boyut ~11K eğitim parçasına karşı sınıflandırıcının gürültüye oturmasına izin
+veriyor; projeksiyon düzenlileştiriyor. İki özellik setini birleştirmeyi de geçiyor.
+PCA yalnızca eğitim split'inde fit edilir ve model bundle'ında saklanır.
+
+→ `model_trainer.py` duruyor ve çalışır durumda (CNN yolunu yeniden denemek istenirse).
+  `inference_engine.py` artık TensorFlow import etmiyor.
 
 ## ⚠️ Bilinen Tuzaklar (kritik — yeni kod yazmadan önce oku)
 
@@ -86,14 +94,13 @@ baseline'ın altında kaldığı demek.
    buluyor. Yeniden eğitim sonrası ad yine değişebilir; isme geri dönme.
 
 3. **Retrieval artık FAISS değil (2026-07-29)**
-   `models/classic_catalog.npz` (14,235 × 102, 5.6 MB) + düz numpy kosinüs, sorgu
-   **0.04 ms**. Eski `vector_db_track.index` (87 MB) ve CNN embedding'leri
-   kullanılmıyor.
-   → ⚠️ **Katalog ve sorgu aynı fonksiyonu kullanmalı:** `audio_features.extract_features`.
-   Bu kural Tuzak 1'in dersi — orada eğitim ve inference ayrı kod bloklarıydı, birbirinden
-   uzaklaştılar ve aylarca fark edilmedi. `FEATURE_DIM` değişirse hem katalog hem
-   sınıflandırıcı yeniden üretilmeli (`train_classic.py --extract`); kod bunu yükleme
-   sırasında kontrol edip hata veriyor.
+   `models/classic_catalog.npz` (14,235 × 128, 6.9 MB) + düz numpy kosinüs.
+   FAISS ve CNN embedding'leri kullanılmıyor.
+   → ⚠️ **Katalog ve sorgu aynı yoldan geçmeli:** `inference_engine._project()`
+   (embed → PCA → scale). Sıra önemli ve `train_classic.py` ile aynı olmalı.
+   Bu kural Tuzak 1'in dersi — orada eğitim ve inference ayrı kod bloklarıydı,
+   birbirinden uzaklaştılar ve aylarca fark edilmedi. Boyut değişirse hem katalog hem
+   sınıflandırıcı yeniden üretilmeli; kod bunu yüklemede kontrol edip hata veriyor.
 
 4. **Train/val veri sızıntısı (eğitim gerektirir, şimdilik ERTELENDİ)**
    `model_trainer.py`'de `train_test_split` slice seviyesinde rastgele. Aynı şarkının
@@ -106,7 +113,7 @@ baseline'ın altında kaldığı demek.
    Mood sesle ilişkili değil — `config.py`'de sanatçı başına elle atanmış.
    `analyze_beat` artık mood döndürmüyor, API ve UI'da da yok.
    → Genre hâlâ tahmin ediliyor ama **joint decoding** ile: `skor(a) = log P(artist=a)
-   + log P(genre=G[a])`. Ölçüldü — doğrudan tahminden iyi (%17.32 vs %16.37) ve
+   + log P(genre=G[a])`. Ölçüldü — doğrudan tahminden iyi (%24.17 vs %22.87) ve
    taksonomide var olmayan çift üretemiyor.
 
 6. **Sınıf dengesizliği** — class_weight yok, genre'de 46x, artist'te 28x oran var.
@@ -130,18 +137,17 @@ baseline'ın altında kaldığı demek.
 - `beathunter_users_old.db` çöp, silinebilir.
 
 ## Şu anki durum
-**Klasik özellik yolu üretimde** (2026-07-29). `analyze_beat` uçtan uca çalışıyor:
-artist/genre sınıflandırma, 5 öneri, BPM/key. GPU'ya hiç ihtiyaç yok — bu aynı zamanda
-"Windows'ta TF GPU desteği yok" sorununu tamamen ortadan kaldırdı.
+**PANNs PCA-128 yolu üretimde** (2026-07-29). `analyze_beat` uçtan uca çalışıyor:
+artist/genre sınıflandırma, 5 öneri, BPM/key. Serving TensorFlow import etmiyor.
 
-Ölçülen (held-out, track bazlı split): artist top-1 %9.45 / top-5 %24.13 (16.7x şans),
-genre top-1 %17.32 (9.7x). Öncesi: CNN, şansın altında.
+Ölçülen: artist top-1 %12.96 / top-5 %32.03 (22.9x şans), genre %24.17 (14.4x).
+Yol boyunca: EfficientNetB3 0.8x (şansın altında) → klasik MFCC 16.7x → PANNs 22.9x.
 
-⚠️ **Mutlak seviye hâlâ düşük.** Top-1 %9.45 çözülmüş bir problem değil. UI bunu
-saklamıyor: tek isim ancak **100x şans** eşiğini geçince gösteriliyor (parçaların
-~%9'u, o dilimde doğruluk %26), aksi halde top-5 aday listesi sunuluyor. Eşik
-ölçülmüş doğruluk tablosundan seçildi, tahminle değil.
+⚠️ **Mutlak seviye hâlâ düşük.** Top-1 %12.96, yani 8 denemede 1. UI bunu saklamıyor:
+tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %6.8'i, o dilimde
+doğruluk %38.7), aksi halde top-5 aday listesi (%32.03 isabet) sunuluyor. Eşik her
+eğitimde yeniden ölçülüyor.
 
-**Sıradaki karar Faz B:** temsili yeniden tasarlayıp (uzun segment, PNG round-trip yok,
-hafif augmentation) CNN'e dönmek mantıklı mı? Klasik yol artık **16.7x'lik bir taban**
-kuruyor — B'nin başarı ölçütü bu. Detaylar `TODO.md`.
+**Sıradaki fikirler** (hiçbiri ölçülmedi): PANNs'i fine-tune etmek (şu an donmuş
+encoder), daha uzun/çoklu pencere, daha büyük PANNs varyantı, ya da PCA boyutunu
+taramak (128 > 256 çıkması boyut seçiminin duyarlı olduğunu gösteriyor).

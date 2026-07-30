@@ -1,30 +1,30 @@
 """
-BeatHunter AI - Inference Engine (classical-feature path)
+BeatHunter AI - Inference Engine (PANNs embedding path)
 
-Classification and retrieval run on classical audio descriptors, not on the CNN.
-Measured on identical held-out tracks (GroupShuffleSplit by track, random_state=42):
+Classification and retrieval run on PANNs — a CNN pretrained on AudioSet — projected to
+128 dimensions. Measured on 2,847 held-out tracks (GroupShuffleSplit by track,
+random_state=42; every figure in this project uses that same split):
 
-    artist      CNN 0.8x chance   ->   16.7x   (top-1 9.45%, top-5 24.13%)
-    genre       CNN 0.7x chance   ->    9.7x   (top-1 17.32%, top-5 40.85%)
+    representation             artist top-1   lift    top-5    genre (joint)
+    EfficientNetB3 (ImageNet)       ~0.7%     0.8x      —          ~1.3%
+    classical MFCC 102-dim           9.45%   16.7x    24.13%      17.32%
+    PANNs PCA-128                   12.96%   22.9x    32.03%      24.17%
 
-The CNN scored below chance on unseen tracks — soft voting over its slices added
-nothing, so there was no signal being diluted. 102 features and a logistic regression
-beat it by more than twenty-fold, train in 15 seconds on CPU, and drop the model from
-127 MB to 225 KB and the catalogue from 87 MB to 5.6 MB. No GPU anywhere, which also
-removes the "TensorFlow has no Windows GPU" problem entirely.
-
-The CNN training path is untouched in model_trainer.py; see TODO.md if the input
-representation is ever redesigned.
+The lesson across those three rows is domain, not capacity: EfficientNetB3 is the
+largest of them and scored below chance because it transfers from photographs, while
+PANNs transfers from 2M audio clips. Against the classical baseline the gain is
++3.51pt artist top-1 (4.2 SE), +7.90pt top-5 (6.7 SE), +6.85pt genre (6.4 SE).
 
 Mood is NOT predicted. Three independent measurements agree it is not audio-linked
 (Cohen d +0.023 on CNN embeddings, +0.094 on classical features, k-NN 1.4x chance) —
 which follows, since it is assigned by hand per artist in config.py and never derived
-from sound. Genre comes from joint decoding, which measured better than predicting it
-directly (17.32% vs 16.37%) AND guarantees the artist/genre pair is one the taxonomy
-actually contains.
+from sound. Genre comes from joint decoding, which measures better than predicting it
+directly (24.17% vs 22.87%) AND cannot emit an artist/genre pair the taxonomy lacks.
 
 BPM and key are measured from the signal by librosa and were never affected by any of
 the model problems.
+
+The EfficientNetB3 training path is untouched in model_trainer.py; see TODO.md.
 """
 
 import io
@@ -56,7 +56,10 @@ CATALOG_NPZ   = "models/classic_catalog.npz"
 CATALOG_CSV   = "models/classic_catalog.csv"
 TAXONOMY_PATH = "models/taxonomy.json"
 
-SAMPLE_RATE      = AF.SAMPLE_RATE
+# Audio is loaded once at PANNs' native 32 kHz and reused for everything.
+# Resampling the embedding input to anything else silently degrades it;
+# beat tracking and chroma work fine at 32 kHz.
+SAMPLE_RATE      = AF.PANNS_SR
 SEGMENT_DURATION = 3          # only for the UI spectrogram image
 
 # Spectrogram parameters for the DISPLAY image only — nothing is classified from it.
@@ -79,11 +82,12 @@ def _get_model():
                     raise FileNotFoundError(
                         f"{MODEL_PATH} not found. Build it with: python train_classic.py")
                 _cached_model = joblib.load(MODEL_PATH)
-                if _cached_model["feature_dim"] != AF.FEATURE_DIM:
+                exp = AF.PCA_DIM if _cached_model["kind"].startswith("panns") else AF.CLASSIC_DIM
+                if _cached_model["embed_dim"] != exp:
                     raise ValueError(
-                        f"model expects {_cached_model['feature_dim']}-dim features but "
-                        f"audio_features.FEATURE_DIM is {AF.FEATURE_DIM}. The feature set "
-                        "changed without rebuilding — re-run train_classic.py --extract.")
+                        f"model was built at {_cached_model['embed_dim']} dims but "
+                        f"audio_features expects {exp} for kind={_cached_model['kind']}. "
+                        "Rebuild with train_classic.py.")
     return _cached_model
 
 
@@ -158,30 +162,49 @@ def extract_bpm_and_key(y, sr):
 # ============================================================
 # CLASSIFICATION
 # ============================================================
-# Threshold for showing a single artist as a headline answer. Calibrated against
-# measured accuracy on the 2,847 held-out tracks, not guessed:
+# The bar for showing a single artist as a headline answer is CALIBRATED per model and
+# stored in the bundle by train_classic.py — never hardcoded here. Copying a previous
+# model's number over would be cargo-culting a measurement: the old classical model's
+# 100x bar bought 26.1% precision on its own confidence distribution, while on the PANNs
+# model 100x buys 25.9% and 150x is needed for 38.7%.
 #
-#   threshold   tracks shown   top-1 correct
-#      >=  3x        100.0%          9.4%     <- everything; useless as a signal
-#      >= 25x         68.0%         12.0%
-#      >= 50x         30.8%         17.5%
-#      >=100x          8.7%         26.1%
-#      >=150x          2.4%         44.1%
+# The current bundle's calibration table (PANNs PCA-128, 2,847 held-out tracks):
 #
-# Confidence is genuinely predictive here — accuracy climbs monotonically with it — but
-# the absolute level stays low, so 100x is the point where a single label is worth
-# stating at all. Anything looser presents a guess that is wrong four times out of five,
-# which is the "confidently wrong" failure this project already shipped once.
+#     bar     shown   top-1 correct
+#   >= 25x    90.8%       13.7%
+#   >= 50x    59.4%       17.3%
+#   >= 75x    36.6%       20.8%
+#   >=100x    21.7%       25.9%
+#   >=150x     6.8%       38.7%   <- chosen: first bar clearing 35% precision
 #
-# The baseline is 1/n_classes here; note that when comparing to class-imbalanced
-# baselines elsewhere the prior-matched figure (sum of squared frequencies) is the
-# honest one — using 1/n is what flattered the old CNN into looking like 1.6x when it
-# was really 0.8x.
-#
-# Coverage is deliberately low because top-5 carries the useful signal: 24.13% versus
-# 9.45% for top-1. Callers should lead with artist_top5 and treat the single label as a
-# bonus that usually is not there.
-CONFIDENCE_MIN_RATIO = 100.0
+# Coverage is deliberately low because top-5 carries the useful signal (32.03% against
+# 12.96%). Callers should lead with artist_top5 and treat the single label as a bonus
+# that usually is not there.
+DEFAULT_CONFIDENCE_MIN_RATIO = 150.0
+
+
+def _confidence_threshold(m):
+    return float(m.get("confidence_threshold") or DEFAULT_CONFIDENCE_MIN_RATIO)
+
+
+def _project(m, y, sr):
+    """
+    Waveform -> the exact vector the classifier and catalogue were built on.
+
+    Order matters and must match train_classic.py: embed -> PCA -> scale. Both callers
+    go through here so the query and the catalogue cannot drift apart — the mistake that
+    cost this project months on the spectrogram path.
+    """
+    if m["kind"].startswith("panns"):
+        raw = AF.extract_embedding(y, sr)
+    else:
+        raw = AF.extract_classical_features(y, sr)
+    if raw is None:
+        return None
+    X = raw.reshape(1, -1)
+    if m.get("pca") is not None:
+        X = m["pca"].transform(X)
+    return m["scaler"].transform(X)
 
 
 def classify(y, sr):
@@ -193,11 +216,10 @@ def classify(y, sr):
     contains. Measured better than predicting genre directly (17.32% vs 16.37%).
     """
     m = _get_model()
-    feat = AF.extract_features(y, sr)
+    feat = _project(m, y, sr)
     if feat is None:
         raise ValueError("Track too short to analyse (under 5 seconds).")
-
-    Xs = m["scaler"].transform(feat.reshape(1, -1))
+    Xs = feat
     Pa = m["clf_artist"].predict_proba(Xs)[0]
     Pg = m["clf_genre"].predict_proba(Xs)[0]
 
@@ -222,9 +244,9 @@ def classify(y, sr):
                    "probability": float(Pg[list(g_cls).index(gi)]) if gi in g_cls else 0.0,
                    "ratio_vs_chance": (float(Pg[list(g_cls).index(gi)]) * len(genres)
                                        if gi in g_cls else 0.0)},
-        "min_ratio_required": CONFIDENCE_MIN_RATIO,
+        "min_ratio_required": _confidence_threshold(m),
     }
-    confidence["reliable"] = p_artist / chance_a >= CONFIDENCE_MIN_RATIO
+    confidence["reliable"] = p_artist / chance_a >= _confidence_threshold(m)
 
     # Top-5 is the honest view for this product: top-1 is 9.45% but top-5 is 24.13%.
     top5 = np.argsort(-Pa)[:5]
@@ -239,10 +261,10 @@ def find_similar(y, sr, k=N_RECOMMENDATIONS):
     m = _get_model()
     X, tracks, meta = _get_catalog()
 
-    feat = AF.extract_features(y, sr)
+    feat = _project(m, y, sr)
     if feat is None:
         return []
-    q = m["scaler"].transform(feat.reshape(1, -1))[0]
+    q = feat[0]
     q = q / (np.linalg.norm(q) + 1e-9)
 
     sims = X @ q

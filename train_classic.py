@@ -1,22 +1,24 @@
 """
-BeatHunter AI — trains the classical-feature classifier and builds the retrieval catalogue.
+BeatHunter AI — trains the classifier and builds the retrieval catalogue.
 
-Replaces the CNN path for classification and similarity. Measured on identical held-out
-tracks (GroupShuffleSplit by track, random_state=42 — the same split the CNN was scored
-on):
+Pipeline: PANNs embedding (2048) -> PCA (128) -> StandardScaler -> LogisticRegression,
+with genre resolved by joint decoding over the taxonomy.
 
-    artist      CNN 0.8x chance   ->   16.7x
-    genre       CNN 0.7x chance   ->    9.7x
+Measured on 2,847 held-out tracks (GroupShuffleSplit by track, random_state=42):
 
-Runs on CPU in seconds. No GPU, no WSL2.
+    representation            artist top-1   lift    top-5    genre (joint)
+    EfficientNetB3 (ImageNet)      ~0.7%     0.8x      —          ~1.3%
+    classical MFCC 102-dim          9.45%   16.7x    24.13%      17.32%
+    PANNs PCA-128                  12.96%   22.9x    32.03%      24.17%
 
-    python train_classic.py                # uses the cached feature matrix if present
-    python train_classic.py --extract      # re-extracts features from audio (~14 min)
+    python train_classic.py                 # reuse cached embeddings
+    python train_classic.py --extract        # re-embed from audio (~49 min on GPU)
+    python train_classic.py --classical      # fall back to MFCC features (no PyTorch)
 
 Writes:
-    models/classic_model.joblib     scaler + artist/genre LogReg + class names
-    models/classic_catalog.npz      L2-normalised track vectors for k-NN retrieval
-    models/classic_catalog.csv      track -> artist/genre, aligned row-for-row
+    models/classic_model.joblib     pca + scaler + classifiers + calibrated threshold
+    models/classic_catalog.npz      L2-normalised 128-dim track vectors
+    models/classic_catalog.csv      track -> artist/genre, row-for-row aligned
 """
 
 import os, sys, json, time, argparse, warnings
@@ -25,12 +27,14 @@ warnings.filterwarnings("ignore")
 import numpy as np, pandas as pd, joblib
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.model_selection import GroupShuffleSplit
 
 import audio_features as AF
 
 MODEL_DIR    = "models"
-FEATURE_CACHE = os.path.join(MODEL_DIR, "classic_features.npz")
+PANNS_CACHE  = os.path.join(MODEL_DIR, "panns_features.npz")
+CLASSIC_CACHE = os.path.join(MODEL_DIR, "classic_features.npz")
 MODEL_PATH   = os.path.join(MODEL_DIR, "classic_model.joblib")
 CATALOG_NPZ  = os.path.join(MODEL_DIR, "classic_catalog.npz")
 CATALOG_CSV  = os.path.join(MODEL_DIR, "classic_catalog.csv")
@@ -39,143 +43,197 @@ SLICE_META   = "dataset_processed/metadata_processed.csv"
 TAXONOMY     = os.path.join(MODEL_DIR, "taxonomy.json")
 
 
-def extract_all(workers=6):
-    from multiprocessing import Pool
+def extract_panns(batch=16, save_every=1000):
+    """Embeds every track, checkpointing every save_every so a power cut costs minutes
+    rather than the whole ~49-minute run."""
     meta = pd.read_csv(TRACK_META)
     meta["path"] = meta["track"].map(lambda t: f"dataset/audio/{t}.mp3")
     meta = meta[meta["path"].map(os.path.exists)].reset_index(drop=True)
-    print(f"extracting {len(meta):,} tracks with {workers} workers...", flush=True)
 
-    t0, rows, feats = time.time(), [], []
-    with Pool(workers) as pool:
-        for i, (t, f) in enumerate(pool.imap_unordered(
-                _work, list(zip(meta["track"], meta["path"])), chunksize=8), 1):
-            if f is not None:
-                rows.append(t); feats.append(f)
-            if i % 1000 == 0:
-                el = time.time() - t0
-                print(f"  {i:,}/{len(meta):,}  {el:.0f}s  eta {el/i*(len(meta)-i):.0f}s", flush=True)
+    tracks_out, emb_out = [], []
+    if os.path.exists(PANNS_CACHE):
+        z = np.load(PANNS_CACHE, allow_pickle=True)
+        tracks_out, emb_out = list(z["tracks"]), list(z["X"])
+        print(f"resuming from {len(tracks_out):,} cached embeddings")
 
-    X, tracks = np.stack(feats), np.array(rows)
-    np.savez_compressed(FEATURE_CACHE, X=X, tracks=tracks)
-    print(f"cached {X.shape} -> {FEATURE_CACHE} ({time.time()-t0:.0f}s)")
-    return X, tracks
+    done = set(tracks_out)
+    todo = meta[~meta["track"].isin(done)].reset_index(drop=True)
+    if len(todo) == 0:
+        return np.stack(emb_out).astype(np.float32), np.array(tracks_out)
+    print(f"embedding {len(todo):,} of {len(meta):,} tracks...", flush=True)
+
+    buf, buf_t, t0 = [], [], time.time()
+
+    def flush():
+        if buf:
+            emb_out.extend(AF.extract_embeddings_batch(buf))
+            tracks_out.extend(buf_t)
+            buf.clear(); buf_t.clear()
+
+    def save():
+        tmp = PANNS_CACHE + ".tmp.npz"
+        np.savez_compressed(tmp, X=np.stack(emb_out).astype(np.float32),
+                            tracks=np.array(tracks_out))
+        os.replace(tmp, PANNS_CACHE)
+
+    for i, (t, p) in enumerate(zip(todo["track"], todo["path"]), 1):
+        y = AF.load_audio(p)
+        if y is not None and len(y) >= AF.PANNS_SR * 5:
+            buf.append(y); buf_t.append(t)
+        if len(buf) >= batch:
+            flush()
+        if i % 500 == 0:
+            el = time.time() - t0
+            print(f"  {i:,}/{len(todo):,}  {el:.0f}s  eta {el/i*(len(todo)-i):.0f}s", flush=True)
+        if i % save_every == 0:
+            flush(); save()
+    flush(); save()
+    print(f"done ({time.time()-t0:.0f}s)")
+    return np.stack(emb_out).astype(np.float32), np.array(tracks_out)
 
 
-def _work(args):
-    track, path = args
-    return track, AF.extract_from_file(path)
-
-
-def held_out_tracks():
-    """The exact val tracks the CNN was scored on, so the numbers stay comparable."""
+def held_out(tracks):
+    """The exact val tracks every published figure in this project was measured on."""
     m = pd.read_csv(SLICE_META)
     m["track"] = m["filename"].str.split("_slice").str[0]
     _, va = next(GroupShuffleSplit(n_splits=1, test_size=0.2,
                                    random_state=42).split(m, groups=m["track"]))
-    return set(m.iloc[va]["track"].unique())
+    val = set(m.iloc[va]["track"].unique())
+    return np.array([t in val for t in tracks])
+
+
+def calibrate_threshold(Pa, truth, classes, n_classes):
+    """
+    Picks the confidence bar from THIS model's accuracy distribution.
+
+    The previous model's bar (100x) is not reusable: it was chosen against a distribution
+    where top-1 was 9.45%, and this one is at 12.96% with a differently shaped confidence
+    profile. Copying the number over would be cargo-culting a measurement.
+
+    Target: the lowest bar whose retained predictions are right at least MIN_PRECISION of
+    the time. Below that a shown name misleads more often than it helps.
+    """
+    MIN_PRECISION = 0.35
+    conf  = Pa.max(1) * n_classes            # ratio against a uniform guess
+    right = classes[Pa.argmax(1)] == truth
+
+    print("\n  confidence bar   shown   top-1 correct")
+    rows, chosen = [], None
+    for thr in (3, 10, 25, 50, 75, 100, 150, 200, 300, 400):
+        sel = conf >= thr
+        if sel.sum() < 30:
+            continue
+        prec = float(right[sel].mean())
+        rows.append({"threshold": thr, "coverage": float(sel.mean()), "precision": prec})
+        print(f"    >= {thr:4d}x      {sel.mean()*100:5.1f}%        {prec*100:5.1f}%")
+        if chosen is None and prec >= MIN_PRECISION:
+            chosen = thr
+    if chosen is None:
+        chosen = max(r["threshold"] for r in rows)
+        print(f"\n  no bar reaches {MIN_PRECISION*100:.0f}% precision — using the highest "
+              f"measured ({chosen}x); the UI must lead with top-5")
+    else:
+        print(f"\n  chosen: {chosen}x (first bar at >= {MIN_PRECISION*100:.0f}% precision)")
+    return chosen, rows
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--extract", action="store_true", help="re-extract features from audio")
+    ap.add_argument("--extract", action="store_true")
+    ap.add_argument("--classical", action="store_true",
+                    help="use MFCC features instead of PANNs (no PyTorch needed)")
     args = ap.parse_args()
 
-    if args.extract or not os.path.exists(FEATURE_CACHE):
-        X, tracks = extract_all()
+    if args.classical:
+        z = np.load(CLASSIC_CACHE, allow_pickle=True)
+        X, tracks, kind, pca_dim = z["X"], z["tracks"], "classical-102", None
+        print(f"classical features {X.shape} (fallback path)")
     else:
-        z = np.load(FEATURE_CACHE, allow_pickle=True)
-        X, tracks = z["X"], z["tracks"]
-        print(f"loaded cached features {X.shape} from {FEATURE_CACHE}")
+        if args.extract or not os.path.exists(PANNS_CACHE):
+            X, tracks = extract_panns()
+        else:
+            z = np.load(PANNS_CACHE, allow_pickle=True)
+            X, tracks = z["X"], z["tracks"]
+            print(f"cached PANNs embeddings {X.shape}")
+        if X.shape[1] != AF.EMBED_DIM:
+            sys.exit(f"cache is {X.shape[1]}-dim, expected {AF.EMBED_DIM}. Re-run --extract.")
+        kind, pca_dim = "panns-pca128", AF.PCA_DIM
 
-    if X.shape[1] != AF.FEATURE_DIM:
-        sys.exit(f"cached features are {X.shape[1]}-dim but audio_features.FEATURE_DIM "
-                 f"is {AF.FEATURE_DIM}. Re-run with --extract.")
-
-    meta = pd.read_csv(TRACK_META).set_index("track").loc[pd.Index(tracks)]
+    meta = pd.read_csv(TRACK_META).set_index("track")
     taxonomy = json.load(open(TAXONOMY, encoding="utf-8"))
+    is_val = held_out(tracks)
+    print(f"train {(~is_val).sum():,} / held-out {is_val.sum():,} tracks")
 
-    val = held_out_tracks()
-    is_val = np.array([t in val for t in tracks])
-    print(f"train {(~is_val).sum():,} / held-out {is_val.sum():,} tracks\n")
+    # PCA and scaler are fitted on TRAINING tracks only — fitting on everything would
+    # leak the held-out distribution into every number below.
+    pca = None
+    if pca_dim:
+        t0 = time.time()
+        pca = PCA(n_components=pca_dim, random_state=42).fit(X[~is_val])
+        X = pca.transform(X)
+        print(f"PCA {AF.EMBED_DIM} -> {pca_dim} "
+              f"({pca.explained_variance_ratio_.sum()*100:.1f}% variance, {time.time()-t0:.0f}s)")
 
-    # Scaler is fit on training tracks only — fitting on everything would leak the
-    # held-out distribution into the numbers below.
     scaler = StandardScaler().fit(X[~is_val])
     Xs = scaler.transform(X)
 
-    artists = np.sort(meta["artist_type"].unique())
-    genres  = np.sort(meta["genre"].unique())
+    artists = np.sort(meta.loc[tracks, "artist_type"].unique())
+    genres  = np.sort(meta.loc[tracks, "genre"].unique())
     a_idx = {a: i for i, a in enumerate(artists)}
     g_idx = {g: i for i, g in enumerate(genres)}
-    ya = meta["artist_type"].map(a_idx).to_numpy()
-    yg = meta["genre"].map(g_idx).to_numpy()
+    ya = meta.loc[tracks, "artist_type"].map(a_idx).to_numpy()
+    yg = meta.loc[tracks, "genre"].map(g_idx).to_numpy()
 
     print("training...", flush=True)
     t0 = time.time()
     clf_a = LogisticRegression(max_iter=1000, n_jobs=-1).fit(Xs[~is_val], ya[~is_val])
     clf_g = LogisticRegression(max_iter=1000, n_jobs=-1).fit(Xs[~is_val], yg[~is_val])
-    print(f"  fitted in {time.time()-t0:.0f}s\n")
+    print(f"  {time.time()-t0:.0f}s")
 
-    # ── how should genre be produced? measure, do not assume ────────────────────
-    Pa = clf_a.predict_proba(Xs[is_val])
-    Pg = clf_g.predict_proba(Xs[is_val])
+    Pa = clf_a.predict_proba(Xs[is_val]); Pg = clf_g.predict_proba(Xs[is_val])
     ta, tg = ya[is_val], yg[is_val]
     ch_a = float((pd.Series(ta).value_counts(normalize=True) ** 2).sum())
     ch_g = float((pd.Series(tg).value_counts(normalize=True) ** 2).sum())
 
-    # artist index -> genre index, from the taxonomy
-    g_of_a = np.array([g_idx[taxonomy[a]["genre"]] for a in artists], dtype=int)
+    g_of_a = np.array([g_idx[taxonomy[a]["genre"]] for a in artists])
+    logPg = np.full((len(ta), len(genres)), -30.0)
+    logPg[:, clf_g.classes_] = np.log(Pg + 1e-12)
+    joint = np.log(Pa + 1e-12) + logPg[:, g_of_a[clf_a.classes_]]
+    joint_a = clf_a.classes_[joint.argmax(1)]
 
-    def acc(pred, truth): return float((pred == truth).mean())
-    def top5(P, cls, truth):
-        return float(np.mean([truth[i] in cls[np.argsort(-P[i])[:5]] for i in range(len(truth))]))
+    a_top1 = float((clf_a.classes_[Pa.argmax(1)] == ta).mean())
+    a_top5 = float(np.mean([ta[i] in clf_a.classes_[np.argsort(-Pa[i])[:5]]
+                            for i in range(len(ta))]))
+    g_direct = float((clf_g.classes_[Pg.argmax(1)] == tg).mean())
+    g_joint = float((g_of_a[joint_a] == tg).mean())
 
-    direct_a = clf_a.classes_[Pa.argmax(1)]
-    direct_g = clf_g.classes_[Pg.argmax(1)]
-    derived_g = g_of_a[direct_a]
+    print(f"\n=== {kind} on {is_val.sum():,} held-out tracks ===")
+    print(f"  artist  top-1 {a_top1*100:5.2f}%  top-5 {a_top5*100:5.2f}%  "
+          f"chance {ch_a*100:.2f}%  -> {a_top1/ch_a:.1f}x")
+    print(f"  genre   direct {g_direct*100:5.2f}%  joint {g_joint*100:5.2f}%  "
+          f"chance {ch_g*100:.2f}%  -> {g_joint/ch_g:.1f}x")
+    print("\n  reference: classical MFCC 9.45%/24.13%/17.32%, EfficientNetB3 below chance")
 
-    # joint: pick the artist that best explains both heads, then read genre off it
-    eps = 1e-12
-    logPa = np.log(Pa + eps)
-    logPg_full = np.full((len(ta), len(genres)), -30.0)
-    logPg_full[:, clf_g.classes_] = np.log(Pg + eps)
-    joint_scores = logPa + logPg_full[:, g_of_a[clf_a.classes_]]
-    joint_a = clf_a.classes_[joint_scores.argmax(1)]
-    joint_g = g_of_a[joint_a]
+    threshold, table = calibrate_threshold(Pa, ta, clf_a.classes_, len(artists))
 
-    print("=" * 72)
-    print(f"{'strategy':28s} {'artist':>9s} {'genre':>9s}   consistent?")
-    print("=" * 72)
-    print(f"{'direct (independent)':28s} {acc(direct_a,ta)*100:8.2f}% {acc(direct_g,tg)*100:8.2f}%   no")
-    print(f"{'artist -> taxonomy genre':28s} {acc(direct_a,ta)*100:8.2f}% {acc(derived_g,tg)*100:8.2f}%   yes")
-    print(f"{'joint decode':28s} {acc(joint_a,ta)*100:8.2f}% {acc(joint_g,tg)*100:8.2f}%   yes")
-    print(f"\nchance: artist {ch_a*100:.2f}%  genre {ch_g*100:.2f}%")
-    print(f"top-5 : artist {top5(Pa, clf_a.classes_, ta)*100:.2f}%  "
-          f"genre {top5(Pg, clf_g.classes_, tg)*100:.2f}%")
-    print(f"lift  : artist {acc(direct_a,ta)/ch_a:.1f}x  genre {acc(direct_g,tg)/ch_g:.1f}x")
-    print("\nCNN on these same held-out tracks: artist 0.8x, genre 0.7x")
-
-    # ── persist ────────────────────────────────────────────────────────────────
     joblib.dump({
-        "scaler": scaler, "clf_artist": clf_a, "clf_genre": clf_g,
+        "kind": kind, "pca": pca, "scaler": scaler,
+        "clf_artist": clf_a, "clf_genre": clf_g,
         "artists": artists, "genres": genres, "genre_of_artist": g_of_a,
-        "feature_dim": AF.FEATURE_DIM, "duration": AF.DURATION,
+        "embed_dim": X.shape[1], "duration": AF.DURATION,
+        "confidence_threshold": threshold, "calibration_table": table,
+        "metrics": {"artist_top1": a_top1, "artist_top5": a_top5,
+                    "genre_joint": g_joint, "n_held_out": int(is_val.sum())},
     }, MODEL_PATH)
 
     Xn = Xs / (np.linalg.norm(Xs, axis=1, keepdims=True) + 1e-9)
     np.savez_compressed(CATALOG_NPZ, X=Xn.astype(np.float32), tracks=tracks)
-    # Built from `tracks` directly so the CSV is row-for-row aligned with the npz.
-    # Reusing meta's index here silently depended on its name surviving .loc[].
-    pd.DataFrame({
-        "track": tracks,
-        "artist_type": meta["artist_type"].to_numpy(),
-        "genre": meta["genre"].to_numpy(),
-    }).to_csv(CATALOG_CSV, index=False)
+    pd.DataFrame({"track": tracks,
+                  "artist_type": meta.loc[tracks, "artist_type"].to_numpy(),
+                  "genre": meta.loc[tracks, "genre"].to_numpy()}).to_csv(CATALOG_CSV, index=False)
 
-    print(f"\nwrote {MODEL_PATH} ({os.path.getsize(MODEL_PATH)/1e3:.0f} KB)")
+    print(f"\nwrote {MODEL_PATH} ({os.path.getsize(MODEL_PATH)/1e6:.1f} MB)")
     print(f"wrote {CATALOG_NPZ} ({os.path.getsize(CATALOG_NPZ)/1e6:.1f} MB, {Xn.shape})")
-    print(f"wrote {CATALOG_CSV}")
 
 
 if __name__ == "__main__":

@@ -1,18 +1,29 @@
-# ⚠️ TensorFlow has no native Windows GPU support past 2.10. On Windows this stack runs
-# inference on CPU (measured ~10 img/s); under WSL2 with CUDA the same work measured
-# ~90 img/s. Train and rebuild the FAISS index under WSL2.
+# Serving needs NO TensorFlow and no WSL2. Classification and retrieval run on PANNs
+# via PyTorch, which has working Windows CUDA support; TensorFlow does not past 2.10,
+# and that limitation shaped a lot of this project's history.
 #
-# tensorflow is deliberately unpinned: the previous file pinned 2.15.0, which was
-# installed nowhere — the API host runs 2.20.0 and the WSL2 training box runs 2.21.0.
-# A pin matching no real environment hides the fact that the two differ. Pin per
-# environment if that ever matters.
+# tensorflow stays listed only for the retired EfficientNetB3 training path. It is
+# deliberately unpinned: an earlier pin of 2.15.0 was installed nowhere (the API host
+# ran 2.20.0, the training box 2.21.0), which hid the fact that the two differed.
 
 fastapi
 uvicorn
 python-multipart
 python-dotenv
 
+# --- Audio embedding (PANNs) ---
+# PANNs (AudioSet-pretrained CNN) replaced the in-house EfficientNetB3 for
+# classification and retrieval: 22.9x chance for artist against 16.7x for the classical
+# MFCC baseline and 0.8x — below chance — for EfficientNetB3, all on the same held-out
+# tracks. PyTorch has working Windows CUDA support, unlike TensorFlow, so this needs no
+# WSL2. Weights (327 MB) are downloaded once to ~/panns_data; see audio_features.py for
+# the command.
+torch
+panns-inference
+
 # --- ML ---
+# tensorflow is only needed to train or inspect the retired EfficientNetB3 path
+# (model_trainer.py, overfit_test.py). Serving no longer imports it.
 tensorflow
 numpy
 pandas
