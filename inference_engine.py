@@ -82,6 +82,22 @@ def _get_model():
                     raise FileNotFoundError(
                         f"{MODEL_PATH} not found. Build it with: python train_classic.py")
                 _cached_model = joblib.load(MODEL_PATH)
+                # The catalogue and classifier were built by ONE encoder. If a different
+                # one is active now every vector is in the wrong space — and the output
+                # would look plausible rather than fail, so this is a hard error.
+                if _cached_model["kind"].startswith("panns"):
+                    want, have = _cached_model.get("encoder_id"), AF.encoder_id()
+                    if want and want != have:
+                        raise ValueError(
+                            f"model was built with encoder '{want}' but '{have}' is active. "
+                            "The catalogue vectors live in a different space — rebuild with "
+                            "train_classic.py, or restore the encoder it was built with.")
+                    wh, hh = _cached_model.get("encoder_hash"), AF.encoder_hash()
+                    if wh and hh and wh != hh:
+                        raise ValueError(
+                            f"encoder id matches ('{have}') but the weights hash differs "
+                            f"({wh} vs {hh}) — the file changed after the model was built.")
+
                 exp = AF.PCA_DIM if _cached_model["kind"].startswith("panns") else AF.CLASSIC_DIM
                 if _cached_model["embed_dim"] != exp:
                     raise ValueError(

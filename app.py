@@ -432,11 +432,11 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     st.divider()
     st.header("🎯 Analysis Report")
 
-    # Artist/genre come from the PANNs classifier. Measured on held-out tracks it reaches
-    # 22.9x chance for artist and 14.4x for genre — against 16.7x/9.7x for the classical
-    # features it replaced, and 0.8x (below chance) for the EfficientNetB3 before that.
-    # Top-1 is still only 12.96%, so a single name is not a fact; top-5 hits 32.03%,
-    # which is why it leads here.
+    # Artist/genre come from the fine-tuned PANNs classifier. On held-out tracks: 27.1x
+    # chance for artist, 16.8x for genre — against 22.9x/14.4x for the stock AudioSet
+    # encoder, 16.7x/9.7x for the classical features before that, and 0.8x (below chance)
+    # for the original EfficientNetB3. Top-1 is still only 15.35%, so a single name is not
+    # a fact; top-5 hits 37.72%, which is why it leads here.
     #
     # Tempo and Key are measured from the signal by librosa and are always shown.
     # Mood is gone: three independent measurements found it is not audio-linked.
@@ -462,8 +462,8 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
 
     st.caption(
         "Style and genre are estimates, not identifications. Measured on unseen tracks "
-        "the top guess is right about 1 time in 8, and the correct artist is somewhere "
-        "in the five above about 1 time in 3 — useful as a starting point, not as an "
+        "the top guess is right about 1 time in 7, and the correct artist is somewhere "
+        "in the five above about 3 times in 8 — useful as a starting point, not as an "
         "answer. Tempo and key are measured from the audio and are not estimates."
     )
 
@@ -472,8 +472,9 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
             st.markdown(
                 "A single name is shown only when confidence passes a "
                 f"**{conf.get('min_ratio_required', 150):.0f}x**-chance bar, which happens "
-                "for roughly 7% of tracks. That bar is re-measured whenever the model is "
-                "retrained: below it the top guess is wrong about three times in four, so the "
+                "for roughly 11% of tracks. That bar is re-measured whenever the model is "
+                "retrained: above it the top guess is right about 44% of the time and well "
+                "below that under it, so the "
                 "candidate list above is the honest answer instead."
             )
             rows = [{"Field": k.capitalize(),

@@ -2,7 +2,8 @@
 
 ## Ne yapıyor
 Ses girdisi alır → Demucs ile vokal ayırır → **PANNs embedding'i** çıkarır
-(AudioSet üzerinde önceden eğitilmiş CNN, 2048 → PCA-128) → LogisticRegression ile
+(AudioSet'te ön-eğitilmiş, kendi verimizle fine-tune edilmiş CNN, 2048 → PCA-128)
+→ LogisticRegression ile
 artist/genre sınıflandırır (joint decoding ile tutarlı çift) → aynı 128-boyutlu
 vektörle 14,235 parçalık katalogda kosinüs benzerliği ile benzer beat önerir.
 BPM ve key librosa'dan (modelden bağımsız).
@@ -14,11 +15,18 @@ projedeki her sayı bu split'ten):**
 |---|---|---|---|---|
 | EfficientNetB3 (ImageNet) | ~%0.7 | 0.8x | — | ~%1.3 |
 | klasik MFCC 102-dim | %9.45 | 16.7x | %24.13 | %17.32 |
-| **PANNs PCA-128** | **%12.96** | **22.9x** | **%32.03** | **%24.17** |
+| donuk PANNs (AudioSet) | %12.96 | 22.9x | %32.03 | %24.17 |
+| **fine-tuned PANNs** | **%15.35** | **27.1x** | **%37.72** | **%28.21** |
 
-Bu üç satırın dersi **kapasite değil domain**: EfficientNetB3 üçünün en büyüğü ve
-şansın altında kaldı, çünkü fotoğraftan transfer ediyor. PANNs 2M ses klibinden
-transfer ediyor.
+İlk üç satırın dersi **kapasite değil domain**: EfficientNetB3 en büyüğüydü ve şansın
+altında kaldı, çünkü fotoğraftan transfer ediyor. PANNs 2M ses klibinden transfer ediyor.
+
+Dördüncü satırın dersi ayrı: **fine-tuning'in kazancı temsilde, head'de değil.** Encoder
+donuk özellik çıkarıcı olarak kullanıldığında, tam uçtan uca eğitimin top-1'deki
+kazancının **%94'ünü**, genre'dekinin **%106'sını** veriyor (Deney C). Bu yüzden
+PCA+LogReg+joint decoding mimarisi hiç değişmedi — sadece embedding kaynağı değişti.
+Tek istisna top-5: uçtan uca model orada 2.7p (~3 SE) daha iyi, çünkü kendi head'i
+2048 boyutun tamamını görüyor, PCA ise %10 varyansı atıyor.
 
 ## Stack
 - Backend: FastAPI + Uvicorn
@@ -47,9 +55,12 @@ transfer ediyor.
 | `thermal_guard.py` | GPU sıcaklık koruması (uzun koşular) |
 | `panns_features_experiment.py` | PANNs vs klasik karşılaştırma deneyi |
 | `pca_sweep_experiment.py` | PCA boyut taraması (negatif sonuç, kayıtlı) |
+| `panns_finetune.py` | PANNs fine-tuning (kesinti-toleranslı, termal korumalı) |
+| `panns_ft_frozen_experiment.py` | Deney C: kazanç temsilde mi head'de mi |
+| `get_encoder.py` | **Yeni makinede İLK bunu çalıştır** — ağırlık kurulumu/doğrulaması |
 | `models/` | Ağırlıklar ve artefaktlar — **elle değiştirme** |
 
-## 🚨 EN ÖNEMLİ: iki temsil elendi, üçüncüsü üretimde
+## 🚨 EN ÖNEMLİ: üç temsil denendi ve aşıldı, dördüncüsü üretimde
 
 **1. EfficientNetB3 (ImageNet) — şansın altında.** Soft voting hiçbir şey eklemiyordu
 (dilim ve parça seviyesi aynı), yani seyreltilen bir sinyal yoktu.
@@ -64,8 +75,14 @@ Elenen açıklamalar (tekrar araştırma):
 `extract_classical_features` olarak **duruyor** — PyTorch gerektirmiyor, hem fallback
 hem gelecek temsillerin geçmesi gereken ucuz referans. Silme.
 
-**3. PANNs PCA-128 — üretimde.** 22.9x. Klasik tabana karşı +3.51p artist top-1
-(4.2 SE), +7.90p top-5 (6.7 SE), +6.85p genre (6.4 SE).
+**3. Donuk PANNs (stock AudioSet) PCA-128 — aşıldı, fallback olarak duruyor.** 22.9x.
+Klasik tabana karşı +3.51p artist top-1 (4.2 SE), +7.90p top-5 (6.7 SE), +6.85p genre
+(6.4 SE). Fine-tuned ağırlık yoksa `audio_features` otomatik buna düşer.
+
+**4. Fine-tuned PANNs PCA-128 — ÜRETİMDE.** 27.1x. Donuk PANNs'e karşı +2.39p artist
+top-1, +5.69p top-5, +4.04p genre. Fine-tuning 12 epoch / ~2.8 sa GPU sürdü; en iyi
+epoch 11. Uçtan uca modelin kendi head'i top-5'te 2.7p daha iyiydi ama inference'ı
+baştan yazmayı gerektiriyordu ve kazancın %94'ü zaten donuk encoder'la geliyor.
 
 → ⚠️ **PCA-128, ham 2048'i her metrikte geçiyor** (2048: %11.52 / 20.3x / %28.13).
 2048 boyut ~11K eğitim parçasına karşı sınıflandırıcının gürültüye oturmasına izin
@@ -164,20 +181,49 @@ tarama (80, 112) zaman kaybı. Boyutla düşüş ise gerçek: 384 vs 96 arası 2
   bir uyuşmazlık olabilir.** Değişiklik yapınca "veri de yeniden üretildi mi?" diye sor.
 - `beathunter_users_old.db` çöp, silinebilir.
 
+## 🔑 Encoder ağırlıkları (yeni makinede ilk iş)
+
+```
+python get_encoder.py        # ne var ne yok, stock ağırlıkları indirir
+```
+
+İki dosya var ve **cinsleri farklı**:
+
+| dosya | ne | nasıl elde edilir |
+|---|---|---|
+| `models/panns_ft_encoder.pt` (327 MB) | **bizim** fine-tune ettiğimiz encoder | indirilemez — build artefaktı |
+| `~/panns_data/Cnn14_mAP=0.431.pth` (327 MB) | stock AudioSet | Zenodo'dan indirilir |
+
+Fine-tuned ağırlık için üç yol: **(1)** başka makineden kopyala (günlük kullanımda bu),
+**(2)** yeniden üret (`panns_finetune.py` ~2.8 sa GPU + `--extract-encoder`, sonra
+`train_classic.py --extract` ~45 dk), **(3)** onsuz çalış — stock ağırlıklar otomatik
+devreye girer, maliyeti artist top-1 %15.35 → %12.96; ardından `train_classic.py`
+(dakikalar, embedding'ler cache'te).
+
+⚠️ Git ikisini de takip etmiyor: her yeniden eğitimde değişen 327 MB binary LFS işi ve
+repo'da LFS yok. Gerekirse `panns_ft_encoder.pt` LFS'e alınır, cache'lenmiş
+embedding'ler dışarıda kalır.
+
+⚠️ **Katalog ve sorgu aynı encoder'dan gelmek ZORUNDA.** Model bundle'ı `encoder_id` ve
+ağırlık hash'ini saklıyor; `inference_engine` yüklemede ikisini de doğrulayıp uyuşmazlıkta
+**hata veriyor**. İkisi de negatif testle kanıtlandı (yanlış encoder → hata, değişmiş
+dosya → hata). Bu kontrolü kaldırma; Tuzak 1'in tam deseni.
+
 ## Şu anki durum
-**PANNs PCA-128 yolu üretimde** (2026-07-29). `analyze_beat` uçtan uca çalışıyor:
-artist/genre sınıflandırma, 5 öneri, BPM/key. Serving TensorFlow import etmiyor.
+**Fine-tuned PANNs + PCA-128 üretimde** (2026-07-30). `analyze_beat` uçtan uca çalışıyor.
 
-Ölçülen: artist top-1 %12.96 / top-5 %32.03 (22.9x şans), genre %24.17 (14.4x).
-Yol boyunca: EfficientNetB3 0.8x (şansın altında) → klasik MFCC 16.7x → PANNs 22.9x.
+Ölçülen (2,847 held-out parça): artist top-1 **%15.35** / top-5 **%37.72** (27.1x şans),
+genre **%28.21** (16.8x). Yol: EfficientNetB3 0.8x → klasik MFCC 16.7x → donuk PANNs
+22.9x → fine-tuned PANNs 27.1x.
 
-⚠️ **Mutlak seviye hâlâ düşük.** Top-1 %12.96, yani 8 denemede 1. UI bunu saklamıyor:
-tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %6.8'i, o dilimde
-doğruluk %38.7), aksi halde top-5 aday listesi (%32.03 isabet) sunuluyor. Eşik her
-eğitimde yeniden ölçülüyor.
+⚠️ **Mutlak seviye hâlâ düşük.** Top-1 %15.35, yani 7 denemede 1. UI bunu saklamıyor:
+tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %11.1'i, o dilimde
+doğruluk %43.5), aksi halde top-5 aday listesi (%37.72). Eşik her eğitimde
+`train_classic.py` tarafından yeniden ölçülüyor — kopyalanmıyor.
 
-**Sıradaki fikirler** (hiçbiri ölçülmedi): PANNs'i fine-tune etmek (şu an encoder
-donmuş), daha uzun veya çoklu pencere, daha büyük PANNs varyantı.
+**Denenmiş ve kapanmış:** PCA boyut taraması (64-128 platosu), tam uçtan uca fine-tune
+(top-5'te +2.7p daha iyi ama inference'ı baştan yazmayı gerektiriyor; temsil kazancının
+%94'ü zaten donuk encoder'la geliyor).
 
-~~PCA boyut taraması~~ → **yapıldı, kazanç yok** (yukarıdaki tablo, 64-128 platosu).
-Tekrar denemeye değmez.
+**Sıradaki fikirler** (ölçülmedi): daha uzun/çoklu pencere, daha büyük PANNs varyantı
+(Cnn14 yerine ResNet38/Wavegram), ikinci bir fine-tune turu daha düşük LR ile.

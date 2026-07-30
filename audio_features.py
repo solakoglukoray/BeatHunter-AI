@@ -46,35 +46,101 @@ PANNS_SR    = 32000       # PANNs is trained at 32 kHz. Not 22.05 kHz — resamp
 DURATION    = 30          # seconds analysed from the start of the track
 EMBED_DIM   = 2048        # raw Cnn14 output, before the PCA in the model bundle
 PCA_DIM     = 128         # what the classifier and catalogue actually use
-PANNS_CKPT  = os.environ.get(
+# Two possible encoders, in priority order:
+#
+#   1. models/panns_ft_encoder.pt — our Cnn14 fine-tuned on this dataset. With the SAME
+#      PCA-128 + LogReg + joint decoding on top it measures artist top-1 15.35% /
+#      top-5 37.72% / genre 28.21%, against the stock encoder's 12.96% / 32.03% / 24.17%.
+#      Fine-tuning closed 94% of the top-1 gap and 106% of the genre gap to a full
+#      end-to-end model, so the gain lives in the REPRESENTATION rather than in a trained
+#      head — which is exactly why the classifier architecture below is unchanged.
+#
+#   2. ~/panns_data/Cnn14_mAP=0.431.pth — stock AudioSet weights. Fallback, and the
+#      documented baseline.
+#
+# ⚠️ The catalogue and the classifier are built against ONE of these, and their vectors
+# live in different spaces. Mixing them produces confident nonsense rather than an error,
+# so train_classic.py records encoder_id() and a hash of the weights in the model bundle
+# and inference_engine verifies both on load. Do not remove that check: this project
+# already lost months to precisely this failure on the spectrogram path.
+FT_CKPT     = os.environ.get("PANNS_FT_CKPT", "models/panns_ft_encoder.pt")
+BASE_CKPT   = os.environ.get(
     "PANNS_CKPT", os.path.expanduser("~/panns_data/Cnn14_mAP=0.431.pth"))
 
 _panns_model = None
 _panns_device = None
+_encoder_id = None
+_encoder_hash = None
+
+
+def _hash_file(path, chunk=1 << 20):
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            b = f.read(chunk)
+            if not b:
+                break
+            h.update(b)
+    return h.hexdigest()[:16]
+
+
+def encoder_id():
+    """Short identifier for whichever encoder is active. Recorded in the model bundle."""
+    _load_panns()
+    return _encoder_id
+
+
+def encoder_hash():
+    _load_panns()
+    return _encoder_hash
+
+
+def feature_cache_path():
+    """Cache filename is tied to the encoder, so switching encoders cannot silently
+    reuse the other one's embeddings."""
+    return ("models/panns_ft_features.npz" if encoder_id().startswith("panns-ft")
+            else "models/panns_features.npz")
 
 
 def _load_panns():
-    """Loads Cnn14 once. Uses CUDA when available — PyTorch, unlike TensorFlow, has
-    working Windows CUDA support, so this needs no WSL2."""
-    global _panns_model, _panns_device
+    """Loads Cnn14 once, preferring the fine-tuned encoder. Uses CUDA when available —
+    PyTorch, unlike TensorFlow, has working Windows CUDA support, so no WSL2 needed."""
+    global _panns_model, _panns_device, _encoder_id, _encoder_hash
     if _panns_model is None:
         import torch
         from panns_inference.models import Cnn14
-        if not os.path.exists(PANNS_CKPT):
+
+        if os.path.exists(FT_CKPT):
+            ck = torch.load(FT_CKPT, map_location="cpu", weights_only=False)
+            state = ck["trunk"]
+            _encoder_id = f"panns-ft-e{ck.get('epoch', '?')}"
+            _encoder_hash = _hash_file(FT_CKPT)
+        elif os.path.exists(BASE_CKPT):
+            state = torch.load(BASE_CKPT, map_location="cpu",
+                               weights_only=False)["model"]
+            _encoder_id = "panns-audioset"
+            _encoder_hash = _hash_file(BASE_CKPT)
+            print("ℹ️  fine-tuned encoder yok, stock AudioSet agirliklari kullaniliyor "
+                  "(top-1 %12.96 vs fine-tuned %15.35)")
+        else:
             raise FileNotFoundError(
-                f"PANNs weights not found at {PANNS_CKPT}.\n"
-                "Download once (327 MB):\n"
+                f"No encoder found.\n\n"
+                f"Preferred: {FT_CKPT} — our fine-tuned encoder (327 MB).\n"
+                "  A build artefact, not a download. See README 'PANNs weights'.\n"
+                "  Regenerate: python panns_finetune.py  (~2.8 h GPU)\n"
+                "              python panns_ft_frozen_experiment.py --extract-encoder\n\n"
+                f"Fallback: {BASE_CKPT} — stock AudioSet (327 MB):\n"
                 "  mkdir -p ~/panns_data && cd ~/panns_data\n"
                 "  curl -L -o 'Cnn14_mAP=0.431.pth' "
                 "'https://zenodo.org/record/3987831/files/Cnn14_mAP%3D0.431.pth?download=1'\n"
                 "  curl -L -o class_labels_indices.csv "
                 "'http://storage.googleapis.com/us_audioset/youtube_corpus/v1/csv/"
-                "class_labels_indices.csv'\n"
-                "Or point PANNS_CKPT at an existing copy.")
+                "class_labels_indices.csv'")
+
         m = Cnn14(sample_rate=PANNS_SR, window_size=1024, hop_size=320, mel_bins=64,
                   fmin=50, fmax=14000, classes_num=527)
-        m.load_state_dict(torch.load(PANNS_CKPT, map_location="cpu",
-                                     weights_only=False)["model"])
+        m.load_state_dict(state)
         _panns_device = "cuda" if torch.cuda.is_available() else "cpu"
         _panns_model = m.eval().to(_panns_device)
     return _panns_model, _panns_device

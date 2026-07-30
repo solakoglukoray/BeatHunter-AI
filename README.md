@@ -27,3 +27,56 @@ docker-compose up -d
 
 * **Frontend UI:** `http://localhost:8501`
 * **Backend API Docs (Swagger):** `http://localhost:8000/docs`
+
+## Kurulum — encoder ağırlıkları
+
+Yeni bir makinede **ilk iş**:
+
+```bash
+pip install -r requirements-backend.txt
+python get_encoder.py        # ne var ne yok raporlar, stock ağırlıkları indirir
+```
+
+Sınıflandırma ve benzerlik araması, AudioSet'te ön-eğitilip bu veri setiyle fine-tune
+edilmiş bir PANNs (Cnn14) encoder'ına dayanıyor. **İki ayrı ağırlık dosyası var ve
+cinsleri farklı:**
+
+| dosya | boyut | ne | nasıl elde edilir |
+|---|---|---|---|
+| `models/panns_ft_encoder.pt` | 327 MB | **bizim** fine-tune ettiğimiz encoder | **indirilemez** — build artefaktı |
+| `~/panns_data/Cnn14_mAP=0.431.pth` | 327 MB | stock AudioSet ağırlıkları | Zenodo'dan otomatik indirilir |
+
+Fine-tuned ağırlık hiçbir yerde yayınlanmış değil; `panns_finetune.py`'nin çıktısı.
+Üç yol var:
+
+1. **Kopyala** (günlük kullanımda bu) — elinde olan bir makineden
+   `models/panns_ft_encoder.pt` olarak koy, `python get_encoder.py --verify` ile doğrula.
+2. **Yeniden üret** — `python panns_finetune.py` (~2.8 sa GPU), ardından
+   `python panns_ft_frozen_experiment.py --extract-encoder`, sonra
+   `python train_classic.py --extract` (~45 dk). Sonuç bit-özdeş olmaz; hash değişir,
+   yeniden üretim uyumlu bir çift yazar.
+3. **Onsuz çalış** — dosyayı koymazsan stock ağırlıklar otomatik devreye girer.
+   Ölçülen maliyet: artist top-1 %15.35 → %12.96, top-5 %37.72 → %32.03.
+   Ardından `python train_classic.py` çalıştır (dakikalar, embedding'ler cache'te).
+
+Git ikisini de takip etmiyor: her yeniden eğitimde değişen 327 MB binary LFS işi ve
+repoda LFS kurulu değil.
+
+⚠️ **Katalog ve sorgu aynı encoder'dan gelmek zorunda.** Model bundle'ı `encoder_id` ve
+ağırlık hash'ini saklar; `inference_engine` yüklemede ikisini de doğrular ve uyuşmazlıkta
+hata verir. Encoder'ı değiştirdiysen `train_classic.py` çalıştırman gerekir.
+
+## Ölçülen doğruluk
+
+2,847 held-out parça (`GroupShuffleSplit`, track bazlı):
+
+| temsil | artist top-1 | top-5 | genre |
+|---|---|---|---|
+| EfficientNetB3 (ImageNet) | ~%0.7 *(şansın altında)* | — | ~%1.3 |
+| klasik MFCC 102-dim | %9.45 | %24.13 | %17.32 |
+| donuk PANNs | %12.96 | %32.03 | %24.17 |
+| **fine-tuned PANNs** | **%15.35** | **%37.72** | **%28.21** |
+
+Mutlak seviye düşük: top-1 yaklaşık 7 denemede 1 doğru. UI bunu saklamıyor — tek bir
+isim ancak ölçülmüş bir güven eşiğini (150x şans, parçaların %11'i, o dilimde doğruluk
+%43.5) geçtiğinde gösterilir, aksi halde top-5 aday listesi sunulur.

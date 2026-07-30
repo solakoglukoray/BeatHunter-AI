@@ -33,7 +33,10 @@ from sklearn.model_selection import GroupShuffleSplit
 import audio_features as AF
 
 MODEL_DIR    = "models"
-PANNS_CACHE  = os.path.join(MODEL_DIR, "panns_features.npz")
+# Cache path follows the active encoder, so switching encoders cannot reuse the
+# other one's embeddings — see audio_features.feature_cache_path().
+def _panns_cache():
+    return AF.feature_cache_path()
 CLASSIC_CACHE = os.path.join(MODEL_DIR, "classic_features.npz")
 MODEL_PATH   = os.path.join(MODEL_DIR, "classic_model.joblib")
 CATALOG_NPZ  = os.path.join(MODEL_DIR, "classic_catalog.npz")
@@ -51,8 +54,8 @@ def extract_panns(batch=16, save_every=1000):
     meta = meta[meta["path"].map(os.path.exists)].reset_index(drop=True)
 
     tracks_out, emb_out = [], []
-    if os.path.exists(PANNS_CACHE):
-        z = np.load(PANNS_CACHE, allow_pickle=True)
+    if os.path.exists(_panns_cache()):
+        z = np.load(_panns_cache(), allow_pickle=True)
         tracks_out, emb_out = list(z["tracks"]), list(z["X"])
         print(f"resuming from {len(tracks_out):,} cached embeddings")
 
@@ -71,10 +74,10 @@ def extract_panns(batch=16, save_every=1000):
             buf.clear(); buf_t.clear()
 
     def save():
-        tmp = PANNS_CACHE + ".tmp.npz"
+        tmp = _panns_cache() + ".tmp.npz"
         np.savez_compressed(tmp, X=np.stack(emb_out).astype(np.float32),
                             tracks=np.array(tracks_out))
-        os.replace(tmp, PANNS_CACHE)
+        os.replace(tmp, _panns_cache())
 
     for i, (t, p) in enumerate(zip(todo["track"], todo["path"]), 1):
         y = AF.load_audio(p)
@@ -149,12 +152,12 @@ def main():
         X, tracks, kind, pca_dim = z["X"], z["tracks"], "classical-102", None
         print(f"classical features {X.shape} (fallback path)")
     else:
-        if args.extract or not os.path.exists(PANNS_CACHE):
+        if args.extract or not os.path.exists(_panns_cache()):
             X, tracks = extract_panns()
         else:
-            z = np.load(PANNS_CACHE, allow_pickle=True)
+            z = np.load(_panns_cache(), allow_pickle=True)
             X, tracks = z["X"], z["tracks"]
-            print(f"cached PANNs embeddings {X.shape}")
+            print(f"cached PANNs embeddings {X.shape} from {_panns_cache()}")
         if X.shape[1] != AF.EMBED_DIM:
             sys.exit(f"cache is {X.shape[1]}-dim, expected {AF.EMBED_DIM}. Re-run --extract.")
         kind, pca_dim = "panns-pca128", AF.PCA_DIM
@@ -218,6 +221,9 @@ def main():
 
     joblib.dump({
         "kind": kind, "pca": pca, "scaler": scaler,
+        # Guards against the catalogue and the query using different encoders.
+        "encoder_id": (AF.encoder_id() if kind.startswith("panns") else "classical"),
+        "encoder_hash": (AF.encoder_hash() if kind.startswith("panns") else None),
         "clf_artist": clf_a, "clf_genre": clf_g,
         "artists": artists, "genres": genres, "genre_of_artist": g_of_a,
         "embed_dim": X.shape[1], "duration": AF.DURATION,

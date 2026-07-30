@@ -61,3 +61,8 @@ models/classic_features.npz
 # PANNs experiment weights (downloaded, ~327 MB)
 panns_data/
 models/panns_*.npz
+
+# PANNs fine-tune artefaktlari (buyuk, yeniden uretilebilir)
+models/panns_finetune_*.pt
+models/panns_ft_encoder.pt
+models/panns_ft_features.npz

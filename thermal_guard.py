@@ -120,6 +120,39 @@ class ThermalGuard:
                 return
 
 
+def check_and_wait():
+    """
+    Framework-agnostic guard for a plain training loop (PyTorch, or anything else).
+
+    Returns True to keep going, False if the run must stop. Blocks while the GPU cools,
+    which idles it without losing any state the caller holds.
+
+    The Keras path below does the same thing through a callback because Keras owns the
+    loop; here the caller owns it, so this just returns a verdict.
+    """
+    if state["abort"]:
+        return False
+    t = state["gpu"]
+    if t is None or t < COOL_C:
+        return True
+
+    state["pauses"] += 1
+    print(f"\n  ~ GPU {t}C >= {COOL_C}C — duraklatildi, <{RESUME_C}C bekleniyor...",
+          flush=True)
+    waited = 0
+    while True:
+        time.sleep(5)
+        waited += 5
+        t = state["gpu"]
+        if t is None or t < RESUME_C:
+            print(f"  ~ devam ({t}C, {waited}s duraklama)", flush=True)
+            return True
+        if t >= ABORT_C or waited > COOL_TIMEOUT:
+            state["abort"] = True
+            state["reason"] = f"soguma basarisiz (GPU {t}C, {waited}s)"
+            return False
+
+
 def make_keras_callback(tf, every=20):
     """Builds a tf.keras.callbacks.Callback bound to the guard (tf passed in to avoid
     importing TensorFlow from this module)."""
