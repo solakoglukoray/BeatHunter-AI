@@ -1,12 +1,4 @@
 track,artist_type,genre
--27cxHNLhLs,Korn,Nu Metal
--2JRDvgfDeg,MF DOOM,Underground Hip-Hop
--2a2JdSu4B0,J. Cole,Progressive Rap
--2g8CgtumX0,Childish Gambino,Hipster Hop
--2xvety0j4k,Childish Gambino,Hipster Hop
--2ywgSGW1Ys,Colt Ford,Country Rap
--2zW5pTw7rk,Nine Inch Nails,Industrial Hip-Hop
--3GjznVbohQ,Mac Dre,Hyphy
 --2EKZMgzCg,Rondodasosa,Afro Drill
 --SDFg1O710,808Melo,Brooklyn Drill
 --ZsLN6XF0s,Nine Inch Nails,Industrial Hip-Hop
@@ -15,6 +7,14 @@ track,artist_type,genre
 -1NWgOe-_s0,Clams Casino,Cloud Rap
 -1Q505ztaJ8,A Tribe Called Quest,Jazz Rap
 -1Th2UME0KY,J Balvin,Reggaeton
+-27cxHNLhLs,Korn,Nu Metal
+-2JRDvgfDeg,MF DOOM,Underground Hip-Hop
+-2a2JdSu4B0,J. Cole,Progressive Rap
+-2g8CgtumX0,Childish Gambino,Hipster Hop
+-2xvety0j4k,Childish Gambino,Hipster Hop
+-2ywgSGW1Ys,Colt Ford,Country Rap
+-2zW5pTw7rk,Nine Inch Nails,Industrial Hip-Hop
+-3GjznVbohQ,Mac Dre,Hyphy
 -3SAbnvaoqk,Kool G Rap,Mafioso Rap
 -43Zz5GcHso,ericdoa,Digicore
 -442GPc5yks,The Roots,Philadelphia Hip-Hop
@@ -31,14 +31,6 @@ track,artist_type,genre
 -75HYZbGq8A,Mac Dre,Hyphy
 -7KXcSn2wBU,Insane Clown Posse,Horrorcore
 -7bft7950SQ,Digable Planets,Jazz Rap
--AWCBk6nGAo,Lil Jon,Crunk
--AZXmt0n0ZI,Macklemore,Pop Rap
--AbFoUDVPbU,Lil Scrappy,Crunk
--Ahr1OqN7EU,glaive,Digicore
--B1Ae1nRymA,DJ Shadow,Instrumental Hip-Hop
--BwQQlvMj0M,Natanael Cano,Mexican Drill
--COH8hQStfU,clipping.,Experimental Hip-Hop
--CYK2_ZauAY,Bad Bunny,Latin Trap
 -8Cureceuzk,Paul Wall,Chopped and Screwed
 -8hftnJ3Ohk,Giggs,Road Rap
 -8v0StS6ZwQ,Kid Cudi,Hipster Hop
@@ -47,6 +39,14 @@ track,artist_type,genre
 -9V9qrjDQKk,Tony Shhnow,Plugg
 -9tD57kOmKk,Killa Kyleon,Slab Music
 -ATlguDwZDw,Snoop Dogg,G-Funk
+-AWCBk6nGAo,Lil Jon,Crunk
+-AZXmt0n0ZI,Macklemore,Pop Rap
+-AbFoUDVPbU,Lil Scrappy,Crunk
+-Ahr1OqN7EU,glaive,Digicore
+-B1Ae1nRymA,DJ Shadow,Instrumental Hip-Hop
+-BwQQlvMj0M,Natanael Cano,Mexican Drill
+-COH8hQStfU,clipping.,Experimental Hip-Hop
+-CYK2_ZauAY,Bad Bunny,Latin Trap
 -DCDXQ0ReYM,Kool G Rap,Mafioso Rap
 -E4xCaSb_0k,The Roots,Philadelphia Hip-Hop
 -E8zXh2Imjo,ericdoa,Digicore
@@ -119,14 +119,6 @@ track,artist_type,genre
 -W0miw_nQeY,Metro Boomin,Trap
 -WBjaDh34vY,Insane Clown Posse,Horrorcore
 -WCmSyV9W0c,Inflo,British Hip-Hop
--_Ge4EdHmF4,Ken Carson,Rage
--_Ps26N9xOc,Pharrell Williams,Alternative Hip-Hop
--_bK5YXYRzM,Massive Attack,Trip Hop
--aJop5GXp0U,Tech N9ne,Chopper
--aMNM2weuFM,DJ Shadow,Instrumental Hip-Hop
--abJoPxfAPo,Paul Wall,Chopped and Screwed
--alzfvPuOEE,Migos,Trap
--bDzBVNPpqo,El-P,Industrial Hip-Hop
 -WO-6V6PGcI,Inflo,British Hip-Hop
 -XRuT85KiSw,Lil Rob,Chicano Rap
 -Xlcv2HSQLc,D4L,Snap Music
@@ -135,6 +127,14 @@ track,artist_type,genre
 -YZZKEabyic,King Von,Chicago Drill
 -Yfz6MLhBt4,DJ Quik,West Coast Hip-Hop
 -_9zOexwLBw,Fever 333,Punk Rap
+-_Ge4EdHmF4,Ken Carson,Rage
+-_Ps26N9xOc,Pharrell Williams,Alternative Hip-Hop
+-_bK5YXYRzM,Massive Attack,Trip Hop
+-aJop5GXp0U,Tech N9ne,Chopper
+-aMNM2weuFM,DJ Shadow,Instrumental Hip-Hop
+-abJoPxfAPo,Paul Wall,Chopped and Screwed
+-alzfvPuOEE,Migos,Trap
+-bDzBVNPpqo,El-P,Industrial Hip-Hop
 -bEfxBDxzzk,The Roots,Philadelphia Hip-Hop
 -bKZfM-pmrE,Ghosty,UK Drill
 -bVSzeU7iM0,Playboi Carti,Mumble Rap
@@ -143,14 +143,6 @@ track,artist_type,genre
 -btd3MbI2mQ,The Soulquarians,Neo Soul
 -bwlUmICgtQ,Lil Jon,Crunk
 -bwwWsJZObw,Nas,Boom Bap
--eOc6vxC7Q4,Yeat,Rage
--eYQG4oLpOc,Weird Al Yankovic,Comedy Hip-Hop
--euzx0a8HzY,Dr. Dre,West Coast Hip-Hop
--ev2KItHK64,Mexikodro,Plugg
--evzd1qoavo,Fever 333,Punk Rap
--fIF8sDyO3U,Childish Gambino,Hipster Hop
--fIWw03Jc8I,Fever 333,Punk Rap
--fLabQXbL5c,Big Freedia,Bounce
 -by8yNJszKI,Ghostemane,Trap Metal
 -c0qUON3kg4,Kordhell,Phonk
 -cZBFVaG19c,Slipknot,Nu Metal
@@ -159,6 +151,14 @@ track,artist_type,genre
 -dVYl2H-JIM,DJ Quik,West Coast Hip-Hop
 -dXDwSCJByA,Lil Rob,Chicano Rap
 -e0N2ag4dmM,Diego Money,Plugg
+-eOc6vxC7Q4,Yeat,Rage
+-eYQG4oLpOc,Weird Al Yankovic,Comedy Hip-Hop
+-euzx0a8HzY,Dr. Dre,West Coast Hip-Hop
+-ev2KItHK64,Mexikodro,Plugg
+-evzd1qoavo,Fever 333,Punk Rap
+-fIF8sDyO3U,Childish Gambino,Hipster Hop
+-fIWw03Jc8I,Fever 333,Punk Rap
+-fLabQXbL5c,Big Freedia,Bounce
 -g2HAGs35iE,RZA,East Coast Hip-Hop
 -gE8tM639_0,Pharrell Williams,Alternative Hip-Hop
 -gG7tPsYRrM,Emile Haynie,Hipster Hop
@@ -175,14 +175,6 @@ track,artist_type,genre
 -igMmsuSxTo,The Soulquarians,Neo Soul
 -kZl0fcWK28,2Pac,West Coast Hip-Hop
 -kdvgDoE_Gc,Immortal Technique,Political Hip-Hop
--nf2XF1vMzo,21 Savage,Trap
--nkbdJ0SH0c,T.I.,Southern Hip-Hop
--ohivA8hr6g,UGK,Southern Hip-Hop
--orCihb6Y6A,NWA,Gangsta Rap
--pX9H1_9gRE,Rage Against the Machine,Rap Rock
--pv1ROJmZv8,D12,Detroit Hip-Hop
--qC1Ej6NiPI,Jinsang,Lofi Hip-Hop
--qd-66FI3kE,Soudiere,Phonk
 -klBIalgshg,Mannie Fresh,Bounce
 -kx5ZAm_nyo,Summrs,Pluggnb
 -kxAbmIXMOU,Migos,Trap
@@ -191,6 +183,14 @@ track,artist_type,genre
 -lpF5KlzDxo,Nas,Boom Bap
 -mteI0ODD2w,Lil Dicky,Comedy Hip-Hop
 -nMQvufmemE,D'Angelo,Neo Soul
+-nf2XF1vMzo,21 Savage,Trap
+-nkbdJ0SH0c,T.I.,Southern Hip-Hop
+-ohivA8hr6g,UGK,Southern Hip-Hop
+-orCihb6Y6A,NWA,Gangsta Rap
+-pX9H1_9gRE,Rage Against the Machine,Rap Rock
+-pv1ROJmZv8,D12,Detroit Hip-Hop
+-qC1Ej6NiPI,Jinsang,Lofi Hip-Hop
+-qd-66FI3kE,Soudiere,Phonk
 -qyiJLyyZTo,A$AP Rocky,Cloud Rap
 -rEl6SBk4gA,Stormzy,Grime
 -rGyF749kOk,Pharrell Williams,Alternative Hip-Hop
@@ -239,14 +239,6 @@ track,artist_type,genre
 01VJLY_IazE,Tomppabeats,Chillhop
 01lGR-rrZo4,Snowgoons,Hardcore Hip-Hop
 01pcvq1nbf0,Bubba Sparxxx,Country Rap
-03WlgVIJdGc,Travis Scott,Psychedelic Rap
-03fWixRPxto,Dr. Dre,West Coast Hip-Hop
-040B5lUUiXs,F1lthy,Rage
-04InT8eid-E,Kanye West,Progressive Rap
-04SpAKdesdw,Lil Pump,Mumble Rap
-04iIy2gF8jE,F1lthy,Rage
-04mjcNe0cDg,MF DOOM,Underground Hip-Hop
-04o6hQ5tHMA,Tech N9ne,Chopper
 01u26oLMevU,Clams Casino,Cloud Rap
 01zfqZWcxKE,Twista,Chopper
 02MuooL-HQM,Busta Rhymes,Chopper
@@ -255,14 +247,14 @@ track,artist_type,genre
 03PHIIazVG0,Nine Inch Nails,Industrial Hip-Hop
 03S2BT75p8I,Machine Gun Kelly,Punk Rap
 03TQN126b3o,Autumn!,Pluggnb
-06RpgJH3uPc,Luny Tunes,Reggaeton
-07FsI4vRULs,Colt Ford,Country Rap
-07ZrW1wP-Ks,Paul Wall,Chopped and Screwed
-07gPNxx5sMM,NWA,Gangsta Rap
-07pWZgjhVuA,Playboi Carti,Mumble Rap
-08NLrS0V7No,Young Chop,Chicago Drill
-08SaoQ9eM0s,Lil Peep,Emo Rap
-08zVOrsOkhs,J. Cole,Progressive Rap
+03WlgVIJdGc,Travis Scott,Psychedelic Rap
+03fWixRPxto,Dr. Dre,West Coast Hip-Hop
+040B5lUUiXs,F1lthy,Rage
+04InT8eid-E,Kanye West,Progressive Rap
+04SpAKdesdw,Lil Pump,Mumble Rap
+04iIy2gF8jE,F1lthy,Rage
+04mjcNe0cDg,MF DOOM,Underground Hip-Hop
+04o6hQ5tHMA,Tech N9ne,Chopper
 059bT7OHw9c,Snow Tha Product,Latino Hip-Hop
 05Et01s0N-k,Inflo,British Hip-Hop
 05L6jOULSzg,Kanye West,Progressive Rap
@@ -271,14 +263,14 @@ track,artist_type,genre
 05weMry-RwQ,Lil Dicky,Comedy Hip-Hop
 06OJMUk5W1A,Ghostface Playa,Phonk
 06R7V1ZKCJQ,Idealism,Lofi Hip-Hop
-0CYJuEZ4Ca8,Public Enemy,Political Hip-Hop
-0CatLkURn_E,T.I.,Southern Hip-Hop
-0Ce3-UEWtb8,Kid Cudi,Hipster Hop
-0CmIIqP6GPQ,Philanthrope,Lofi Hip-Hop
-0CzOtYcs7qc,Kid Cudi,Hipster Hop
-0DL_taKkVdg,MF DOOM,Underground Hip-Hop
-0DVqk5Vznp8,Pop Smoke,Brooklyn Drill
-0Dhpy_9KK6A,Big Sean,Detroit Hip-Hop
+06RpgJH3uPc,Luny Tunes,Reggaeton
+07FsI4vRULs,Colt Ford,Country Rap
+07ZrW1wP-Ks,Paul Wall,Chopped and Screwed
+07gPNxx5sMM,NWA,Gangsta Rap
+07pWZgjhVuA,Playboi Carti,Mumble Rap
+08NLrS0V7No,Young Chop,Chicago Drill
+08SaoQ9eM0s,Lil Peep,Emo Rap
+08zVOrsOkhs,J. Cole,Progressive Rap
 09IDAfAWmYg,Keak da Sneak,Hyphy
 09NUdLmwXTE,Snoop Dogg,G-Funk
 09UEktYuCvg,Lil Pump,Mumble Rap
@@ -287,6 +279,14 @@ track,artist_type,genre
 0AhZTT9LbZg,Korn,Nu Metal
 0Bj6QCU3Ggg,The Lonely Island,Comedy Hip-Hop
 0CP7jfMgA4M,A Tribe Called Quest,Jazz Rap
+0CYJuEZ4Ca8,Public Enemy,Political Hip-Hop
+0CatLkURn_E,T.I.,Southern Hip-Hop
+0Ce3-UEWtb8,Kid Cudi,Hipster Hop
+0CmIIqP6GPQ,Philanthrope,Lofi Hip-Hop
+0CzOtYcs7qc,Kid Cudi,Hipster Hop
+0DL_taKkVdg,MF DOOM,Underground Hip-Hop
+0DVqk5Vznp8,Pop Smoke,Brooklyn Drill
+0Dhpy_9KK6A,Big Sean,Detroit Hip-Hop
 0Dpk2Hg-19Y,Pharrell Williams,Alternative Hip-Hop
 0E8fYsOA5io,Anuel AA,Latin Trap
 0EPMHfA2noE,Raekwon,Mafioso Rap
@@ -319,14 +319,6 @@ track,artist_type,genre
 0MtgjeX_N2c,DJ Shadow,Instrumental Hip-Hop
 0NGkC-TtfQI,clipping.,Experimental Hip-Hop
 0NH1Q8q_4fs,Ghostemane,Trap Metal
-0PD5t-yUYzk,Death Grips,Experimental Hip-Hop
-0PF94yFM-Gw,Brotha Lynch Hung,Horrorcore
-0Prb2I-HWjY,J Balvin,Reggaeton
-0PzaMQWpVjI,Birocratic,Chillhop
-0QT6R0lfO24,MF DOOM,Underground Hip-Hop
-0QedmX_DfWA,Aesop Rock,Underground Hip-Hop
-0QlBcZJ12rE,Philanthrope,Lofi Hip-Hop
-0QuQJZHFNVw,Lil Pump,Mumble Rap
 0NNkTj2wNM0,Public Enemy,Political Hip-Hop
 0NjfZyvKCi8,Pharrell Williams,Alternative Hip-Hop
 0NnccOgsDOs,Philanthrope,Lofi Hip-Hop
@@ -335,6 +327,14 @@ track,artist_type,genre
 0OHhbrAYl7U,Scarlxrd,Trap Metal
 0OuV4BVEVwo,Soudiere,Phonk
 0P5hp1Rl_PU,RZA,East Coast Hip-Hop
+0PD5t-yUYzk,Death Grips,Experimental Hip-Hop
+0PF94yFM-Gw,Brotha Lynch Hung,Horrorcore
+0Prb2I-HWjY,J Balvin,Reggaeton
+0PzaMQWpVjI,Birocratic,Chillhop
+0QT6R0lfO24,MF DOOM,Underground Hip-Hop
+0QedmX_DfWA,Aesop Rock,Underground Hip-Hop
+0QlBcZJ12rE,Philanthrope,Lofi Hip-Hop
+0QuQJZHFNVw,Lil Pump,Mumble Rap
 0RL1MrDWWq8,Meek Mill,Philadelphia Hip-Hop
 0RSy6xyGGLg,Eminem,Detroit Hip-Hop
 0RqP3xLxFrc,J. Cole,Progressive Rap
@@ -343,14 +343,6 @@ track,artist_type,genre
 0SgpKlpT0_M,Pete Rock,Boom Bap
 0ShHSKs95Zw,B-Real,Chicano Rap
 0Sz_f5loNCM,Childish Gambino,Hipster Hop
-0VBZdzD8VGs,D'Angelo,Neo Soul
-0VLzWPCM_Dw,Little Simz,British Hip-Hop
-0VjXRNxonrU,Questlove,Philadelphia Hip-Hop
-0Wa2krPqB7E,Childish Gambino,Hipster Hop
-0WdUwQWFbsE,Yeat,Rage
-0WivAeRXxBg,Kupla,Chillhop
-0Wj7_Z-E9Ao,Snowgoons,Hardcore Hip-Hop
-0XKQq1q3A7o,J. Cole,Progressive Rap
 0TKjovrBjSQ,Keak da Sneak,Hyphy
 0Tj9_ugkWVY,DJ Muggs,Latino Hip-Hop
 0Tk8Cq34p6M,A$AP Rocky,Cloud Rap
@@ -359,6 +351,14 @@ track,artist_type,genre
 0ULeTk5FvSc,Pharrell Williams,Alternative Hip-Hop
 0UQO6xUujX8,Childish Gambino,Hipster Hop
 0V3CiznFU5E,Ken Carson,Rage
+0VBZdzD8VGs,D'Angelo,Neo Soul
+0VLzWPCM_Dw,Little Simz,British Hip-Hop
+0VjXRNxonrU,Questlove,Philadelphia Hip-Hop
+0Wa2krPqB7E,Childish Gambino,Hipster Hop
+0WdUwQWFbsE,Yeat,Rage
+0WivAeRXxBg,Kupla,Chillhop
+0Wj7_Z-E9Ao,Snowgoons,Hardcore Hip-Hop
+0XKQq1q3A7o,J. Cole,Progressive Rap
 0XhCYaEBXqc,Raekwon,Mafioso Rap
 0Y23THal8TU,Ken Carson,Rage
 0Y5lv593Gi0,J. Cole,Progressive Rap
@@ -391,14 +391,6 @@ track,artist_type,genre
 0cs_KWpwNIo,Ghostemane,Trap Metal
 0dACz_0asXI,Jay-Z,East Coast Hip-Hop
 0dkowQrp2Ac,Killa Kyleon,Slab Music
-0ivQwwgW4OY,dead prez,Political Hip-Hop
-0j00k3tf2xY,Drake,Pop Rap
-0j5H3L1LFkA,Insane Clown Posse,Horrorcore
-0j5v9_BeUYo,Lil Dicky,Comedy Hip-Hop
-0j7TQIsUnQw,Kid Frost,Chicano Rap
-0kATLR9xSZs,Dr. Dre,West Coast Hip-Hop
-0kSihQg6vsI,Snowgoons,Hardcore Hip-Hop
-0kcmMzUCZrA,Diego Money,Plugg
 0dq-K6zhiX8,Ghostemane,Trap Metal
 0drwcJD4I1o,Summrs,Pluggnb
 0e-E7tnQjNg,Rondodasosa,Afro Drill
@@ -415,6 +407,14 @@ track,artist_type,genre
 0hjji9aCzAg,2Pac,West Coast Hip-Hop
 0hq_3UCT_kY,Central Cee,UK Drill
 0iSWU1Mzprc,Ying Yang Twins,Crunk
+0ivQwwgW4OY,dead prez,Political Hip-Hop
+0j00k3tf2xY,Drake,Pop Rap
+0j5H3L1LFkA,Insane Clown Posse,Horrorcore
+0j5v9_BeUYo,Lil Dicky,Comedy Hip-Hop
+0j7TQIsUnQw,Kid Frost,Chicano Rap
+0kATLR9xSZs,Dr. Dre,West Coast Hip-Hop
+0kSihQg6vsI,Snowgoons,Hardcore Hip-Hop
+0kcmMzUCZrA,Diego Money,Plugg
 0ky8sDYjz-g,Lupe Fiasco,Progressive Rap
 0l1ey912RBk,Pharrell Williams,Alternative Hip-Hop
 0lFriqeel3o,Digable Planets,Jazz Rap
@@ -439,14 +439,6 @@ track,artist_type,genre
 0qAcs2K6OQ8,E-40,Hyphy
 0qTMHO4tLIw,Wiley,Grime
 0qXqiJHcQlA,Pi'erre Bourne,Mumble Rap
-0smDKv2A5Eg,Pete Rock,Boom Bap
-0sxrQaWL6-k,Birocratic,Chillhop
-0t-BUr3rtWg,Twista,Chopper
-0t00bGNQbfY,Insane Clown Posse,Horrorcore
-0tOCK4ds-zQ,Little Simz,British Hip-Hop
-0tlJmNC4EF4,Pharrell Williams,Alternative Hip-Hop
-0uKax5wWca8,Lil Jon,Crunk
-0uOJHRHDchQ,Outkast,Alternative Hip-Hop
 0r5Ltqv1HJc,Rondodasosa,Afro Drill
 0rOer3k2DWg,Busta Rhymes,Chopper
 0rbWLDjopaM,Pharrell Williams,Alternative Hip-Hop
@@ -455,6 +447,14 @@ track,artist_type,genre
 0sU88NNBWbw,Ken Carson,Rage
 0saUoBA8njw,Onyx,Hardcore Hip-Hop
 0sgZNrgqpKE,Killa Kyleon,Slab Music
+0smDKv2A5Eg,Pete Rock,Boom Bap
+0sxrQaWL6-k,Birocratic,Chillhop
+0t-BUr3rtWg,Twista,Chopper
+0t00bGNQbfY,Insane Clown Posse,Horrorcore
+0tOCK4ds-zQ,Little Simz,British Hip-Hop
+0tlJmNC4EF4,Pharrell Williams,Alternative Hip-Hop
+0uKax5wWca8,Lil Jon,Crunk
+0uOJHRHDchQ,Outkast,Alternative Hip-Hop
 0vPv8qvlEBQ,Mr. Collipark,Snap Music
 0vsnOfH9IsQ,Autumn!,Pluggnb
 0w0X7fzku88,Diego Money,Plugg
@@ -463,14 +463,6 @@ track,artist_type,genre
 0xZW4YIiymU,Inflo,British Hip-Hop
 0xsQTQQbkQs,Pop Smoke,Brooklyn Drill
 0yNh0az27K0,Juice WRLD,Emo Rap
-1-2Bf1Hj7zk,The Roots,Philadelphia Hip-Hop
-10Ew2d1FDVE,Nas,Boom Bap
-10Mbl3s3KWw,Playboi Carti,Mumble Rap
-10hU1S5F4Dg,clipping.,Experimental Hip-Hop
-10r_8PvhnN0,Yung Lean,Cloud Rap
-117f8YTBQBY,Young Chop,Chicago Drill
-11tajlI6aU4,T.I.,Southern Hip-Hop
-12D6XwYi-3E,Birocratic,Chillhop
 0yQ1hDeKTHw,Idealism,Lofi Hip-Hop
 0yW7NBNDlLU,Ghostemane,Trap Metal
 0ybs1J7z1FU,clipping.,Experimental Hip-Hop
@@ -479,14 +471,14 @@ track,artist_type,genre
 0zJ00yGFv8E,Snoop Dogg,G-Funk
 0zjXu6RGsLY,Ice Cube,Gangsta Rap
 0zkZl13Pz7o,Snow Tha Product,Latino Hip-Hop
-15NDgbPyQgw,Lil Scrappy,Crunk
-15cL_NHTLoI,Idealism,Lofi Hip-Hop
-165q1Va5NIA,Insane Clown Posse,Horrorcore
-168P__mRklk,Lauryn Hill,Neo Soul
-16rMC3bAQ6Q,Lil Nas X,Country Rap
-17l0aVtrfdQ,Run-DMC,Rap Rock
-17tScdsznIA,Nines,Road Rap
-18VfZqy-oBI,Yung Lean,Cloud Rap
+1-2Bf1Hj7zk,The Roots,Philadelphia Hip-Hop
+10Ew2d1FDVE,Nas,Boom Bap
+10Mbl3s3KWw,Playboi Carti,Mumble Rap
+10hU1S5F4Dg,clipping.,Experimental Hip-Hop
+10r_8PvhnN0,Yung Lean,Cloud Rap
+117f8YTBQBY,Young Chop,Chicago Drill
+11tajlI6aU4,T.I.,Southern Hip-Hop
+12D6XwYi-3E,Birocratic,Chillhop
 13KUxLwTgLo,Ken Carson,Rage
 13XqjsYmhiM,King Von,Chicago Drill
 13_j-vqC--8,The Soulquarians,Neo Soul
@@ -495,14 +487,14 @@ track,artist_type,genre
 14nYbuU3Hcg,Luny Tunes,Reggaeton
 14xWJxHU2_M,Zaytoven,Georgia Trap
 15AhKIyAbBc,9th Wonder,Conscious Hip-Hop
-1B9YXmGXsw0,Organized Noize,Southern Hip-Hop
-1BTaUKgoGIs,dltzk,Digicore
-1BbwZgs2VdM,Travis Scott,Psychedelic Rap
-1Bd5NrZNRc4,Tomppabeats,Chillhop
-1BgHs_Jr01c,Kool G Rap,Mafioso Rap
-1C4wn_b3ibU,Fivio Foreign,Brooklyn Drill
-1CCj4vvzkuY,Mac Dre,Hyphy
-1CTq4pdJIF4,Keak da Sneak,Hyphy
+15NDgbPyQgw,Lil Scrappy,Crunk
+15cL_NHTLoI,Idealism,Lofi Hip-Hop
+165q1Va5NIA,Insane Clown Posse,Horrorcore
+168P__mRklk,Lauryn Hill,Neo Soul
+16rMC3bAQ6Q,Lil Nas X,Country Rap
+17l0aVtrfdQ,Run-DMC,Rap Rock
+17tScdsznIA,Nines,Road Rap
+18VfZqy-oBI,Yung Lean,Cloud Rap
 18gQCyIdV2A,Brokencyde,Crunkcore
 18mfphH1mnM,Pharrell Williams,Alternative Hip-Hop
 197feJwFsHw,Gravediggaz,Horrorcore
@@ -511,6 +503,14 @@ track,artist_type,genre
 1A2Hjb3ckYw,Travis Scott,Psychedelic Rap
 1APFHxymEz4,Ken Carson,Rage
 1AggcYry1w4,Pop Smoke,Brooklyn Drill
+1B9YXmGXsw0,Organized Noize,Southern Hip-Hop
+1BTaUKgoGIs,dltzk,Digicore
+1BbwZgs2VdM,Travis Scott,Psychedelic Rap
+1Bd5NrZNRc4,Tomppabeats,Chillhop
+1BgHs_Jr01c,Kool G Rap,Mafioso Rap
+1C4wn_b3ibU,Fivio Foreign,Brooklyn Drill
+1CCj4vvzkuY,Mac Dre,Hyphy
+1CTq4pdJIF4,Keak da Sneak,Hyphy
 1CobyVk6wJ0,Jinsang,Lofi Hip-Hop
 1CvjoOAjCH8,Lil Rob,Chicano Rap
 1DGWy8HJ4mc,Soudiere,Phonk
@@ -535,22 +535,6 @@ track,artist_type,genre
 1HvGxmt7sbU,Outkast,Alternative Hip-Hop
 1I8MewpFu6Y,Jay-Z,East Coast Hip-Hop
 1IixZyZgmj0,Bubba Sparxxx,Country Rap
-1Ob8mV7TA70,Headie One,UK Drill
-1OdBahO5tQs,Dr. Dre,West Coast Hip-Hop
-1Ofwohj-thc,Nate Dogg,G-Funk
-1Owc2RpFqTw,NWA,Gangsta Rap
-1P3oeXCk1xE,Blockhead,Instrumental Hip-Hop
-1P9p3P5dgp8,Peso Pluma,Mexican Drill
-1PatzK6sixs,Rage Against the Machine,Rap Rock
-1QWEPdgS3As,A Tribe Called Quest,Jazz Rap
-1Lfyci7QwmE,Gucci Mane,Georgia Trap
-1M-vzpxuz-4,UGK,Southern Hip-Hop
-1MVxRADPNd0,Nate Dogg,G-Funk
-1NK0pUMxLDQ,Paul Wall,Chopped and Screwed
-1NiYZuXbrZg,King Von,Chicago Drill
-1NmPM7ppIjc,Ice Cube,Gangsta Rap
-1OGh4p773Jo,D'Angelo,Neo Soul
-1ONBGmXwc8Y,Snoop Dogg,G-Funk
 1Izdo58Hp04,DJ Screw,Chopped and Screwed
 1J85dmaeg3A,Birocratic,Chillhop
 1JSNZDYJPLQ,Central Cee,UK Drill
@@ -559,6 +543,22 @@ track,artist_type,genre
 1Kdn8-bwnyI,UGK,Southern Hip-Hop
 1L-EZiRr2KQ,Autumn!,Pluggnb
 1LKfbFjbnfY,Insane Clown Posse,Horrorcore
+1Lfyci7QwmE,Gucci Mane,Georgia Trap
+1M-vzpxuz-4,UGK,Southern Hip-Hop
+1MVxRADPNd0,Nate Dogg,G-Funk
+1NK0pUMxLDQ,Paul Wall,Chopped and Screwed
+1NiYZuXbrZg,King Von,Chicago Drill
+1NmPM7ppIjc,Ice Cube,Gangsta Rap
+1OGh4p773Jo,D'Angelo,Neo Soul
+1ONBGmXwc8Y,Snoop Dogg,G-Funk
+1Ob8mV7TA70,Headie One,UK Drill
+1OdBahO5tQs,Dr. Dre,West Coast Hip-Hop
+1Ofwohj-thc,Nate Dogg,G-Funk
+1Owc2RpFqTw,NWA,Gangsta Rap
+1P3oeXCk1xE,Blockhead,Instrumental Hip-Hop
+1P9p3P5dgp8,Peso Pluma,Mexican Drill
+1PatzK6sixs,Rage Against the Machine,Rap Rock
+1QWEPdgS3As,A Tribe Called Quest,Jazz Rap
 1Qkf61YdyZI,Jinsang,Lofi Hip-Hop
 1R8WxVDMthM,Stormzy,Grime
 1RPntaSbQbg,DJ Screw,Chopped and Screwed
@@ -735,14 +735,6 @@ track,artist_type,genre
 29R6xz0rwQw,Kid Frost,Chicano Rap
 29XvLBaqY_Y,Big Freedia,Bounce
 29nlcbkcjEI,Kordhell,Phonk
-2Bu8INhCzTI,Pop Smoke,Brooklyn Drill
-2C9JeSiiSOg,BROCKHAMPTON,Psychedelic Rap
-2Ca7iF-XmFE,Mary J. Blige,Hip-Hop Soul
-2CiViF87N4o,21 Savage,Trap
-2CqFByRs920,Big Freedia,Bounce
-2Cs-ikCx8uM,Drake,Pop Rap
-2D-XpvabEIQ,MF DOOM,Underground Hip-Hop
-2DuNVXJufmE,Post Malone,Pop Rap
 2AGRrd3lGvU,Warren G,G-Funk
 2ANyFJmFiE4,Nine Inch Nails,Industrial Hip-Hop
 2ARQz-vE0W4,Bad Bunny,Latin Trap
@@ -751,6 +743,14 @@ track,artist_type,genre
 2BMcs_0I5mk,Nine Inch Nails,Industrial Hip-Hop
 2BUAHbsRHj4,Chief Keef,Chicago Drill
 2Bk0138luZ8,Ken Carson,Rage
+2Bu8INhCzTI,Pop Smoke,Brooklyn Drill
+2C9JeSiiSOg,BROCKHAMPTON,Psychedelic Rap
+2Ca7iF-XmFE,Mary J. Blige,Hip-Hop Soul
+2CiViF87N4o,21 Savage,Trap
+2CqFByRs920,Big Freedia,Bounce
+2Cs-ikCx8uM,Drake,Pop Rap
+2D-XpvabEIQ,MF DOOM,Underground Hip-Hop
+2DuNVXJufmE,Post Malone,Pop Rap
 2DuTXhgvDYE,Big Freedia,Bounce
 2E5Ch7i-XsQ,Busta Rhymes,Chopper
 2E81rMnFpWk,Anuel AA,Latin Trap
@@ -919,14 +919,6 @@ track,artist_type,genre
 3-DhmogpidI,Peso Pluma,Mexican Drill
 3-RLBIlqy40,DJ Quik,West Coast Hip-Hop
 3-bgCGiM4Cg,Kid Cudi,Hipster Hop
-337nXBGY3QU,Tainy,Latin Trap
-33BaoRLpgd8,Jay-Z,East Coast Hip-Hop
-34vfKxV8njs,2Pac,West Coast Hip-Hop
-357i2kTEKRs,SL,Afro Drill
-35LLhow1o-0,Kordhell,Phonk
-35PD9E2kF-0,Kordhell,Phonk
-35TNbGUupZ8,Macklemore,Pop Rap
-36CSeG16AG8,Nujabes,Lofi Hip-Hop
 3-emd-CTwsc,Common,Conscious Hip-Hop
 315k9D3k3EY,Puff Daddy,Hip-Hop Soul
 31fNLX5_uFs,Soudiere,Phonk
@@ -935,6 +927,14 @@ track,artist_type,genre
 32pCeyCOFGE,Blockhead,Instrumental Hip-Hop
 32sjoxrsbpA,Big Sean,Detroit Hip-Hop
 3326E2xJfjg,RZA,East Coast Hip-Hop
+337nXBGY3QU,Tainy,Latin Trap
+33BaoRLpgd8,Jay-Z,East Coast Hip-Hop
+34vfKxV8njs,2Pac,West Coast Hip-Hop
+357i2kTEKRs,SL,Afro Drill
+35LLhow1o-0,Kordhell,Phonk
+35PD9E2kF-0,Kordhell,Phonk
+35TNbGUupZ8,Macklemore,Pop Rap
+36CSeG16AG8,Nujabes,Lofi Hip-Hop
 36eD_pb_gWw,Chief Keef,Chicago Drill
 36ibvRMLIfE,Rage Against the Machine,Rap Rock
 36jB20Zmi1A,Nine Inch Nails,Industrial Hip-Hop
@@ -967,14 +967,6 @@ track,artist_type,genre
 3DVd-FqQOmY,Juice WRLD,Emo Rap
 3Dm5Skb7jgc,Colt Ford,Country Rap
 3E8Qot5jD-A,Scarlxrd,Trap Metal
-3JsOjJDl_Zc,Carns Hill,Road Rap
-3K1tXh-bg9o,Gravediggaz,Horrorcore
-3KGNjbrk5PA,Playboi Carti,Mumble Rap
-3KzL8qJlsa8,Chief Keef,Chicago Drill
-3L5VDnob1Yk,Kanye West,Progressive Rap
-3LgBbk2_ylE,Ho99o9,Industrial Hip-Hop
-3Lh6vMNeCIs,JPEGMAFIA,Experimental Hip-Hop
-3LntM7gyNO8,Colt Ford,Country Rap
 3F5Q7n48IGY,Stormzy,Grime
 3FADYV59m3I,Pi'erre Bourne,Mumble Rap
 3FJ9E4FDc_E,Onyx,Hardcore Hip-Hop
@@ -983,6 +975,14 @@ track,artist_type,genre
 3G3JkjZznqc,Snowgoons,Hardcore Hip-Hop
 3IlAvs7gWYk,Lil Pump,Mumble Rap
 3JM4-BAekI4,UGK,Southern Hip-Hop
+3JsOjJDl_Zc,Carns Hill,Road Rap
+3K1tXh-bg9o,Gravediggaz,Horrorcore
+3KGNjbrk5PA,Playboi Carti,Mumble Rap
+3KzL8qJlsa8,Chief Keef,Chicago Drill
+3L5VDnob1Yk,Kanye West,Progressive Rap
+3LgBbk2_ylE,Ho99o9,Industrial Hip-Hop
+3Lh6vMNeCIs,JPEGMAFIA,Experimental Hip-Hop
+3LntM7gyNO8,Colt Ford,Country Rap
 3LpWADCYaTs,Daddy Yankee,Reggaeton
 3M29owu3vf8,Outkast,Alternative Hip-Hop
 3M2z31UAorY,Bubba Sparxxx,Country Rap
@@ -1015,14 +1015,6 @@ track,artist_type,genre
 3QcHL9thzcE,Tech N9ne,Chopper
 3RFCHC9a9vk,Linkin Park,Rap Rock
 3RXaPe0CfV0,slowthai,Punk Rap
-3Ve4eyuqQLI,Stormzy,Grime
-3VoqE4Y8bEM,Kendrick Lamar,Conscious Hip-Hop
-3W3QTGyatwE,T.I.,Southern Hip-Hop
-3WJyaQRHOeo,F1lthy,Rage
-3Wkqn5sfVDE,Snoop Dogg,G-Funk
-3X5gSzGtd8I,Lil Peep,Emo Rap
-3X6NhhOUPRA,Snowgoons,Hardcore Hip-Hop
-3XBu3Tq-wfk,Nines,Road Rap
 3SRnUhtf0co,Autumn!,Pluggnb
 3SjyAdgzRhw,Immortal Technique,Political Hip-Hop
 3TFGsPeSgAI,Ying Yang Twins,Crunk
@@ -1031,6 +1023,14 @@ track,artist_type,genre
 3TxO1JtcYJ0,Lil Peep,Emo Rap
 3UAMTiOS-aM,JPEGMAFIA,Experimental Hip-Hop
 3VTU7dms7Ls,Meek Mill,Philadelphia Hip-Hop
+3Ve4eyuqQLI,Stormzy,Grime
+3VoqE4Y8bEM,Kendrick Lamar,Conscious Hip-Hop
+3W3QTGyatwE,T.I.,Southern Hip-Hop
+3WJyaQRHOeo,F1lthy,Rage
+3Wkqn5sfVDE,Snoop Dogg,G-Funk
+3X5gSzGtd8I,Lil Peep,Emo Rap
+3X6NhhOUPRA,Snowgoons,Hardcore Hip-Hop
+3XBu3Tq-wfk,Nines,Road Rap
 3XuQeTE9_sU,Clams Casino,Cloud Rap
 3XzekyhZ-PE,Limp Bizkit,Nu Metal
 3Y9OvRVgwes,Delinquent Habits,Latino Hip-Hop
@@ -1079,14 +1079,6 @@ track,artist_type,genre
 3gNkhzY7Tts,Q-Tip,Jazz Rap
 3gZFWCBBlrQ,Central Cee,UK Drill
 3glhj7sD-lw,Jay-Z,East Coast Hip-Hop
-3kg8DGB5neU,Pete Rock,Boom Bap
-3koGpj8iGWw,Rage Against the Machine,Rap Rock
-3kop77UlY3k,Puff Daddy,Hip-Hop Soul
-3l8Eid-PogI,Philanthrope,Lofi Hip-Hop
-3lIrrFK03UU,A$AP Rocky,Cloud Rap
-3m4TnMLcggY,Anuel AA,Latin Trap
-3mB71JDrhCc,Rage Against the Machine,Rap Rock
-3n7pCCR5TQE,Eminem,Detroit Hip-Hop
 3hDrPndu5Bg,Lil Peep,Emo Rap
 3i71gh0DCZM,MF DOOM,Underground Hip-Hop
 3iHlj-pxg3o,Anuel AA,Latin Trap
@@ -1095,6 +1087,14 @@ track,artist_type,genre
 3j0zdMlPlGc,Snowgoons,Hardcore Hip-Hop
 3jXIfcxmOXI,Fivio Foreign,Brooklyn Drill
 3jq0z4nZNaw,Korn,Nu Metal
+3kg8DGB5neU,Pete Rock,Boom Bap
+3koGpj8iGWw,Rage Against the Machine,Rap Rock
+3kop77UlY3k,Puff Daddy,Hip-Hop Soul
+3l8Eid-PogI,Philanthrope,Lofi Hip-Hop
+3lIrrFK03UU,A$AP Rocky,Cloud Rap
+3m4TnMLcggY,Anuel AA,Latin Trap
+3mB71JDrhCc,Rage Against the Machine,Rap Rock
+3n7pCCR5TQE,Eminem,Detroit Hip-Hop
 3nM4exnRp64,Linkin Park,Rap Rock
 3nPhQPvAw4k,Tricky,Trip Hop
 3nRHy2Rr9OQ,Yung Lean,Cloud Rap
@@ -1111,14 +1111,6 @@ track,artist_type,genre
 3qCAIOowrXU,Fivio Foreign,Brooklyn Drill
 3qmMhnRYpi4,El-P,Industrial Hip-Hop
 3qoahFVCrls,Travis Scott,Psychedelic Rap
-3tFN8_CW9g8,Natanael Cano,Mexican Drill
-3tJnpVCV8is,"Tyler, The Creator",Alternative Hip-Hop
-3tjoDraBC-w,Metro Boomin,Trap
-3to-xEi25Fc,Raekwon,Mafioso Rap
-3u0mXYcuTOI,Autumn!,Pluggnb
-3u3SoiSqhM8,Colt Ford,Country Rap
-3uB1uSIgtgo,Pop Smoke,Brooklyn Drill
-3ubgyO7LGRc,Busta Rhymes,Chopper
 3r8QMoCG3hM,Lil Scrappy,Crunk
 3rFQuGVWOAM,Weird Al Yankovic,Comedy Hip-Hop
 3rId_AqbJTo,Eminem,Detroit Hip-Hop
@@ -1127,6 +1119,14 @@ track,artist_type,genre
 3s1mOZE_47I,Ken Carson,Rage
 3sPWJJxdAds,Kanye West,Progressive Rap
 3t8DnDccFv8,Kanye West,Progressive Rap
+3tFN8_CW9g8,Natanael Cano,Mexican Drill
+3tJnpVCV8is,"Tyler, The Creator",Alternative Hip-Hop
+3tjoDraBC-w,Metro Boomin,Trap
+3to-xEi25Fc,Raekwon,Mafioso Rap
+3u0mXYcuTOI,Autumn!,Pluggnb
+3u3SoiSqhM8,Colt Ford,Country Rap
+3uB1uSIgtgo,Pop Smoke,Brooklyn Drill
+3ubgyO7LGRc,Busta Rhymes,Chopper
 3uj_1k-X1Bo,Wiley,Grime
 3unVdhtIEoo,Gravediggaz,Horrorcore
 3uqRjRdid1U,Brotha Lynch Hung,Horrorcore
@@ -1207,22 +1207,6 @@ track,artist_type,genre
 4Cz5ZYc2qT0,Ghostface Playa,Phonk
 4D7u5KF7SP8,Pharrell Williams,Alternative Hip-Hop
 4DKJbuMBUb4,Busta Rhymes,Chopper
-4Kc3dD8yXfg,Diego Money,Plugg
-4L0Ae-k6eZM,The Soulquarians,Neo Soul
-4L10cgF1zZI,Run-DMC,Rap Rock
-4LNvW15wUo8,The Lonely Island,Comedy Hip-Hop
-4MEjq2E3MW4,Puff Daddy,Hip-Hop Soul
-4NBc9Fzi-gA,Zaytoven,Georgia Trap
-4NmKrjnRn-A,Killa Kyleon,Slab Music
-4NuXF0OCAc0,dead prez,Political Hip-Hop
-4H_QVYjSi7g,Ho99o9,Industrial Hip-Hop
-4HvRn1uHoS8,Philanthrope,Lofi Hip-Hop
-4I4SmQ8sVXo,Bubba Sparxxx,Country Rap
-4J8X4uqImfE,The Roots,Philadelphia Hip-Hop
-4JOVCjI6e5U,Emile Haynie,Hipster Hop
-4JVQYOwI2nE,F1lthy,Rage
-4KEJQ3S8Vco,Ken Carson,Rage
-4KHHBv-_erQ,Ghostemane,Trap Metal
 4DbiNa4eneM,Summrs,Pluggnb
 4DiJncukxTI,Insane Clown Posse,Horrorcore
 4DlX0O70Wp4,Korn,Nu Metal
@@ -1231,6 +1215,22 @@ track,artist_type,genre
 4EXuTImF57w,Diego Money,Plugg
 4H3uOC14F8U,clipping.,Experimental Hip-Hop
 4HLT34Tme7I,Kid Cudi,Hipster Hop
+4H_QVYjSi7g,Ho99o9,Industrial Hip-Hop
+4HvRn1uHoS8,Philanthrope,Lofi Hip-Hop
+4I4SmQ8sVXo,Bubba Sparxxx,Country Rap
+4J8X4uqImfE,The Roots,Philadelphia Hip-Hop
+4JOVCjI6e5U,Emile Haynie,Hipster Hop
+4JVQYOwI2nE,F1lthy,Rage
+4KEJQ3S8Vco,Ken Carson,Rage
+4KHHBv-_erQ,Ghostemane,Trap Metal
+4Kc3dD8yXfg,Diego Money,Plugg
+4L0Ae-k6eZM,The Soulquarians,Neo Soul
+4L10cgF1zZI,Run-DMC,Rap Rock
+4LNvW15wUo8,The Lonely Island,Comedy Hip-Hop
+4MEjq2E3MW4,Puff Daddy,Hip-Hop Soul
+4NBc9Fzi-gA,Zaytoven,Georgia Trap
+4NmKrjnRn-A,Killa Kyleon,Slab Music
+4NuXF0OCAc0,dead prez,Political Hip-Hop
 4NyCTqaF5G4,Wiley,Grime
 4O30a6xE-PU,Lil Scrappy,Crunk
 4O37FUQeraw,Outkast,Alternative Hip-Hop
@@ -1255,14 +1255,6 @@ track,artist_type,genre
 4VJeHf4bJGY,ericdoa,Digicore
 4VR9nipnGRY,Wiley,Grime
 4W28Jmu0lps,Raekwon,Mafioso Rap
-4YOVC5OBk3Q,King Von,Chicago Drill
-4YY_7ZtMajs,Kordhell,Phonk
-4Y_RROrVfB8,Bubba Sparxxx,Country Rap
-4YaJhmC8Tl4,F1lthy,Rage
-4Yc_VmUhkhI,Tony Shhnow,Plugg
-4Z6sF1WbE6Y,Bubba Sparxxx,Country Rap
-4ZmGaixttRY,Rondodasosa,Afro Drill
-4_CVCjwA7f8,Gravediggaz,Horrorcore
 4WHkJbh_KlM,Lil Jon,Crunk
 4WYqAJiI4vU,Scarlxrd,Trap Metal
 4XIG-Ugafwk,"Tyler, The Creator",Alternative Hip-Hop
@@ -1271,6 +1263,14 @@ track,artist_type,genre
 4XuIDlLKfOI,Jinsang,Lofi Hip-Hop
 4Y-GaeLcLQA,Public Enemy,Political Hip-Hop
 4YOR-OoRJDs,Common,Conscious Hip-Hop
+4YOVC5OBk3Q,King Von,Chicago Drill
+4YY_7ZtMajs,Kordhell,Phonk
+4Y_RROrVfB8,Bubba Sparxxx,Country Rap
+4YaJhmC8Tl4,F1lthy,Rage
+4Yc_VmUhkhI,Tony Shhnow,Plugg
+4Z6sF1WbE6Y,Bubba Sparxxx,Country Rap
+4ZmGaixttRY,Rondodasosa,Afro Drill
+4_CVCjwA7f8,Gravediggaz,Horrorcore
 4_lglzOIEZA,"Tyler, The Creator",Alternative Hip-Hop
 4_yOqYk8AOQ,DJ Muggs,Latino Hip-Hop
 4aZLCF9FlVs,The Roots,Philadelphia Hip-Hop
@@ -1279,14 +1279,6 @@ track,artist_type,genre
 4bNQ939WOfM,Peso Pluma,Mexican Drill
 4bbyvtns0P8,Rage Against the Machine,Rap Rock
 4c-fYVhkACY,Lil Peep,Emo Rap
-4fJXBRXMrQI,MF DOOM,Underground Hip-Hop
-4ffyDJ1_8YI,Young Chop,Chicago Drill
-4gD4SRn_lFk,Skepta,Grime
-4gQfzWxxtxE,Juvenile,Bounce
-4gVJOVataDw,Jay-Z,East Coast Hip-Hop
-4gZd9jRzAnA,Slipknot,Nu Metal
-4giTLsX570A,Inflo,British Hip-Hop
-4gnN-Q7ycp8,E-40,Hyphy
 4c64BwKOdWs,NWA,Gangsta Rap
 4cv5fsHX_Fw,The Soulquarians,Neo Soul
 4d5jZ-DBF5E,A$AP Rocky,Cloud Rap
@@ -1295,6 +1287,14 @@ track,artist_type,genre
 4e9whwwov5w,B-Real,Chicano Rap
 4elKb6F4qAs,Q-Tip,Jazz Rap
 4f4vhpd86B8,RZA,East Coast Hip-Hop
+4fJXBRXMrQI,MF DOOM,Underground Hip-Hop
+4ffyDJ1_8YI,Young Chop,Chicago Drill
+4gD4SRn_lFk,Skepta,Grime
+4gQfzWxxtxE,Juvenile,Bounce
+4gVJOVataDw,Jay-Z,East Coast Hip-Hop
+4gZd9jRzAnA,Slipknot,Nu Metal
+4giTLsX570A,Inflo,British Hip-Hop
+4gnN-Q7ycp8,E-40,Hyphy
 4hEqqAnoma0,Juice WRLD,Emo Rap
 4hJxWM4FoYU,Tricky,Trip Hop
 4hZExgTWBNk,Mac Dre,Hyphy
@@ -1447,14 +1447,6 @@ track,artist_type,genre
 5Krp8U7ocHA,Tainy,Latin Trap
 5KytCuhQip8,clipping.,Experimental Hip-Hop
 5LUcTy9vfyQ,Migos,Trap
-5OW-zoPMeWc,E-40,Hyphy
-5OlzzftYuHs,Zaytoven,Georgia Trap
-5OpYR50zhac,F1lthy,Rage
-5OryRL_SoJU,Skepta,Grime
-5OtRB8O6zEQ,21 Savage,Trap
-5P274OAK7Vw,Kid Frost,Chicano Rap
-5P5tQetfh04,Kool G Rap,Mafioso Rap
-5P6S_V49vhY,J. Cole,Progressive Rap
 5LxCICsV7Lk,Puff Daddy,Hip-Hop Soul
 5MyGXN3Drtc,Eminem,Detroit Hip-Hop
 5N-ZTMlHkls,Z-Ro,Chopped and Screwed
@@ -1463,14 +1455,14 @@ track,artist_type,genre
 5Na7h5G4qng,DJ Quik,West Coast Hip-Hop
 5NtIkphXS9Y,Limp Bizkit,Nu Metal
 5OPwYZY_gAA,Kordhell,Phonk
-5QsH93AXec0,DJ Shadow,Instrumental Hip-Hop
-5R6qsu0Fyq8,Kid Cudi,Hipster Hop
-5RHcTOwEiGY,Dave,British Hip-Hop
-5RKceYpoPGA,Pete Rock,Boom Bap
-5RXqfvmAlYg,Public Enemy,Political Hip-Hop
-5ReK9yHmwZs,Eazy-E,Gangsta Rap
-5RyxBbn4qzI,Tainy,Latin Trap
-5Sc8IJieiUw,Jay-Z,East Coast Hip-Hop
+5OW-zoPMeWc,E-40,Hyphy
+5OlzzftYuHs,Zaytoven,Georgia Trap
+5OpYR50zhac,F1lthy,Rage
+5OryRL_SoJU,Skepta,Grime
+5OtRB8O6zEQ,21 Savage,Trap
+5P274OAK7Vw,Kid Frost,Chicano Rap
+5P5tQetfh04,Kool G Rap,Mafioso Rap
+5P6S_V49vhY,J. Cole,Progressive Rap
 5PdUbmNGaAg,clipping.,Experimental Hip-Hop
 5Pe9s69Gamk,Lil Nas X,Country Rap
 5Pt-GRcrWsw,Wiley,Grime
@@ -1479,6 +1471,14 @@ track,artist_type,genre
 5QMoY3SgdZE,Madlib,Underground Hip-Hop
 5QYWXxLQ5w0,Lil Pump,Mumble Rap
 5QnsaUieP2U,Ronny J,Trap Metal
+5QsH93AXec0,DJ Shadow,Instrumental Hip-Hop
+5R6qsu0Fyq8,Kid Cudi,Hipster Hop
+5RHcTOwEiGY,Dave,British Hip-Hop
+5RKceYpoPGA,Pete Rock,Boom Bap
+5RXqfvmAlYg,Public Enemy,Political Hip-Hop
+5ReK9yHmwZs,Eazy-E,Gangsta Rap
+5RyxBbn4qzI,Tainy,Latin Trap
+5Sc8IJieiUw,Jay-Z,East Coast Hip-Hop
 5ScBOPn1qOA,Future,Trap
 5TNdfaL2EeU,Kool G Rap,Mafioso Rap
 5TS1Djux03c,dltzk,Digicore
@@ -1543,14 +1543,6 @@ track,artist_type,genre
 5hjSM2uPpNg,Macklemore,Pop Rap
 5hr_3aeBNyw,Immortal Technique,Political Hip-Hop
 5iLEQ0lM_7Q,Tainy,Latin Trap
-5laarKZnVWQ,glaive,Digicore
-5ljjLjQBQ5I,Ho99o9,Industrial Hip-Hop
-5mCvXCC9hVc,Mexikodro,Plugg
-5mENoQSpmWY,Kid Cudi,Hipster Hop
-5mEmrNy39Lw,ericdoa,Digicore
-5mKxATWptfc,Daddy Yankee,Reggaeton
-5mgFX20-_sE,XXXTentacion,Emo Rap
-5n9yCzlwgcQ,Nas,Boom Bap
 5iO9CvocmLM,Pharrell Williams,Alternative Hip-Hop
 5ihsl_dbRFo,Lauryn Hill,Neo Soul
 5is69UvpdWE,Limp Bizkit,Nu Metal
@@ -1559,6 +1551,14 @@ track,artist_type,genre
 5jsI9yQDL3o,clipping.,Experimental Hip-Hop
 5jvJjk6MCTo,D'Angelo,Neo Soul
 5la5CewubwQ,Childish Gambino,Hipster Hop
+5laarKZnVWQ,glaive,Digicore
+5ljjLjQBQ5I,Ho99o9,Industrial Hip-Hop
+5mCvXCC9hVc,Mexikodro,Plugg
+5mENoQSpmWY,Kid Cudi,Hipster Hop
+5mEmrNy39Lw,ericdoa,Digicore
+5mKxATWptfc,Daddy Yankee,Reggaeton
+5mgFX20-_sE,XXXTentacion,Emo Rap
+5n9yCzlwgcQ,Nas,Boom Bap
 5nihDZANzAk,Massive Attack,Trip Hop
 5nlpGt7K5cY,Ying Yang Twins,Crunk
 5nxHNkNSJhk,Kanye West,Progressive Rap
@@ -1647,14 +1647,6 @@ track,artist_type,genre
 69-ZrpIp_N8,T.I.,Southern Hip-Hop
 69NHIrn_v3I,NWA,Gangsta Rap
 69Y5zZTGMbM,D'Angelo,Neo Soul
-6D7Hb3P5SwA,The Alchemist,Mafioso Rap
-6DKvbhAprGU,Meek Mill,Philadelphia Hip-Hop
-6DVGK5rqFoQ,Peso Pluma,Mexican Drill
-6Dq91UjIZGA,Tomppabeats,Chillhop
-6DsT2CmofTQ,Public Enemy,Political Hip-Hop
-6Ek5Mk5xqkA,Migos,Trap
-6EwqddQQGBk,Chief Keef,Chicago Drill
-6F-1xXfxLfc,Birocratic,Chillhop
 69_nIwDtD48,Digable Planets,Jazz Rap
 6ACOBwfnk3M,Post Malone,Pop Rap
 6AaTjexAHNw,SL,Afro Drill
@@ -1663,6 +1655,14 @@ track,artist_type,genre
 6C1_fH63BfQ,Erykah Badu,Hip-Hop Soul
 6CHs4x2uqcQ,Pharrell Williams,Alternative Hip-Hop
 6D3a7QugzgQ,Yung Lean,Cloud Rap
+6D7Hb3P5SwA,The Alchemist,Mafioso Rap
+6DKvbhAprGU,Meek Mill,Philadelphia Hip-Hop
+6DVGK5rqFoQ,Peso Pluma,Mexican Drill
+6Dq91UjIZGA,Tomppabeats,Chillhop
+6DsT2CmofTQ,Public Enemy,Political Hip-Hop
+6Ek5Mk5xqkA,Migos,Trap
+6EwqddQQGBk,Chief Keef,Chicago Drill
+6F-1xXfxLfc,Birocratic,Chillhop
 6F7t93v7IEI,Big Freedia,Bounce
 6FWqkd3QBso,D'Angelo,Neo Soul
 6Fy71CzBU4o,2Pac,West Coast Hip-Hop
@@ -1711,14 +1711,6 @@ track,artist_type,genre
 6T830CqjyCE,Ghosty,UK Drill
 6TeoGDg3Qhk,Zaytoven,Georgia Trap
 6TfieAJlNMU,Public Enemy,Political Hip-Hop
-6WqnwVJltfg,Nas,Boom Bap
-6X8WrbJmMvM,J Dilla,Instrumental Hip-Hop
-6XFaCexqhLc,Massive Attack,Trip Hop
-6XkVaNlo9uE,DJ Quik,West Coast Hip-Hop
-6Y1PwTSxU0Y,Peso Pluma,Mexican Drill
-6YCY0uC0i3c,Juvenile,Bounce
-6YGiofqBk4w,The Roots,Philadelphia Hip-Hop
-6Z33m_o5cxs,Emile Haynie,Hipster Hop
 6UFqd19y3rE,Pi'erre Bourne,Mumble Rap
 6UHhJz0lnJE,Jay-Z,East Coast Hip-Hop
 6UWWrTaDHnk,F1lthy,Rage
@@ -1727,6 +1719,14 @@ track,artist_type,genre
 6VVQlRPDhJs,The Notorious B.I.G.,East Coast Hip-Hop
 6WB7AOgX_UE,Yung Lean,Cloud Rap
 6WH51uHDMZM,Anuel AA,Latin Trap
+6WqnwVJltfg,Nas,Boom Bap
+6X8WrbJmMvM,J Dilla,Instrumental Hip-Hop
+6XFaCexqhLc,Massive Attack,Trip Hop
+6XkVaNlo9uE,DJ Quik,West Coast Hip-Hop
+6Y1PwTSxU0Y,Peso Pluma,Mexican Drill
+6YCY0uC0i3c,Juvenile,Bounce
+6YGiofqBk4w,The Roots,Philadelphia Hip-Hop
+6Z33m_o5cxs,Emile Haynie,Hipster Hop
 6ZXwYklPaT8,Organized Noize,Southern Hip-Hop
 6Z_7oAqnX2k,Pharrell Williams,Alternative Hip-Hop
 6Zo8qhqqS0g,Public Enemy,Political Hip-Hop
@@ -1879,14 +1879,6 @@ track,artist_type,genre
 76cjI3TNb40,Wiley,Grime
 77CuJDeB-KE,Gravediggaz,Horrorcore
 77L78uwaDw8,JPEGMAFIA,Experimental Hip-Hop
-7Ax95j3CkPI,Death Grips,Experimental Hip-Hop
-7AzSwGRpqxE,Outkast,Alternative Hip-Hop
-7BCUXIeW5rg,SL,Afro Drill
-7Bc59JQWI9w,21 Savage,Trap
-7BxfM7WyI-E,Eazy-E,Gangsta Rap
-7CJBgDX4DiM,dltzk,Digicore
-7CmbL-0y65Y,Kordhell,Phonk
-7Co0poWaCkg,Lil Pump,Mumble Rap
 78KJ1DDHXNw,DJ Muggs,Latino Hip-Hop
 78TmWZWD6lU,Immortal Technique,Political Hip-Hop
 79AwsAu_IXo,DJ Shadow,Instrumental Hip-Hop
@@ -1895,14 +1887,14 @@ track,artist_type,genre
 79t7a0M9ECY,Lauryn Hill,Neo Soul
 79yYJL1w9Eo,Colt Ford,Country Rap
 7AK_8Td-59E,D'Angelo,Neo Soul
-7F8QS_UtkFk,RZA,East Coast Hip-Hop
-7FPGswmum1Q,Soudiere,Phonk
-7Fb8XIPaCY8,DJ Shadow,Instrumental Hip-Hop
-7Fbx9Vk1Kho,Giggs,Road Rap
-7FmhfDcFtxE,Central Cee,UK Drill
-7GHI-0x1sMw,Unknown T,Afro Drill
-7GTzOemnsuE,Ho99o9,Industrial Hip-Hop
-7GogBoJBYA4,Yung Lean,Cloud Rap
+7Ax95j3CkPI,Death Grips,Experimental Hip-Hop
+7AzSwGRpqxE,Outkast,Alternative Hip-Hop
+7BCUXIeW5rg,SL,Afro Drill
+7Bc59JQWI9w,21 Savage,Trap
+7BxfM7WyI-E,Eazy-E,Gangsta Rap
+7CJBgDX4DiM,dltzk,Digicore
+7CmbL-0y65Y,Kordhell,Phonk
+7Co0poWaCkg,Lil Pump,Mumble Rap
 7CveM9nS1t4,Insane Clown Posse,Horrorcore
 7D2Zk3v9nAY,Fivio Foreign,Brooklyn Drill
 7DITr49Tt1g,Meek Mill,Philadelphia Hip-Hop
@@ -1911,6 +1903,14 @@ track,artist_type,genre
 7DnOzu_49iQ,Post Malone,Pop Rap
 7ErRluvTvMg,Goyxrd,Pluggnb
 7Ev0tXi8WSk,Madlib,Underground Hip-Hop
+7F8QS_UtkFk,RZA,East Coast Hip-Hop
+7FPGswmum1Q,Soudiere,Phonk
+7Fb8XIPaCY8,DJ Shadow,Instrumental Hip-Hop
+7Fbx9Vk1Kho,Giggs,Road Rap
+7FmhfDcFtxE,Central Cee,UK Drill
+7GHI-0x1sMw,Unknown T,Afro Drill
+7GTzOemnsuE,Ho99o9,Industrial Hip-Hop
+7GogBoJBYA4,Yung Lean,Cloud Rap
 7Gug3Wbnan4,Nujabes,Lofi Hip-Hop
 7H-NOJMbliA,Kendrick Lamar,Conscious Hip-Hop
 7H75BXmGZYs,Clams Casino,Cloud Rap
@@ -1991,14 +1991,6 @@ track,artist_type,genre
 7avZvHhTW80,Chief Keef,Chicago Drill
 7bszs1SK-2M,Blockhead,Instrumental Hip-Hop
 7btaomwW_1g,Ronny J,Trap Metal
-7f6jxCmndQA,Scarlxrd,Trap Metal
-7fBUd5tWv6k,DJ Shadow,Instrumental Hip-Hop
-7fv4DgRYOhc,Diego Money,Plugg
-7g8qmrxa5RU,Madlib,Underground Hip-Hop
-7gDPJbfkLEA,Tony Shhnow,Plugg
-7gajSW7yw5I,Kordhell,Phonk
-7gykAAR-dxg,RZA,East Coast Hip-Hop
-7hSbyPrS7Ag,ericdoa,Digicore
 7c5WtM7U09Q,Philanthrope,Lofi Hip-Hop
 7cT_mcqCL1o,Ying Yang Twins,Crunk
 7chS-I_xKag,Pop Smoke,Brooklyn Drill
@@ -2007,6 +1999,14 @@ track,artist_type,genre
 7dMe6s4p9F8,Jinsang,Lofi Hip-Hop
 7dzlv23-dtc,"Tyler, The Creator",Alternative Hip-Hop
 7f3GuzJfVCA,Ying Yang Twins,Crunk
+7f6jxCmndQA,Scarlxrd,Trap Metal
+7fBUd5tWv6k,DJ Shadow,Instrumental Hip-Hop
+7fv4DgRYOhc,Diego Money,Plugg
+7g8qmrxa5RU,Madlib,Underground Hip-Hop
+7gDPJbfkLEA,Tony Shhnow,Plugg
+7gajSW7yw5I,Kordhell,Phonk
+7gykAAR-dxg,RZA,East Coast Hip-Hop
+7hSbyPrS7Ag,ericdoa,Digicore
 7hnBXosbH10,Goyxrd,Pluggnb
 7hxVH-IeW8Q,Giggs,Road Rap
 7iHYGZF25DA,Juvenile,Bounce
@@ -2039,14 +2039,6 @@ track,artist_type,genre
 7ocxub2fsyk,J Dilla,Instrumental Hip-Hop
 7pR9Rkjkm_E,El-P,Industrial Hip-Hop
 7pVfBW6N7QA,Eminem,Detroit Hip-Hop
-7ra5QugQk4M,Ken Carson,Rage
-7rsi8Q8Wu5U,Southside,Georgia Trap
-7sIq7wpDF5I,Outkast,Alternative Hip-Hop
-7sfYazfr-Ic,Twista,Chopper
-7sq-OvxhBcI,Three 6 Mafia,Memphis Rap
-7tGnqvG_d8M,Immortal Technique,Political Hip-Hop
-7tYJfOgEKzQ,Pete Rock,Boom Bap
-7tfrejv5NNk,Nate Dogg,G-Funk
 7pfmPlvCJgI,Jinsang,Lofi Hip-Hop
 7qFc-5-YTa8,Southside,Georgia Trap
 7qU8-ZyMxVg,Wu-Tang Clan,Boom Bap
@@ -2055,6 +2047,14 @@ track,artist_type,genre
 7qrl4dPOH8M,Kendrick Lamar,Conscious Hip-Hop
 7rRE_HMmgVs,Slipknot,Nu Metal
 7rY96aWf_-M,Emile Haynie,Hipster Hop
+7ra5QugQk4M,Ken Carson,Rage
+7rsi8Q8Wu5U,Southside,Georgia Trap
+7sIq7wpDF5I,Outkast,Alternative Hip-Hop
+7sfYazfr-Ic,Twista,Chopper
+7sq-OvxhBcI,Three 6 Mafia,Memphis Rap
+7tGnqvG_d8M,Immortal Technique,Political Hip-Hop
+7tYJfOgEKzQ,Pete Rock,Boom Bap
+7tfrejv5NNk,Nate Dogg,G-Funk
 7tjmi7OlgXk,Erykah Badu,Hip-Hop Soul
 7unmRjfpSRk,Slipknot,Nu Metal
 7vTbm9QpA_4,Peso Pluma,Mexican Drill
@@ -2431,14 +2431,6 @@ track,artist_type,genre
 9vKbSVydYQk,Organized Noize,Southern Hip-Hop
 9vOArfmeSmQ,Killa Kyleon,Slab Music
 9vS32eKqfNM,Lil Peep,Emo Rap
-9zXuQbLF3sY,808Melo,Brooklyn Drill
-9zZDVc5oIXA,Mannie Fresh,Bounce
-A-FlbeL7oNU,Ying Yang Twins,Crunk
-A-XJ3ZWoRic,RZA,East Coast Hip-Hop
-A01FWXXcz_Y,Yeat,Rage
-A1E_1hWBXM8,Inflo,British Hip-Hop
-A1Qf9U2SPW0,Inflo,British Hip-Hop
-A1UgRjvV7HI,Kendrick Lamar,Conscious Hip-Hop
 9wucXZVx5dg,Bubba Sparxxx,Country Rap
 9x6iqtk7AMs,Ken Carson,Rage
 9xOhxdEr5GI,DJ Muggs,Latino Hip-Hop
@@ -2447,6 +2439,14 @@ A1UgRjvV7HI,Kendrick Lamar,Conscious Hip-Hop
 9ydg_IZf6Lk,JPEGMAFIA,Experimental Hip-Hop
 9z71YL1EDDk,Snowgoons,Hardcore Hip-Hop
 9zBLvvRtpVE,NWA,Gangsta Rap
+9zXuQbLF3sY,808Melo,Brooklyn Drill
+9zZDVc5oIXA,Mannie Fresh,Bounce
+A-FlbeL7oNU,Ying Yang Twins,Crunk
+A-XJ3ZWoRic,RZA,East Coast Hip-Hop
+A01FWXXcz_Y,Yeat,Rage
+A1E_1hWBXM8,Inflo,British Hip-Hop
+A1Qf9U2SPW0,Inflo,British Hip-Hop
+A1UgRjvV7HI,Kendrick Lamar,Conscious Hip-Hop
 A1dySGQol6E,The Alchemist,Mafioso Rap
 A1gZfuhER9I,Paul Wall,Chopped and Screwed
 A2AXqOdQ-5o,Little Simz,British Hip-Hop
@@ -2455,14 +2455,6 @@ A3Y13tfhiTc,Macklemore,Pop Rap
 A3YB9DVznxw,MF DOOM,Underground Hip-Hop
 A3h2xh2Y0kw,Idealism,Lofi Hip-Hop
 A3lEgoZuc4k,Daddy Yankee,Reggaeton
-A5Lz74SZl78,Post Malone,Pop Rap
-A5mFh8MhKeU,Organized Noize,Southern Hip-Hop
-A66ZX-_teLE,Puff Daddy,Hip-Hop Soul
-A6Hi_Lps93Q,Unknown T,Afro Drill
-A6SfX0gQT60,dead prez,Political Hip-Hop
-A6fPfczho5Y,Busta Rhymes,Chopper
-A6i-VBmTJJE,Paul Wall,Chopped and Screwed
-A6xlJcAZ_9s,The Notorious B.I.G.,East Coast Hip-Hop
 A3stEhEkfLw,clipping.,Experimental Hip-Hop
 A4KgavMvmgk,D'Angelo,Neo Soul
 A4QT-UOrx7I,Slipknot,Nu Metal
@@ -2471,6 +2463,14 @@ A4l9WECC-yw,DJ Muggs,Latino Hip-Hop
 A59Qro2_uYw,Zaytoven,Georgia Trap
 A5EPkcLhJnA,9th Wonder,Conscious Hip-Hop
 A5IK3n46jlg,Puff Daddy,Hip-Hop Soul
+A5Lz74SZl78,Post Malone,Pop Rap
+A5mFh8MhKeU,Organized Noize,Southern Hip-Hop
+A66ZX-_teLE,Puff Daddy,Hip-Hop Soul
+A6Hi_Lps93Q,Unknown T,Afro Drill
+A6SfX0gQT60,dead prez,Political Hip-Hop
+A6fPfczho5Y,Busta Rhymes,Chopper
+A6i-VBmTJJE,Paul Wall,Chopped and Screwed
+A6xlJcAZ_9s,The Notorious B.I.G.,East Coast Hip-Hop
 A6zfu_aad0A,Wiley,Grime
 A7Fvl0OCSF4,Pop Smoke,Brooklyn Drill
 A7GAu95vzlg,Soudiere,Phonk
@@ -2567,14 +2567,6 @@ AarwN8utZic,E-40,Hyphy
 Ab2zjtoEAls,Kid Cudi,Hipster Hop
 AbeaoYhyP-A,Childish Gambino,Hipster Hop
 AbzhYm0VPGE,T.I.,Southern Hip-Hop
-AeZVTOZ_L3s,B-Real,Chicano Rap
-Aec_pNYG0vA,DJ Shadow,Instrumental Hip-Hop
-AfKUKYS_1Pc,Carns Hill,Road Rap
-AfQFQmJ4ut4,Dave,British Hip-Hop
-AfV9Oe--RXQ,Ghostface Playa,Phonk
-AfzJtVAsPIY,Puff Daddy,Hip-Hop Soul
-AgEEpQgNf-o,Young Chop,Chicago Drill
-AgIJDVpEytI,Busta Rhymes,Chopper
 AcIbtmjIjgM,Carns Hill,Road Rap
 AccSxfGby8c,D'Angelo,Neo Soul
 Ad6x6A63nhc,Gravediggaz,Horrorcore
@@ -2583,6 +2575,14 @@ AdTaf02zO-o,Wiley,Grime
 Ae4Zs12fY0w,Clams Casino,Cloud Rap
 Ae6sc5GMedo,Ghosty,UK Drill
 AeYbGjQWPCg,J Dilla,Instrumental Hip-Hop
+AeZVTOZ_L3s,B-Real,Chicano Rap
+Aec_pNYG0vA,DJ Shadow,Instrumental Hip-Hop
+AfKUKYS_1Pc,Carns Hill,Road Rap
+AfQFQmJ4ut4,Dave,British Hip-Hop
+AfV9Oe--RXQ,Ghostface Playa,Phonk
+AfzJtVAsPIY,Puff Daddy,Hip-Hop Soul
+AgEEpQgNf-o,Young Chop,Chicago Drill
+AgIJDVpEytI,Busta Rhymes,Chopper
 AgIi5jZUrV4,D4L,Snap Music
 AgNGmMrxO_c,Insane Clown Posse,Horrorcore
 AiTWqYepyRA,Eazy-E,Gangsta Rap
@@ -2615,14 +2615,6 @@ AqQ_JkZjCms,Mary J. Blige,Hip-Hop Soul
 Aqqz-iyYbQo,Big Freedia,Bounce
 AqyDtOLYJFo,Junior H,Mexican Drill
 ArRS2VxJrI4,DJ Shadow,Instrumental Hip-Hop
-AuUar4G5zSY,Brotha Lynch Hung,Horrorcore
-Au_ClZAwQWQ,Lil Scrappy,Crunk
-AvkMG36Mi0c,Pete Rock,Boom Bap
-Aw-BtQpnSfU,Luny Tunes,Reggaeton
-AwLPTq4mgk0,Bad Bunny,Latin Trap
-AwrXxeenKdU,Dave,British Hip-Hop
-AxBp9WQzolI,Keak da Sneak,Hyphy
-AxCLExKcRA0,21 Savage,Trap
 ArS7sBDLeME,Ying Yang Twins,Crunk
 AsfX3Dq1q5E,Autumn!,Pluggnb
 AtcOMbQLkr0,The Roots,Philadelphia Hip-Hop
@@ -2631,6 +2623,14 @@ Au-kIBwJVDc,Playboi Carti,Mumble Rap
 AuIdCyqXTqM,Colt Ford,Country Rap
 AuRhWTY9XEM,21 Savage,Trap
 AuU_eFEq7ms,Limp Bizkit,Nu Metal
+AuUar4G5zSY,Brotha Lynch Hung,Horrorcore
+Au_ClZAwQWQ,Lil Scrappy,Crunk
+AvkMG36Mi0c,Pete Rock,Boom Bap
+Aw-BtQpnSfU,Luny Tunes,Reggaeton
+AwLPTq4mgk0,Bad Bunny,Latin Trap
+AwrXxeenKdU,Dave,British Hip-Hop
+AxBp9WQzolI,Keak da Sneak,Hyphy
+AxCLExKcRA0,21 Savage,Trap
 AxU7mVzexFQ,Pharrell Williams,Alternative Hip-Hop
 Axtethe-sSA,Pharrell Williams,Alternative Hip-Hop
 AyaHbPkweLo,The Notorious B.I.G.,East Coast Hip-Hop
@@ -2663,14 +2663,6 @@ B7N4XcVynaE,Pharrell Williams,Alternative Hip-Hop
 B7S1lyDO6T8,Public Enemy,Political Hip-Hop
 B7beWYtTgKY,Gucci Mane,Georgia Trap
 B7vH5GzW0mk,Kid Frost,Chicano Rap
-BAT477KNGfY,"Tyler, The Creator",Alternative Hip-Hop
-BAZLwGeyTt8,Lil Dicky,Comedy Hip-Hop
-BAkmEs0R1rM,"Tyler, The Creator",Alternative Hip-Hop
-BBusTTjFq_0,Gucci Mane,Georgia Trap
-BC5jC6BCXuo,Pete Rock,Boom Bap
-BC8amFAhXFg,Q-Tip,Jazz Rap
-BCk7kCrM0NA,Pi'erre Bourne,Mumble Rap
-BCtQmkxBSkU,Nujabes,Lofi Hip-Hop
 B7vd1VrqwE0,Paul Wall,Chopped and Screwed
 B8MsrWZmpLI,Mexikodro,Plugg
 B8Zq5tbMDiE,Lauryn Hill,Neo Soul
@@ -2679,6 +2671,14 @@ B9Z9N47kJW4,DJ Premier,Boom Bap
 B9_eRF0nS_Q,Summrs,Pluggnb
 B9nPb5sQt6o,Lil Dicky,Comedy Hip-Hop
 BADFrBT_WCs,Nas,Boom Bap
+BAT477KNGfY,"Tyler, The Creator",Alternative Hip-Hop
+BAZLwGeyTt8,Lil Dicky,Comedy Hip-Hop
+BAkmEs0R1rM,"Tyler, The Creator",Alternative Hip-Hop
+BBusTTjFq_0,Gucci Mane,Georgia Trap
+BC5jC6BCXuo,Pete Rock,Boom Bap
+BC8amFAhXFg,Q-Tip,Jazz Rap
+BCk7kCrM0NA,Pi'erre Bourne,Mumble Rap
+BCtQmkxBSkU,Nujabes,Lofi Hip-Hop
 BD5OsYsyrmk,Blockhead,Instrumental Hip-Hop
 BDGSri62els,Dr. Dre,West Coast Hip-Hop
 BDJ1_Cfon78,Linkin Park,Rap Rock
@@ -2743,14 +2743,6 @@ BRbFlxdOIwk,Limp Bizkit,Nu Metal
 BRoMrn5_faM,Warren G,G-Funk
 BRtVIu_Hgc4,DJ Muggs,Latino Hip-Hop
 BS3HgiHPYcs,Giggs,Road Rap
-BUvrp4zRQqY,A Tribe Called Quest,Jazz Rap
-BVO4odmIRIo,Ho99o9,Industrial Hip-Hop
-BWUd_tnG9eE,Tricky,Trip Hop
-BY9RGm6I58w,Snoop Dogg,G-Funk
-BYOOJy6lc40,Death Grips,Experimental Hip-Hop
-BZDEaj_9QhY,The Notorious B.I.G.,East Coast Hip-Hop
-BZDNVxWIV6o,Flying Lotus,Psychedelic Rap
-BZXt15OiExg,Philanthrope,Lofi Hip-Hop
 BSpfle3aJfg,Keak da Sneak,Hyphy
 BTM9AAg_8Hc,Madlib,Underground Hip-Hop
 BT_E7AiO5G8,Dr. Dre,West Coast Hip-Hop
@@ -2759,6 +2751,14 @@ BU-PZfDiew4,Headie One,UK Drill
 BULLNO0X1D0,Fever 333,Punk Rap
 BUjN2iM9Zws,Junior H,Mexican Drill
 BUkNX8GCaZo,RZA,East Coast Hip-Hop
+BUvrp4zRQqY,A Tribe Called Quest,Jazz Rap
+BVO4odmIRIo,Ho99o9,Industrial Hip-Hop
+BWUd_tnG9eE,Tricky,Trip Hop
+BY9RGm6I58w,Snoop Dogg,G-Funk
+BYOOJy6lc40,Death Grips,Experimental Hip-Hop
+BZDEaj_9QhY,The Notorious B.I.G.,East Coast Hip-Hop
+BZDNVxWIV6o,Flying Lotus,Psychedelic Rap
+BZXt15OiExg,Philanthrope,Lofi Hip-Hop
 BZqcUv6dGzk,Autumn!,Pluggnb
 BZrIrrsI3Qk,Linkin Park,Rap Rock
 BZt__20bxJk,Warren G,G-Funk
@@ -2839,14 +2839,6 @@ BusU36Iqo2w,Twista,Chopper
 BvzfdUJX6u0,Limp Bizkit,Nu Metal
 Bw8k22u2QVM,Playboi Carti,Mumble Rap
 BwsAi8oYBTw,Philanthrope,Lofi Hip-Hop
-C-d16Fc1ENE,Aesop Rock,Underground Hip-Hop
-C0AC4ST6HUU,2Pac,West Coast Hip-Hop
-C0HtNO1w5C8,Dave,British Hip-Hop
-C0IJdWi3KRE,A Tribe Called Quest,Jazz Rap
-C0Nk_gU5GNk,Juvenile,Bounce
-C0Zwn0wmZRU,Diego Money,Plugg
-C0glRBbT8_E,Mexikodro,Plugg
-C16kuK5eQWg,Drake,Pop Rap
 Bx4WJ5_qFEw,Idealism,Lofi Hip-Hop
 BxAlDg5scnM,Pi'erre Bourne,Mumble Rap
 BxHZokOKLMw,Luny Tunes,Reggaeton
@@ -2855,14 +2847,14 @@ BymGYCszCOw,Scarlxrd,Trap Metal
 ByzrTpc0EYY,A Tribe Called Quest,Jazz Rap
 BzxJ0d_zLgs,Q-Tip,Jazz Rap
 C-HkY_ckEEw,F1lthy,Rage
-C3_xBzNYfdM,Yung Lean,Cloud Rap
-C3oQepZUKa4,A$AP Rocky,Cloud Rap
-C43aIxlA4EY,Playboi Carti,Mumble Rap
-C48W71pfCbM,RZA,East Coast Hip-Hop
-C4ibwv2wEQg,Snowgoons,Hardcore Hip-Hop
-C4lUG8v6PgI,D4L,Snap Music
-C4nO7pqHSeE,A Tribe Called Quest,Jazz Rap
-C53wDO1AWxg,Yung Lean,Cloud Rap
+C-d16Fc1ENE,Aesop Rock,Underground Hip-Hop
+C0AC4ST6HUU,2Pac,West Coast Hip-Hop
+C0HtNO1w5C8,Dave,British Hip-Hop
+C0IJdWi3KRE,A Tribe Called Quest,Jazz Rap
+C0Nk_gU5GNk,Juvenile,Bounce
+C0Zwn0wmZRU,Diego Money,Plugg
+C0glRBbT8_E,Mexikodro,Plugg
+C16kuK5eQWg,Drake,Pop Rap
 C1WxquZ27eA,Tomppabeats,Chillhop
 C2F1EByRjBg,Jay-Z,East Coast Hip-Hop
 C3BDGMuwESM,glaive,Digicore
@@ -2871,6 +2863,14 @@ C3KrNlZSmwI,Natanael Cano,Mexican Drill
 C3Kzrw9raOk,Nine Inch Nails,Industrial Hip-Hop
 C3MuSa8uk-o,Machine Gun Kelly,Punk Rap
 C3UqSSDYkRU,Lupe Fiasco,Progressive Rap
+C3_xBzNYfdM,Yung Lean,Cloud Rap
+C3oQepZUKa4,A$AP Rocky,Cloud Rap
+C43aIxlA4EY,Playboi Carti,Mumble Rap
+C48W71pfCbM,RZA,East Coast Hip-Hop
+C4ibwv2wEQg,Snowgoons,Hardcore Hip-Hop
+C4lUG8v6PgI,D4L,Snap Music
+C4nO7pqHSeE,A Tribe Called Quest,Jazz Rap
+C53wDO1AWxg,Yung Lean,Cloud Rap
 C58dSAGrfb4,Lupe Fiasco,Progressive Rap
 C5BYe3a68og,D'Angelo,Neo Soul
 C5M2cxrr_fE,Philanthrope,Lofi Hip-Hop
@@ -3359,14 +3359,6 @@ EBgTwLzSHVg,Snow Tha Product,Latino Hip-Hop
 EBgbz5cmxZ0,The Lonely Island,Comedy Hip-Hop
 EC0LGybiyrI,Onyx,Hardcore Hip-Hop
 EC8kCw-taMw,Yeat,Rage
-EDVBeQMnOfE,Common,Conscious Hip-Hop
-EDVUpN6VDpc,Skepta,Grime
-EDVhvrCG2DU,Warren G,G-Funk
-EDYOF4Zbh0g,Snow Tha Product,Latino Hip-Hop
-EDeK8GqGjhs,Yung Lean,Cloud Rap
-EDiXkiKtHIk,J Balvin,Reggaeton
-EEaOzuZKEbE,Z-Ro,Chopped and Screwed
-EEgIh2xLXlI,Lil Pump,Mumble Rap
 EC9DO0ylZ14,UGK,Southern Hip-Hop
 ECNaIbvGtHI,Diego Money,Plugg
 ECrw7eIzDmE,Killa Kyleon,Slab Music
@@ -3375,6 +3367,14 @@ EDH2JUuoiG0,Scarlxrd,Trap Metal
 EDHmttUl-Y8,Nines,Road Rap
 EDK0rd1Fpf8,slowthai,Punk Rap
 EDRqNbKhltU,Chief Keef,Chicago Drill
+EDVBeQMnOfE,Common,Conscious Hip-Hop
+EDVUpN6VDpc,Skepta,Grime
+EDVhvrCG2DU,Warren G,G-Funk
+EDYOF4Zbh0g,Snow Tha Product,Latino Hip-Hop
+EDeK8GqGjhs,Yung Lean,Cloud Rap
+EDiXkiKtHIk,J Balvin,Reggaeton
+EEaOzuZKEbE,Z-Ro,Chopped and Screwed
+EEgIh2xLXlI,Lil Pump,Mumble Rap
 EEmRfMBDl_s,Fever 333,Punk Rap
 EEoAijXbtgs,Scarlxrd,Trap Metal
 EF5dpt7xkk8,Central Cee,UK Drill
@@ -4159,14 +4159,6 @@ HsXz_9JM7FU,Meek Mill,Philadelphia Hip-Hop
 HstKgsuecXI,Z-Ro,Chopped and Screwed
 Ht3ci62Zmlo,Nujabes,Lofi Hip-Hop
 HtCkSziLzus,Clams Casino,Cloud Rap
-HvQhDuVAuhE,Lil Pump,Mumble Rap
-HvVUZkZrhT4,Drake,Pop Rap
-HvtC1nPN8WA,Jinsang,Lofi Hip-Hop
-Hwvhbtb1EJM,D'Angelo,Neo Soul
-HwyX-RIwxyA,Chief Keef,Chicago Drill
-HxE5b6mat5Q,D'Angelo,Neo Soul
-HxP5fF9oQA0,Philanthrope,Lofi Hip-Hop
-HxVUDAZamoE,Yeat,Rage
 HtGWu1Tuc8s,D4L,Snap Music
 HtIY2gbraO8,Inflo,British Hip-Hop
 HtI_CgKhGlI,Massive Attack,Trip Hop
@@ -4175,6 +4167,14 @@ HufXPht3fvY,Massive Attack,Trip Hop
 HufivoBDhNc,Yung Lean,Cloud Rap
 HvJMOoS-Ias,Macklemore,Pop Rap
 HvJi_wLU3Qk,Portishead,Trip Hop
+HvQhDuVAuhE,Lil Pump,Mumble Rap
+HvVUZkZrhT4,Drake,Pop Rap
+HvtC1nPN8WA,Jinsang,Lofi Hip-Hop
+Hwvhbtb1EJM,D'Angelo,Neo Soul
+HwyX-RIwxyA,Chief Keef,Chicago Drill
+HxE5b6mat5Q,D'Angelo,Neo Soul
+HxP5fF9oQA0,Philanthrope,Lofi Hip-Hop
+HxVUDAZamoE,Yeat,Rage
 Hxmspe8HXrc,Killa Kyleon,Slab Music
 HxpZhdXgg4o,clipping.,Experimental Hip-Hop
 HyVtnCqeibk,Stormzy,Grime
@@ -4255,14 +4255,6 @@ IHiFMW8s6zk,Public Enemy,Political Hip-Hop
 IHrnmFrHisw,Drake,Pop Rap
 IHtqipglUjQ,Z-Ro,Chopped and Screwed
 II0udp5aHzw,Killa Kyleon,Slab Music
-IKMWigbUY9Q,Unknown T,Afro Drill
-IKsEvIBR5bM,ericdoa,Digicore
-ILCNAln_7Z4,Twista,Chopper
-ILJigFjyFD4,D'Angelo,Neo Soul
-ILSoI_aYa8o,Blockhead,Instrumental Hip-Hop
-IMkjNJz2pNs,Twista,Chopper
-INKiTb1TjB0,Lil Pump,Mumble Rap
-INSntkfhHjQ,Ying Yang Twins,Crunk
 II26jZDLmBE,Fivio Foreign,Brooklyn Drill
 IIGZpbfxrjM,Lil Nas X,Country Rap
 IIQAUXuCiwI,Fever 333,Punk Rap
@@ -4271,6 +4263,14 @@ IIhBoaxYaqk,Mannie Fresh,Bounce
 IJ9kdsavoMs,Ghostemane,Trap Metal
 IJoLHhHnbRU,Ice Cube,Gangsta Rap
 IKJXeFq1d_8,Snow Tha Product,Latino Hip-Hop
+IKMWigbUY9Q,Unknown T,Afro Drill
+IKsEvIBR5bM,ericdoa,Digicore
+ILCNAln_7Z4,Twista,Chopper
+ILJigFjyFD4,D'Angelo,Neo Soul
+ILSoI_aYa8o,Blockhead,Instrumental Hip-Hop
+IMkjNJz2pNs,Twista,Chopper
+INKiTb1TjB0,Lil Pump,Mumble Rap
+INSntkfhHjQ,Ying Yang Twins,Crunk
 INxCmGkSg1M,Ghostface Playa,Phonk
 IP4V3TTC3fw,The Roots,Philadelphia Hip-Hop
 IPYlLruDzlA,Junior H,Mexican Drill
@@ -4303,14 +4303,6 @@ IVWo4sPLwkI,Lil Scrappy,Crunk
 IVlKpHGKfj0,Weird Al Yankovic,Comedy Hip-Hop
 IW22wxKWcQg,Juice WRLD,Emo Rap
 IWcaAg2aTeM,Autumn!,Pluggnb
-IY_dfgREmAw,dltzk,Digicore
-IYko8FFgqso,Kid Cudi,Hipster Hop
-IZ6zCI2YZZE,Migos,Trap
-IZNbYxo7oss,Metro Boomin,Trap
-IZicHiubCTo,Digable Planets,Jazz Rap
-I_4gv7Qosls,Paul Wall,Chopped and Screwed
-I_b5-17aPRs,Yeat,Rage
-I_rDtgt7j4E,Yung Lean,Cloud Rap
 IWci4RlReBI,glaive,Digicore
 IWm_m38iK24,Lil Pump,Mumble Rap
 IWnsHg5dUFU,Travis Scott,Psychedelic Rap
@@ -4319,6 +4311,14 @@ IXTz_kB-FJI,Raekwon,Mafioso Rap
 IXobEr3APDg,NWA,Gangsta Rap
 IXxmSyO5Em4,Mannie Fresh,Bounce
 IYWlxcd9Q9k,Tricky,Trip Hop
+IY_dfgREmAw,dltzk,Digicore
+IYko8FFgqso,Kid Cudi,Hipster Hop
+IZ6zCI2YZZE,Migos,Trap
+IZNbYxo7oss,Metro Boomin,Trap
+IZicHiubCTo,Digable Planets,Jazz Rap
+I_4gv7Qosls,Paul Wall,Chopped and Screwed
+I_b5-17aPRs,Yeat,Rage
+I_rDtgt7j4E,Yung Lean,Cloud Rap
 IaF-QpN58us,Kid Frost,Chicano Rap
 IaIPLgwJ1pU,Chief Keef,Chicago Drill
 IaKfAj06QXc,Lil Rob,Chicano Rap
@@ -8527,14 +8527,6 @@ _pdwlXQ7AyE,DJ Shadow,Instrumental Hip-Hop
 _pk9fcmJ1-M,Scarlxrd,Trap Metal
 _pkAAGJmQgE,808Melo,Brooklyn Drill
 _q1q4Nzd62E,Nas,Boom Bap
-_uLwDUQD8VQ,Flying Lotus,Psychedelic Rap
-_uZwo7u4RKo,Zaytoven,Georgia Trap
-_v4iwCeAXls,Post Malone,Pop Rap
-_vObRWp79vU,Autumn!,Pluggnb
-_vrvPpzztkY,Peso Pluma,Mexican Drill
-_vw1Er4ckfg,DJ Muggs,Latino Hip-Hop
-_w-HaIo2kmg,Nines,Road Rap
-_w9eaADHV3I,Aesop Rock,Underground Hip-Hop
 _r-nPqWGG6c,"Tyler, The Creator",Alternative Hip-Hop
 _rZIJWzSviQ,Goyxrd,Pluggnb
 _sfYUHGLXVE,Dr. Dre,West Coast Hip-Hop
@@ -8543,6 +8535,14 @@ _tO8uvS3g7Q,Birocratic,Chillhop
 _tYDYOb-qD0,T.I.,Southern Hip-Hop
 _taGGAo90ds,Nine Inch Nails,Industrial Hip-Hop
 _tjsw0eVc3o,Idealism,Lofi Hip-Hop
+_uLwDUQD8VQ,Flying Lotus,Psychedelic Rap
+_uZwo7u4RKo,Zaytoven,Georgia Trap
+_v4iwCeAXls,Post Malone,Pop Rap
+_vObRWp79vU,Autumn!,Pluggnb
+_vrvPpzztkY,Peso Pluma,Mexican Drill
+_vw1Er4ckfg,DJ Muggs,Latino Hip-Hop
+_w-HaIo2kmg,Nines,Road Rap
+_w9eaADHV3I,Aesop Rock,Underground Hip-Hop
 _wyRrcMFtHE,Eazy-E,Gangsta Rap
 _x2gzo9KEYU,Weird Al Yankovic,Comedy Hip-Hop
 _xg_zO3XlP4,Unknown T,Afro Drill
@@ -10367,14 +10367,6 @@ iW_elR_-ta8,Brotha Lynch Hung,Horrorcore
 iWxKrBOKKJI,Digable Planets,Jazz Rap
 iX6UljhkKqw,Nujabes,Lofi Hip-Hop
 iXg_TdnHTuA,glaive,Digicore
-i_nFcEDRb7w,Mobb Deep,Hardcore Hip-Hop
-iadx6IRKTDY,Warren G,G-Funk
-iap4DhGXFWo,Migos,Trap
-ibJpn-RDg8U,Z-Ro,Chopped and Screwed
-ibUPn4md2W4,Lil Rob,Chicano Rap
-ic05pxDSR28,Peso Pluma,Mexican Drill
-icBP17S8cTg,Outkast,Alternative Hip-Hop
-icklM3YMDoU,Big Sean,Detroit Hip-Hop
 iY1JytbK_ww,3OH!3,Crunkcore
 iY4MFb-8Xfw,dltzk,Digicore
 iYADghSlLP0,Emile Haynie,Hipster Hop
@@ -10383,6 +10375,14 @@ iZoeap7CUEU,Luny Tunes,Reggaeton
 i_GPWYIM8dI,Mobb Deep,Hardcore Hip-Hop
 i_Z9ViTbnbQ,Nujabes,Lofi Hip-Hop
 i_bjjWlGFeA,Blockhead,Instrumental Hip-Hop
+i_nFcEDRb7w,Mobb Deep,Hardcore Hip-Hop
+iadx6IRKTDY,Warren G,G-Funk
+iap4DhGXFWo,Migos,Trap
+ibJpn-RDg8U,Z-Ro,Chopped and Screwed
+ibUPn4md2W4,Lil Rob,Chicano Rap
+ic05pxDSR28,Peso Pluma,Mexican Drill
+icBP17S8cTg,Outkast,Alternative Hip-Hop
+icklM3YMDoU,Big Sean,Detroit Hip-Hop
 iconkbxp_PU,Warren G,G-Funk
 icznS7-kkFA,The Soulquarians,Neo Soul
 idF8QbXJl9s,Tomppabeats,Chillhop
@@ -10463,14 +10463,6 @@ izTFTzb4DVE,Puff Daddy,Hip-Hop Soul
 izfRxiyuauc,Kordhell,Phonk
 izprs1lKTtg,MF DOOM,Underground Hip-Hop
 j-4f0SMclBc,Organized Noize,Southern Hip-Hop
-j1jBDDKcigg,Jay-Z,East Coast Hip-Hop
-j1oBVImqbWg,Migos,Trap
-j2R9S27o030,Aesop Rock,Underground Hip-Hop
-j2eyaKQ5Sa0,Soudiere,Phonk
-j2phAqNr2YE,Lauryn Hill,Neo Soul
-j2whP-jmbzY,Skepta,Grime
-j3ONLyP1xFc,Mexikodro,Plugg
-j3_W5WNuLEw,Inflo,British Hip-Hop
 j-B2DaDIExg,J. Cole,Progressive Rap
 j-Qp3yqltvo,D'Angelo,Neo Soul
 j-sOjYhcSBY,Kendrick Lamar,Conscious Hip-Hop
@@ -10479,6 +10471,14 @@ j0M83y2KTFU,Mac Dre,Hyphy
 j0lhOhoNahk,El-P,Industrial Hip-Hop
 j1-ODUgzCvw,Ronny J,Trap Metal
 j1ZGfsEPkjQ,Yung Lean,Cloud Rap
+j1jBDDKcigg,Jay-Z,East Coast Hip-Hop
+j1oBVImqbWg,Migos,Trap
+j2R9S27o030,Aesop Rock,Underground Hip-Hop
+j2eyaKQ5Sa0,Soudiere,Phonk
+j2phAqNr2YE,Lauryn Hill,Neo Soul
+j2whP-jmbzY,Skepta,Grime
+j3ONLyP1xFc,Mexikodro,Plugg
+j3_W5WNuLEw,Inflo,British Hip-Hop
 j3s2n-na-iA,Kendrick Lamar,Conscious Hip-Hop
 j4EHZzHF2ag,Carns Hill,Road Rap
 j540yOhkoII,Gravediggaz,Horrorcore
@@ -11319,14 +11319,6 @@ mvs5jiT2nmg,808Melo,Brooklyn Drill
 mwDCLD8dk5I,Skepta,Grime
 mwtE_UtfZrc,Kupla,Chillhop
 mx3GJSwVBeo,Colt Ford,Country Rap
-mznHLUhg8gs,808Melo,Brooklyn Drill
-n-A9nDfmOe4,Puff Daddy,Hip-Hop Soul
-n-Nl8-1k65Q,Luny Tunes,Reggaeton
-n-cNtD26yh4,Dr. Dre,West Coast Hip-Hop
-n0j3W_bKI38,Lauryn Hill,Neo Soul
-n0tnWbtcCXg,King Von,Chicago Drill
-n0ub5KO8_Mg,Killa Kyleon,Slab Music
-n1HPeMAoaBE,Stormzy,Grime
 mx8-oW-kTDg,A Tribe Called Quest,Jazz Rap
 mxE_B8FH6c0,Migos,Trap
 mxoyM22w0IA,Birocratic,Chillhop
@@ -11335,6 +11327,14 @@ myi2bYhrEK4,JPEGMAFIA,Experimental Hip-Hop
 myw2weSZBFs,Jay-Z,East Coast Hip-Hop
 myxojwq22-Q,Mannie Fresh,Bounce
 mzR1NONXGB4,Migos,Trap
+mznHLUhg8gs,808Melo,Brooklyn Drill
+n-A9nDfmOe4,Puff Daddy,Hip-Hop Soul
+n-Nl8-1k65Q,Luny Tunes,Reggaeton
+n-cNtD26yh4,Dr. Dre,West Coast Hip-Hop
+n0j3W_bKI38,Lauryn Hill,Neo Soul
+n0tnWbtcCXg,King Von,Chicago Drill
+n0ub5KO8_Mg,Killa Kyleon,Slab Music
+n1HPeMAoaBE,Stormzy,Grime
 n1X2TAaM6G4,Portishead,Trip Hop
 n1bdZsWs2xo,Young Chop,Chicago Drill
 n1fm4rchsus,808Melo,Brooklyn Drill
@@ -12223,14 +12223,6 @@ qzdc5pBUCTg,ericdoa,Digicore
 qzuwYcFnN-c,Puff Daddy,Hip-Hop Soul
 r-m552SrbOo,9th Wonder,Conscious Hip-Hop
 r0Aufm2FPJg,Metro Boomin,Trap
-r30bp_OeKBA,Twista,Chopper
-r3MIjXsfPvM,Pharrell Williams,Alternative Hip-Hop
-r3mU3O8Fe6Q,Carns Hill,Road Rap
-r3nO0YnNrsk,Madlib,Underground Hip-Hop
-r3zRKOdsPCg,UGK,Southern Hip-Hop
-r4DZ9VgzybU,Carns Hill,Road Rap
-r4bA3LiaEcM,Slipknot,Nu Metal
-r4pRobJvKPA,Flying Lotus,Psychedelic Rap
 r0vtjPGXt9w,Young Chop,Chicago Drill
 r1MAkLIjxqI,Death Grips,Experimental Hip-Hop
 r2-bOuqfsb4,Death Grips,Experimental Hip-Hop
@@ -12239,6 +12231,14 @@ r2dOK_E70bc,Giggs,Road Rap
 r2nAuWVEHZE,Ho99o9,Industrial Hip-Hop
 r2r3CYBBTQ0,A$AP Rocky,Cloud Rap
 r3-Zs7Hlj0I,F1lthy,Rage
+r30bp_OeKBA,Twista,Chopper
+r3MIjXsfPvM,Pharrell Williams,Alternative Hip-Hop
+r3mU3O8Fe6Q,Carns Hill,Road Rap
+r3nO0YnNrsk,Madlib,Underground Hip-Hop
+r3zRKOdsPCg,UGK,Southern Hip-Hop
+r4DZ9VgzybU,Carns Hill,Road Rap
+r4bA3LiaEcM,Slipknot,Nu Metal
+r4pRobJvKPA,Flying Lotus,Psychedelic Rap
 r4qQHrisNwY,Idealism,Lofi Hip-Hop
 r4umgxxJwvQ,Meek Mill,Philadelphia Hip-Hop
 r4wFabGCTuU,Mac Dre,Hyphy
@@ -12271,14 +12271,6 @@ rCUDqIRePnI,Philanthrope,Lofi Hip-Hop
 rD54zDH7FVw,Common,Conscious Hip-Hop
 rDMrFI2aHTc,Z-Ro,Chopped and Screwed
 rDjB3Ft4ktQ,The Lonely Island,Comedy Hip-Hop
-rFmVF2CDW8k,Digable Planets,Jazz Rap
-rFmjRUwWDXs,Portishead,Trip Hop
-rGHaop8b1ZU,21 Savage,Trap
-rGeacNIBg7g,Drake,Pop Rap
-rGoYRaHTwGM,Colt Ford,Country Rap
-rHEGimS0TqI,Jinsang,Lofi Hip-Hop
-rHT1htVvPAA,Mexikodro,Plugg
-rHX9FG822wQ,Colt Ford,Country Rap
 rEJR7LBjIJ8,Big Sean,Detroit Hip-Hop
 rEN9luzNidA,Lupe Fiasco,Progressive Rap
 rEbjRLj7ZcE,Stormzy,Grime
@@ -12287,6 +12279,14 @@ rEw1Q6lY3Pc,Outkast,Alternative Hip-Hop
 rF4hWKoKyis,slowthai,Punk Rap
 rFe0FycH6-U,XXXTentacion,Emo Rap
 rFjAI0uEVVk,RZA,East Coast Hip-Hop
+rFmVF2CDW8k,Digable Planets,Jazz Rap
+rFmjRUwWDXs,Portishead,Trip Hop
+rGHaop8b1ZU,21 Savage,Trap
+rGeacNIBg7g,Drake,Pop Rap
+rGoYRaHTwGM,Colt Ford,Country Rap
+rHEGimS0TqI,Jinsang,Lofi Hip-Hop
+rHT1htVvPAA,Mexikodro,Plugg
+rHX9FG822wQ,Colt Ford,Country Rap
 rHvKJVJEV1w,Lil Nas X,Country Rap
 rI-GzycIoFE,Jinsang,Lofi Hip-Hop
 rI5Y4fVRlbE,The Alchemist,Mafioso Rap
@@ -12319,14 +12319,6 @@ rPlAPWeSjsE,Public Enemy,Political Hip-Hop
 rPljasVf_Vk,Mac Dre,Hyphy
 rQ84EF3DgNE,J Dilla,Instrumental Hip-Hop
 rQ8CcLChgms,Autumn!,Pluggnb
-rRdlfZ5RGsM,"Tyler, The Creator",Alternative Hip-Hop
-rRjOCa96JQM,Goyxrd,Pluggnb
-rRm88IP4RDM,Peso Pluma,Mexican Drill
-rRqbIBTYbs4,Run-DMC,Rap Rock
-rS8yOgtaIJA,Common,Conscious Hip-Hop
-rSDc0hve-1w,Pharrell Williams,Alternative Hip-Hop
-rScvFvm_pNM,Kool G Rap,Mafioso Rap
-rScwLoES2bM,"Tyler, The Creator",Alternative Hip-Hop
 rQDX1uywf98,Drake,Pop Rap
 rQSlntUimL4,Public Enemy,Political Hip-Hop
 rQZPUcjYGXE,Outkast,Alternative Hip-Hop
@@ -12335,6 +12327,14 @@ rQbN_F4ocwM,Mannie Fresh,Bounce
 rQz4Pftnul8,Mobb Deep,Hardcore Hip-Hop
 rRYPr-lFb4w,Fivio Foreign,Brooklyn Drill
 rRZ8a69zgJ8,Blockhead,Instrumental Hip-Hop
+rRdlfZ5RGsM,"Tyler, The Creator",Alternative Hip-Hop
+rRjOCa96JQM,Goyxrd,Pluggnb
+rRm88IP4RDM,Peso Pluma,Mexican Drill
+rRqbIBTYbs4,Run-DMC,Rap Rock
+rS8yOgtaIJA,Common,Conscious Hip-Hop
+rSDc0hve-1w,Pharrell Williams,Alternative Hip-Hop
+rScvFvm_pNM,Kool G Rap,Mafioso Rap
+rScwLoES2bM,"Tyler, The Creator",Alternative Hip-Hop
 rSnNXRKdSn8,Portishead,Trip Hop
 rSxO-CXHdzM,Fever 333,Punk Rap
 rTUeXXMjTdE,ericdoa,Digicore
@@ -12367,14 +12367,6 @@ r_Lym-TIF8M,J Balvin,Reggaeton
 r_SArFs-aGk,Wu-Tang Clan,Boom Bap
 r_WG4PynhpM,Little Simz,British Hip-Hop
 r_axdSXUfE0,Meek Mill,Philadelphia Hip-Hop
-rd0G2h0GPp8,Outkast,Alternative Hip-Hop
-rd2fEjUFkvc,ericdoa,Digicore
-rdo-EIlW7co,Lil Peep,Emo Rap
-reEc3eSn_n4,Insane Clown Posse,Horrorcore
-recs-pUM_V8,Juvenile,Bounce
-retT-Jbe_zk,Unknown T,Afro Drill
-rfjGGfVfWt8,Warren G,G-Funk
-rfk-E43AtyM,Jay-Z,East Coast Hip-Hop
 r_cmlHfpWac,Colt Ford,Country Rap
 raAz3FFGvzA,Snow Tha Product,Latino Hip-Hop
 rb4rwoB_RBA,JPEGMAFIA,Experimental Hip-Hop
@@ -12383,6 +12375,14 @@ rbmvJbhl1Nw,A$AP Rocky,Cloud Rap
 rc9LGSS7jcQ,dltzk,Digicore
 rchrVRj1zq4,9th Wonder,Conscious Hip-Hop
 rcvNguFQrKw,Travis Scott,Psychedelic Rap
+rd0G2h0GPp8,Outkast,Alternative Hip-Hop
+rd2fEjUFkvc,ericdoa,Digicore
+rdo-EIlW7co,Lil Peep,Emo Rap
+reEc3eSn_n4,Insane Clown Posse,Horrorcore
+recs-pUM_V8,Juvenile,Bounce
+retT-Jbe_zk,Unknown T,Afro Drill
+rfjGGfVfWt8,Warren G,G-Funk
+rfk-E43AtyM,Jay-Z,East Coast Hip-Hop
 rg--l2DMeqI,J. Cole,Progressive Rap
 rg1gTxURonc,Kupla,Chillhop
 rgIiBwYM2ag,DJ Shadow,Instrumental Hip-Hop
@@ -12431,14 +12431,6 @@ rsxXbicCBnM,Big Freedia,Bounce
 rt-NFCOQiDI,Travis Scott,Psychedelic Rap
 rt0XFFVLENM,Diego Money,Plugg
 rt5a-ybXNsI,Kordhell,Phonk
-rw1-JCSXCPA,Ghostemane,Trap Metal
-rwGKXwME4To,Jay-Z,East Coast Hip-Hop
-rwMlnLrN1i4,J Balvin,Reggaeton
-rwjHcNG_D7E,T.I.,Southern Hip-Hop
-rwyn8hl87Cs,Pi'erre Bourne,Mumble Rap
-rxKHnyXg-Is,Death Grips,Experimental Hip-Hop
-rxL1oDxCuLI,Brotha Lynch Hung,Horrorcore
-rxRvDpF2FDA,Paul Wall,Chopped and Screwed
 rtBMG3Wqbjs,Pi'erre Bourne,Mumble Rap
 rtJk8zg7Jgw,Colt Ford,Country Rap
 rtuNpCX1RUY,B-Real,Chicano Rap
@@ -12447,6 +12439,14 @@ rudelKzTFFk,The Lonely Island,Comedy Hip-Hop
 rvpYvvP9KzQ,Ice Cube,Gangsta Rap
 rvrLjUmoIhI,Puff Daddy,Hip-Hop Soul
 rvsQlV7M5qQ,Tony Shhnow,Plugg
+rw1-JCSXCPA,Ghostemane,Trap Metal
+rwGKXwME4To,Jay-Z,East Coast Hip-Hop
+rwMlnLrN1i4,J Balvin,Reggaeton
+rwjHcNG_D7E,T.I.,Southern Hip-Hop
+rwyn8hl87Cs,Pi'erre Bourne,Mumble Rap
+rxKHnyXg-Is,Death Grips,Experimental Hip-Hop
+rxL1oDxCuLI,Brotha Lynch Hung,Horrorcore
+rxRvDpF2FDA,Paul Wall,Chopped and Screwed
 rxWnNbbbyq0,Ho99o9,Industrial Hip-Hop
 rxZ0mlkXvh4,DJ Premier,Boom Bap
 rxjgAjCj0JY,Snoop Dogg,G-Funk
@@ -12463,14 +12463,6 @@ s-Z3G7We3is,D'Angelo,Neo Soul
 s0HybVM7XDI,Pete Rock,Boom Bap
 s0ZPkC2zSj4,Lauryn Hill,Neo Soul
 s0cni2reFb4,Snow Tha Product,Latino Hip-Hop
-s4C5ETXrjAc,Lil Nas X,Country Rap
-s4q5pcO2lqE,BROCKHAMPTON,Psychedelic Rap
-s4vF2OxleUA,MF DOOM,Underground Hip-Hop
-s5Hna_mHNDU,Peso Pluma,Mexican Drill
-s5I5ywZfzRk,T.I.,Southern Hip-Hop
-s5ZUTOec8ek,D12,Detroit Hip-Hop
-s5i9p9Tx-gA,Gucci Mane,Georgia Trap
-s64ZuqsaOdg,Wu-Tang Clan,Boom Bap
 s0vPBIgK-mA,"Tyler, The Creator",Alternative Hip-Hop
 s0x40VSTbzg,Yung Lean,Cloud Rap
 s1Apr5OeyT4,Lil Pump,Mumble Rap
@@ -12479,6 +12471,14 @@ s2OQ32lo10s,Z-Ro,Chopped and Screwed
 s2YZLzGB5Gk,Warren G,G-Funk
 s2rp1yaaUMM,Peso Pluma,Mexican Drill
 s3SWlr-lJlE,Portishead,Trip Hop
+s4C5ETXrjAc,Lil Nas X,Country Rap
+s4q5pcO2lqE,BROCKHAMPTON,Psychedelic Rap
+s4vF2OxleUA,MF DOOM,Underground Hip-Hop
+s5Hna_mHNDU,Peso Pluma,Mexican Drill
+s5I5ywZfzRk,T.I.,Southern Hip-Hop
+s5ZUTOec8ek,D12,Detroit Hip-Hop
+s5i9p9Tx-gA,Gucci Mane,Georgia Trap
+s64ZuqsaOdg,Wu-Tang Clan,Boom Bap
 s69hvTZDAR8,Mobb Deep,Hardcore Hip-Hop
 s6FR6m_McjQ,Delinquent Habits,Latino Hip-Hop
 s6sZOoV_sSM,Nujabes,Lofi Hip-Hop
@@ -12559,14 +12559,6 @@ sRM_OVuOZws,DJ Premier,Boom Bap
 sSRamXNi3Xs,Emile Haynie,Hipster Hop
 sT2N6cCF-II,Big Sean,Detroit Hip-Hop
 sT5Io0ndw6w,Keak da Sneak,Hyphy
-sVPWZT9VWHo,Dave,British Hip-Hop
-sVgd0pIZ8fQ,Gucci Mane,Georgia Trap
-sW6lvQ95My4,Skepta,Grime
-sWFUejAS77Y,DJ Quik,West Coast Hip-Hop
-sWSK_7pxAyc,Southside,Georgia Trap
-sWUWP66CpPs,Ho99o9,Industrial Hip-Hop
-sWdBzJPcTLU,Lil Rob,Chicano Rap
-sWvOVU39628,Chief Keef,Chicago Drill
 sT9i7bZXkaE,Skepta,Grime
 sUBrLnHs8P8,Massive Attack,Trip Hop
 sUQNBIjinAw,Inflo,British Hip-Hop
@@ -12575,6 +12567,14 @@ sUkmNQ3Cl-A,Flying Lotus,Psychedelic Rap
 sUtki41MkQA,The Notorious B.I.G.,East Coast Hip-Hop
 sUz4tiy0oJU,Jinsang,Lofi Hip-Hop
 sVII21eIcZQ,Killa Kyleon,Slab Music
+sVPWZT9VWHo,Dave,British Hip-Hop
+sVgd0pIZ8fQ,Gucci Mane,Georgia Trap
+sW6lvQ95My4,Skepta,Grime
+sWFUejAS77Y,DJ Quik,West Coast Hip-Hop
+sWSK_7pxAyc,Southside,Georgia Trap
+sWUWP66CpPs,Ho99o9,Industrial Hip-Hop
+sWdBzJPcTLU,Lil Rob,Chicano Rap
+sWvOVU39628,Chief Keef,Chicago Drill
 sWw7xBrrS6M,Erykah Badu,Hip-Hop Soul
 sWwIF2yAkz4,Pop Smoke,Brooklyn Drill
 sXje3oJ8T8o,dead prez,Political Hip-Hop
@@ -12655,14 +12655,6 @@ swU5ronWYsY,Aesop Rock,Underground Hip-Hop
 swa0wRhm0YM,Juvenile,Bounce
 swl-mgR-yUE,Inflo,British Hip-Hop
 swsQTeINCjU,Childish Gambino,Hipster Hop
-syaYvz2PCL0,Little Simz,British Hip-Hop
-syg_Vyti5C8,J. Cole,Progressive Rap
-szIXtfstebs,dead prez,Political Hip-Hop
-szNP7oEQrLk,Emile Haynie,Hipster Hop
-szQ_d67Chok,Questlove,Philadelphia Hip-Hop
-t-G4__Rhl04,Tainy,Latin Trap
-t-Mfqe5CB6U,Onyx,Hardcore Hip-Hop
-t-XWQG19S0I,Carns Hill,Road Rap
 sx5oXIXop-4,Eminem,Detroit Hip-Hop
 sxFc7nJzGhI,Portishead,Trip Hop
 sxII6W5DZso,Nines,Road Rap
@@ -12671,6 +12663,14 @@ sxc7O8Rw1qY,DJ Shadow,Instrumental Hip-Hop
 sxoL2c6zU8E,Natanael Cano,Mexican Drill
 syLAOAmOq7k,Portishead,Trip Hop
 syVcNZYuY00,Dave,British Hip-Hop
+syaYvz2PCL0,Little Simz,British Hip-Hop
+syg_Vyti5C8,J. Cole,Progressive Rap
+szIXtfstebs,dead prez,Political Hip-Hop
+szNP7oEQrLk,Emile Haynie,Hipster Hop
+szQ_d67Chok,Questlove,Philadelphia Hip-Hop
+t-G4__Rhl04,Tainy,Latin Trap
+t-Mfqe5CB6U,Onyx,Hardcore Hip-Hop
+t-XWQG19S0I,Carns Hill,Road Rap
 t01Ed3a3TeE,Clams Casino,Cloud Rap
 t0A7X7pBLyg,Rage Against the Machine,Rap Rock
 t1LNUCSsDQ0,Busta Rhymes,Chopper
@@ -12751,14 +12751,6 @@ tQw7o-dLAEo,Hollywood Undead,Crunkcore
 tQzNXoYTZqc,slowthai,Punk Rap
 tQzsgbDBViw,Luny Tunes,Reggaeton
 tR3De_xQuO4,Clams Casino,Cloud Rap
-tU6rCIMoo50,F1lthy,Rage
-tU7VyGx8Vbs,Juice WRLD,Emo Rap
-tUF2XZiUafk,Nines,Road Rap
-tUPQNRMWv-U,E-40,Hyphy
-tUV7F5_kqLo,B-Real,Chicano Rap
-tUXN064laD4,Unknown T,Afro Drill
-tV1EpT5rKrc,Anuel AA,Latin Trap
-tV30Cmg3da4,Yung Lean,Cloud Rap
 tR6THb1aJQQ,Organized Noize,Southern Hip-Hop
 tROM2taOLm8,slowthai,Punk Rap
 tRZr3HkoTTY,Ghosty,UK Drill
@@ -12767,6 +12759,14 @@ tSHOmbOJJ9o,Summrs,Pluggnb
 tSryTOMSfaM,Z-Ro,Chopped and Screwed
 tTvn6exdn9U,Limp Bizkit,Nu Metal
 tU0YweW70VM,Lil Nas X,Country Rap
+tU6rCIMoo50,F1lthy,Rage
+tU7VyGx8Vbs,Juice WRLD,Emo Rap
+tUF2XZiUafk,Nines,Road Rap
+tUPQNRMWv-U,E-40,Hyphy
+tUV7F5_kqLo,B-Real,Chicano Rap
+tUXN064laD4,Unknown T,Afro Drill
+tV1EpT5rKrc,Anuel AA,Latin Trap
+tV30Cmg3da4,Yung Lean,Cloud Rap
 tVBEEgkTT5U,Nas,Boom Bap
 tVCzl_eZJxI,Death Grips,Experimental Hip-Hop
 tVEvwIzgCZo,Chief Keef,Chicago Drill
@@ -12799,14 +12799,6 @@ tc-v8MVw0S8,Nines,Road Rap
 tdDR63VWra8,Ying Yang Twins,Crunk
 tdVn471DqnM,Junior H,Mexican Drill
 tdxvSV3avms,J. Cole,Progressive Rap
-tg1kyJ87TYU,Lupe Fiasco,Progressive Rap
-tgEB3s-BxhE,Fivio Foreign,Brooklyn Drill
-tgiwNlvyn18,Lil Rob,Chicano Rap
-tgoTu4-g9aA,Ghostemane,Trap Metal
-tgu0YnSd2a8,Philanthrope,Lofi Hip-Hop
-th34Wws8Z8w,Kendrick Lamar,Conscious Hip-Hop
-th5xhiBy5fE,Kanye West,Progressive Rap
-thj1ShSPLNM,B-Real,Chicano Rap
 te6gacOTkeI,Daddy Yankee,Reggaeton
 teEHfKgAhkg,DJ Muggs,Latino Hip-Hop
 telvx-VKswg,Common,Conscious Hip-Hop
@@ -12815,6 +12807,14 @@ tezah-KdlK0,Run-DMC,Rap Rock
 tf2ugea5xJI,Central Cee,UK Drill
 tf8kdpHC328,Juice WRLD,Emo Rap
 tfeDuXQiK6E,slowthai,Punk Rap
+tg1kyJ87TYU,Lupe Fiasco,Progressive Rap
+tgEB3s-BxhE,Fivio Foreign,Brooklyn Drill
+tgiwNlvyn18,Lil Rob,Chicano Rap
+tgoTu4-g9aA,Ghostemane,Trap Metal
+tgu0YnSd2a8,Philanthrope,Lofi Hip-Hop
+th34Wws8Z8w,Kendrick Lamar,Conscious Hip-Hop
+th5xhiBy5fE,Kanye West,Progressive Rap
+thj1ShSPLNM,B-Real,Chicano Rap
 ti03F_Hp8gM,Chief Keef,Chicago Drill
 tigyUyelx38,Unknown T,Afro Drill
 timxWNTUf_4,Flying Lotus,Psychedelic Rap
@@ -12855,14 +12855,6 @@ tpLnFmev7Cw,Mobb Deep,Hardcore Hip-Hop
 tp_sxlo5z3I,Ronny J,Trap Metal
 tpsIRC5FlYA,Wu-Tang Clan,Boom Bap
 tqCxjjq0Yq8,Juvenile,Bounce
-ttVFNEKAsv8,Ken Carson,Rage
-tttQ4OzMN3c,Snoop Dogg,G-Funk
-ttvaZY0uOHs,Outkast,Alternative Hip-Hop
-tueYirXFaOI,Clams Casino,Cloud Rap
-tvY31eN3gtE,Little Simz,British Hip-Hop
-tw-0WxLjNEo,MF DOOM,Underground Hip-Hop
-twlak-6KKE8,Lil Rob,Chicano Rap
-twtJ1RvDE6I,Eazy-E,Gangsta Rap
 tqNtLM5ylHs,Big Freedia,Bounce
 tqzXfe6ZoaA,F1lthy,Rage
 trBX9GwBXAc,2Pac,West Coast Hip-Hop
@@ -12871,6 +12863,14 @@ trlEJOqEO3g,glaive,Digicore
 trywZchalnk,Wu-Tang Clan,Boom Bap
 tsDbA0wtZ7M,DJ Muggs,Latino Hip-Hop
 tsnycqBq_2A,slowthai,Punk Rap
+ttVFNEKAsv8,Ken Carson,Rage
+tttQ4OzMN3c,Snoop Dogg,G-Funk
+ttvaZY0uOHs,Outkast,Alternative Hip-Hop
+tueYirXFaOI,Clams Casino,Cloud Rap
+tvY31eN3gtE,Little Simz,British Hip-Hop
+tw-0WxLjNEo,MF DOOM,Underground Hip-Hop
+twlak-6KKE8,Lil Rob,Chicano Rap
+twtJ1RvDE6I,Eazy-E,Gangsta Rap
 txDo_X9UnzI,Wiley,Grime
 txJeKEkNJbs,D4L,Snap Music
 txwZ5dgZLFw,2Pac,West Coast Hip-Hop
@@ -12895,14 +12895,6 @@ u21u_ZMHqfE,DJ Screw,Chopped and Screwed
 u2MumoBltPE,Organized Noize,Southern Hip-Hop
 u2NZemtqh0w,DJ Screw,Chopped and Screwed
 u33XcJA20PA,Killa Kyleon,Slab Music
-u4a8gB94cK8,Migos,Trap
-u4qHtK7-O0U,Run-DMC,Rap Rock
-u505WpRAWmw,Eazy-E,Gangsta Rap
-u5coxddSg8I,Massive Attack,Trip Hop
-u6QBGJgmrfU,Massive Attack,Trip Hop
-u72Ipm3Jaec,Clams Casino,Cloud Rap
-u77v0bFpnQg,Nines,Road Rap
-u7aJSLhwK6I,Birocratic,Chillhop
 u3N-mkkhTM0,Flying Lotus,Psychedelic Rap
 u3T33cAfHnI,Ying Yang Twins,Crunk
 u3UA6svwVjc,Public Enemy,Political Hip-Hop
@@ -12911,6 +12903,14 @@ u3rlz5zSHTc,Travis Scott,Psychedelic Rap
 u3wnr_RDKVM,Summrs,Pluggnb
 u48sPyNneo4,JPEGMAFIA,Experimental Hip-Hop
 u4W_XNN5FLI,Summrs,Pluggnb
+u4a8gB94cK8,Migos,Trap
+u4qHtK7-O0U,Run-DMC,Rap Rock
+u505WpRAWmw,Eazy-E,Gangsta Rap
+u5coxddSg8I,Massive Attack,Trip Hop
+u6QBGJgmrfU,Massive Attack,Trip Hop
+u72Ipm3Jaec,Clams Casino,Cloud Rap
+u77v0bFpnQg,Nines,Road Rap
+u7aJSLhwK6I,Birocratic,Chillhop
 u7eQLwjl24k,Kendrick Lamar,Conscious Hip-Hop
 u7jr7apRK6s,Z-Ro,Chopped and Screwed
 u7yavjfdYZs,Playboi Carti,Mumble Rap
@@ -12919,14 +12919,6 @@ u88WqOIeErM,Massive Attack,Trip Hop
 u8bmLCM0nJw,Warren G,G-Funk
 u8hBJ2AM3u8,Idealism,Lofi Hip-Hop
 u9PSOSTHeXU,Pop Smoke,Brooklyn Drill
-uBx3qvXxaGY,Kid Frost,Chicano Rap
-uCkCojokhcQ,Onyx,Hardcore Hip-Hop
-uDAzZHlC7Fc,Keak da Sneak,Hyphy
-uDGeJiZyOfk,DJ Premier,Boom Bap
-uE9KTXUTGrs,T.I.,Southern Hip-Hop
-uEVxHbh1Tao,Unknown T,Afro Drill
-uEXfdA4FUFM,Soudiere,Phonk
-uEsJSIFhDUg,King Von,Chicago Drill
 u9_oxjy6KHo,DJ Screw,Chopped and Screwed
 u9a8ogd2Taw,Yung Lean,Cloud Rap
 u9sYzRUPApc,Peso Pluma,Mexican Drill
@@ -12935,6 +12927,14 @@ uAFn39MXktc,Skepta,Grime
 uAoq4exACto,Erykah Badu,Hip-Hop Soul
 uBdy29nB3r4,Headie One,UK Drill
 uBplWHWxOUE,Bubba Sparxxx,Country Rap
+uBx3qvXxaGY,Kid Frost,Chicano Rap
+uCkCojokhcQ,Onyx,Hardcore Hip-Hop
+uDAzZHlC7Fc,Keak da Sneak,Hyphy
+uDGeJiZyOfk,DJ Premier,Boom Bap
+uE9KTXUTGrs,T.I.,Southern Hip-Hop
+uEVxHbh1Tao,Unknown T,Afro Drill
+uEXfdA4FUFM,Soudiere,Phonk
+uEsJSIFhDUg,King Von,Chicago Drill
 uEyt8juuvvs,Future,Trap
 uFQWry7YyJ4,Fivio Foreign,Brooklyn Drill
 uFv6IxnLaLY,Nate Dogg,G-Funk
@@ -12967,14 +12967,6 @@ uKu7lbXG-iI,RZA,East Coast Hip-Hop
 uL1imhpzllU,Raekwon,Mafioso Rap
 uLQ-Pgj1e6E,Yeat,Rage
 uLdq4SKdpHk,Kid Cudi,Hipster Hop
-uOGTjSX9oDg,Massive Attack,Trip Hop
-uOkS3bLLg9I,Clams Casino,Cloud Rap
-uOqwTL-PmwE,Delinquent Habits,Latino Hip-Hop
-uOw1Pm5hPcM,DJ Muggs,Latino Hip-Hop
-uPe19DC6ztc,dltzk,Digicore
-uQ47B-s9Tu0,Ken Carson,Rage
-uQFiN--aJYc,Nine Inch Nails,Industrial Hip-Hop
-uQWvk4f4Hwg,Bad Bunny,Latin Trap
 uLxAVU17blE,DJ Quik,West Coast Hip-Hop
 uMLUuIXYslM,BROCKHAMPTON,Psychedelic Rap
 uMmr3-UH9pA,Ghostemane,Trap Metal
@@ -12983,6 +12975,14 @@ uNdHCGoKptc,Eminem,Detroit Hip-Hop
 uNkF_ZpQ4eg,Colt Ford,Country Rap
 uNtddrzoR0o,Brotha Lynch Hung,Horrorcore
 uNuaWyCFekA,Philanthrope,Lofi Hip-Hop
+uOGTjSX9oDg,Massive Attack,Trip Hop
+uOkS3bLLg9I,Clams Casino,Cloud Rap
+uOqwTL-PmwE,Delinquent Habits,Latino Hip-Hop
+uOw1Pm5hPcM,DJ Muggs,Latino Hip-Hop
+uPe19DC6ztc,dltzk,Digicore
+uQ47B-s9Tu0,Ken Carson,Rage
+uQFiN--aJYc,Nine Inch Nails,Industrial Hip-Hop
+uQWvk4f4Hwg,Bad Bunny,Latin Trap
 uQpIeGy4_1I,Bubba Sparxxx,Country Rap
 uR6dY5ddPik,clipping.,Experimental Hip-Hop
 uRg3EJI0Skg,Southside,Georgia Trap
@@ -13063,14 +13063,6 @@ uo2Q3YTP0tQ,The Roots,Philadelphia Hip-Hop
 uoLRUvPEJjo,Natanael Cano,Mexican Drill
 uoM1Bgz-x2o,Kool G Rap,Mafioso Rap
 uoRuW1O3YsU,Pete Rock,Boom Bap
-us0XkLOifN0,Playboi Carti,Mumble Rap
-us1Cap9Vv9E,JPEGMAFIA,Experimental Hip-Hop
-usIvqVBlxRs,Tech N9ne,Chopper
-usRSpghMFXQ,UGK,Southern Hip-Hop
-usu0XY4QNB0,Pop Smoke,Brooklyn Drill
-utsPaX7swso,Brotha Lynch Hung,Horrorcore
-utxh_4QL4bM,Diego Money,Plugg
-uuAH5l4es-w,El-P,Industrial Hip-Hop
 uoV0MdQuZHk,Luny Tunes,Reggaeton
 uon0O9Ty_Is,Ronny J,Trap Metal
 uozlB_3BLvk,Junior H,Mexican Drill
@@ -13079,6 +13071,14 @@ upcVcdLQc_I,Nate Dogg,G-Funk
 uq95pHsj3Zk,Daddy Yankee,Reggaeton
 urQZdAKXL6Y,Dr. Dre,West Coast Hip-Hop
 urvxDPJIlUA,Pi'erre Bourne,Mumble Rap
+us0XkLOifN0,Playboi Carti,Mumble Rap
+us1Cap9Vv9E,JPEGMAFIA,Experimental Hip-Hop
+usIvqVBlxRs,Tech N9ne,Chopper
+usRSpghMFXQ,UGK,Southern Hip-Hop
+usu0XY4QNB0,Pop Smoke,Brooklyn Drill
+utsPaX7swso,Brotha Lynch Hung,Horrorcore
+utxh_4QL4bM,Diego Money,Plugg
+uuAH5l4es-w,El-P,Industrial Hip-Hop
 uuBRZxWSqO8,The Lonely Island,Comedy Hip-Hop
 uuKVyfgtXlU,Lil Nas X,Country Rap
 uuRb08biHiU,Summrs,Pluggnb
@@ -13303,14 +13303,6 @@ vrbETtbJCC4,B-Real,Chicano Rap
 vrl5DPF9410,Tricky,Trip Hop
 vrpJB7ucC5Y,Run-DMC,Rap Rock
 vsD6HYTv_DE,Fever 333,Punk Rap
-vxkQ1Xfp67k,Ken Carson,Rage
-vxtsOKfwj2U,Big Freedia,Bounce
-vzL0bEZXqjk,The Roots,Philadelphia Hip-Hop
-vzqopppm5Kc,21 Savage,Trap
-vzzG66xlFvs,Stormzy,Grime
-w-2Xox_ImF0,Nate Dogg,G-Funk
-w-HrOBvsqWw,Delinquent Habits,Latino Hip-Hop
-w-NzvaFuhsE,Limp Bizkit,Nu Metal
 vsXRUvOfZes,Mannie Fresh,Bounce
 vsaIEY5Ub2c,Inflo,British Hip-Hop
 vtgMl_ZE4Gk,Lil Pump,Mumble Rap
@@ -13319,6 +13311,14 @@ vuXOYKGeDLI,Wu-Tang Clan,Boom Bap
 vvZhNPuZWuk,Dem Franchize Boyz,Snap Music
 vvmOsLl1hHY,Metro Boomin,Trap
 vvp2w0j16QM,2Pac,West Coast Hip-Hop
+vxkQ1Xfp67k,Ken Carson,Rage
+vxtsOKfwj2U,Big Freedia,Bounce
+vzL0bEZXqjk,The Roots,Philadelphia Hip-Hop
+vzqopppm5Kc,21 Savage,Trap
+vzzG66xlFvs,Stormzy,Grime
+w-2Xox_ImF0,Nate Dogg,G-Funk
+w-HrOBvsqWw,Delinquent Habits,Latino Hip-Hop
+w-NzvaFuhsE,Limp Bizkit,Nu Metal
 w-sQRS-Lc9k,Kordhell,Phonk
 w047cqmQD_M,Portishead,Trip Hop
 w0lZKVW-LAc,clipping.,Experimental Hip-Hop
@@ -13351,14 +13351,6 @@ w7CWhkFLSOw,Lil Jon,Crunk
 w7Wf0h1Q8a4,The Lonely Island,Comedy Hip-Hop
 w8A6FZpn0QY,Peso Pluma,Mexican Drill
 w8THhxg37W0,Skepta,Grime
-wABkYyW0bNk,Brokencyde,Crunkcore
-wAEeh6w9TP0,Natanael Cano,Mexican Drill
-wAxZQwo8OvE,Twista,Chopper
-wBHtXrFGBTE,Juvenile,Bounce
-wBLkADEqy2E,Lil Jon,Crunk
-wBQDF-kRqKM,Erykah Badu,Hip-Hop Soul
-wBTekD1f39E,21 Savage,Trap
-wBjWADV1AXg,Colt Ford,Country Rap
 w8rWFmO6ktI,Juvenile,Bounce
 w8t1xcHy0PY,Brotha Lynch Hung,Horrorcore
 w9EJtWkq9uQ,Little Simz,British Hip-Hop
@@ -13367,6 +13359,14 @@ w9me3H7sq9M,"Tyler, The Creator",Alternative Hip-Hop
 wA08gDe-Vt4,Drake,Pop Rap
 wA1NH_ktQPk,ericdoa,Digicore
 wA2uq_69AgA,Juice WRLD,Emo Rap
+wABkYyW0bNk,Brokencyde,Crunkcore
+wAEeh6w9TP0,Natanael Cano,Mexican Drill
+wAxZQwo8OvE,Twista,Chopper
+wBHtXrFGBTE,Juvenile,Bounce
+wBLkADEqy2E,Lil Jon,Crunk
+wBQDF-kRqKM,Erykah Badu,Hip-Hop Soul
+wBTekD1f39E,21 Savage,Trap
+wBjWADV1AXg,Colt Ford,Country Rap
 wC2MG0MelyY,Death Grips,Experimental Hip-Hop
 wCZsKEn70PM,Post Malone,Pop Rap
 wCpFnE2bLDw,Ghostemane,Trap Metal
@@ -13447,14 +13447,6 @@ wYSztXlTjKs,Tony Shhnow,Plugg
 wYw9A6wMPWg,El-P,Industrial Hip-Hop
 wZ0cd9ghDK4,Yeat,Rage
 wZFFTfY2hbk,Wiley,Grime
-waKJnlcGfBA,The Roots,Philadelphia Hip-Hop
-waKrKEiNQU0,Erykah Badu,Hip-Hop Soul
-waYUsCWUz0M,Carns Hill,Road Rap
-warnB0dwxBw,Kid Cudi,Hipster Hop
-wavP5iCMXaw,Wu-Tang Clan,Boom Bap
-wbrhXv3ugJQ,Junior H,Mexican Drill
-wby_Iq0PNeQ,Playboi Carti,Mumble Rap
-wbyh9TymM9o,JPEGMAFIA,Experimental Hip-Hop
 wZGzbGCRaZU,Insane Clown Posse,Horrorcore
 wZU9diqtrzY,DJ Muggs,Latino Hip-Hop
 wZYtmxLtoEA,2Pac,West Coast Hip-Hop
@@ -13463,6 +13455,14 @@ w_2aNg0hgWU,Headie One,UK Drill
 w_uTIMmpTf8,808Melo,Brooklyn Drill
 waBZIWhqPgo,Stormzy,Grime
 waFr47gRT1M,Q-Tip,Jazz Rap
+waKJnlcGfBA,The Roots,Philadelphia Hip-Hop
+waKrKEiNQU0,Erykah Badu,Hip-Hop Soul
+waYUsCWUz0M,Carns Hill,Road Rap
+warnB0dwxBw,Kid Cudi,Hipster Hop
+wavP5iCMXaw,Wu-Tang Clan,Boom Bap
+wbrhXv3ugJQ,Junior H,Mexican Drill
+wby_Iq0PNeQ,Playboi Carti,Mumble Rap
+wbyh9TymM9o,JPEGMAFIA,Experimental Hip-Hop
 wcH7XLppkS8,Wiley,Grime
 wcNU3hyTdGY,Eminem,Detroit Hip-Hop
 wclubsxEGaI,NWA,Gangsta Rap
@@ -13543,14 +13543,6 @@ wxiaa2hZdic,Nines,Road Rap
 wxiog5fi-cE,Luny Tunes,Reggaeton
 wySlHKG3_LI,The Roots,Philadelphia Hip-Hop
 wyb5GTEA8ZA,slowthai,Punk Rap
-x0M5Gpm9-hU,Playboi Carti,Mumble Rap
-x0Zk8zS5NVQ,Fever 333,Punk Rap
-x0gtQAr8Flw,Kendrick Lamar,Conscious Hip-Hop
-x10M2wbY7ho,Kool G Rap,Mafioso Rap
-x1SZ8xguYW4,Onyx,Hardcore Hip-Hop
-x1ZEptIw1W8,Massive Attack,Trip Hop
-x1gZt0P3Flo,Wiley,Grime
-x2CpmzV2Qhc,A Tribe Called Quest,Jazz Rap
 wyk7Gd0d9yM,Limp Bizkit,Nu Metal
 wyobJ3lPLhw,D'Angelo,Neo Soul
 wzE3ZUSlHvs,Common,Conscious Hip-Hop
@@ -13559,6 +13551,14 @@ wzlU-Q1JF7Q,Jinsang,Lofi Hip-Hop
 x-cY7TD-TfM,Nas,Boom Bap
 x-dIT5s_1qY,Clams Casino,Cloud Rap
 x-kyQdmcmF0,Migos,Trap
+x0M5Gpm9-hU,Playboi Carti,Mumble Rap
+x0Zk8zS5NVQ,Fever 333,Punk Rap
+x0gtQAr8Flw,Kendrick Lamar,Conscious Hip-Hop
+x10M2wbY7ho,Kool G Rap,Mafioso Rap
+x1SZ8xguYW4,Onyx,Hardcore Hip-Hop
+x1ZEptIw1W8,Massive Attack,Trip Hop
+x1gZt0P3Flo,Wiley,Grime
+x2CpmzV2Qhc,A Tribe Called Quest,Jazz Rap
 x2Pj8kUT6pE,Weird Al Yankovic,Comedy Hip-Hop
 x2T_koSshbY,Insane Clown Posse,Horrorcore
 x2b_MdGJ6X0,Jay-Z,East Coast Hip-Hop
@@ -14199,9 +14199,6 @@ zppgEY2C7-o,D'Angelo,Neo Soul
 zqTB-UBaEDA,Twista,Chopper
 zqfQqYemu08,Lil Dicky,Comedy Hip-Hop
 zrOj5xJce7I,Tricky,Trip Hop
-zzGMewH_peM,DJ Shadow,Instrumental Hip-Hop
-zzGRuDCSuI8,BROCKHAMPTON,Psychedelic Rap
-zzVMQS8jUvQ,Daddy Yankee,Reggaeton
 zra_6Wu353w,Rondodasosa,Afro Drill
 zs1ihJ4x9-E,Diego Money,Plugg
 zsJ07zbw5ZM,Ying Yang Twins,Crunk
@@ -14234,3 +14231,6 @@ zyqckodjGCI,XXXTentacion,Emo Rap
 zz8TW_RIiZI,Central Cee,UK Drill
 zzCZyZMAjU8,"Tyler, The Creator",Alternative Hip-Hop
 zzDypxSj51o,Jinsang,Lofi Hip-Hop
+zzGMewH_peM,DJ Shadow,Instrumental Hip-Hop
+zzGRuDCSuI8,BROCKHAMPTON,Psychedelic Rap
+zzVMQS8jUvQ,Daddy Yankee,Reggaeton
