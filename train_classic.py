@@ -105,7 +105,7 @@ def held_out(tracks):
     return np.array([t in val for t in tracks])
 
 
-def calibrate_threshold(Pa, truth, classes, n_classes):
+def calibrate_threshold(Pa, truth, classes, n_classes, pick):
     """
     Picks the confidence bar from THIS model's accuracy distribution.
 
@@ -115,10 +115,16 @@ def calibrate_threshold(Pa, truth, classes, n_classes):
 
     Target: the lowest bar whose retained predictions are right at least MIN_PRECISION of
     the time. Below that a shown name misleads more often than it helps.
+
+    `pick` is the column index of the artist the pipeline ACTUALLY shows — the joint
+    decode, not Pa.argmax. Those differ, and calibrating on argmax while serving the
+    joint pick measured a quantity nothing downstream used. Same drift as Trap 1, one
+    level up: the number was right about a system we were not running.
     """
     MIN_PRECISION = 0.35
-    conf  = Pa.max(1) * n_classes            # ratio against a uniform guess
-    right = classes[Pa.argmax(1)] == truth
+    rows_i = np.arange(len(Pa))
+    conf  = Pa[rows_i, pick] * n_classes     # ratio against a uniform guess
+    right = classes[pick] == truth
 
     print("\n  confidence bar   shown   top-1 correct")
     rows, chosen = [], None
@@ -204,7 +210,12 @@ def main():
     joint = np.log(Pa + 1e-12) + logPg[:, g_of_a[clf_a.classes_]]
     joint_a = clf_a.classes_[joint.argmax(1)]
 
-    a_top1 = float((clf_a.classes_[Pa.argmax(1)] == ta).mean())
+    # top-1 is the JOINT pick, because that is the artist inference_engine.classify
+    # returns and the UI shows. Scoring Pa.argmax instead reported a system nobody runs
+    # (measured: 15.35% argmax vs 16.16% joint on the same split, +0.81p / 1.2 SE).
+    # argmax is still printed alongside, so the two can never silently diverge again.
+    a_top1 = float((clf_a.classes_[joint.argmax(1)] == ta).mean())
+    a_top1_argmax = float((clf_a.classes_[Pa.argmax(1)] == ta).mean())
     a_top5 = float(np.mean([ta[i] in clf_a.classes_[np.argsort(-Pa[i])[:5]]
                             for i in range(len(ta))]))
     g_direct = float((clf_g.classes_[Pg.argmax(1)] == tg).mean())
@@ -213,11 +224,14 @@ def main():
     print(f"\n=== {kind} on {is_val.sum():,} held-out tracks ===")
     print(f"  artist  top-1 {a_top1*100:5.2f}%  top-5 {a_top5*100:5.2f}%  "
           f"chance {ch_a*100:.2f}%  -> {a_top1/ch_a:.1f}x")
+    print(f"          (top-1 is the joint pick, what inference serves; "
+          f"plain argmax would read {a_top1_argmax*100:.2f}%)")
     print(f"  genre   direct {g_direct*100:5.2f}%  joint {g_joint*100:5.2f}%  "
           f"chance {ch_g*100:.2f}%  -> {g_joint/ch_g:.1f}x")
     print("\n  reference: classical MFCC 9.45%/24.13%/17.32%, EfficientNetB3 below chance")
 
-    threshold, table = calibrate_threshold(Pa, ta, clf_a.classes_, len(artists))
+    threshold, table = calibrate_threshold(Pa, ta, clf_a.classes_, len(artists),
+                                           joint.argmax(1))
 
     joblib.dump({
         "kind": kind, "pca": pca, "scaler": scaler,
@@ -228,7 +242,8 @@ def main():
         "artists": artists, "genres": genres, "genre_of_artist": g_of_a,
         "embed_dim": X.shape[1], "duration": AF.DURATION,
         "confidence_threshold": threshold, "calibration_table": table,
-        "metrics": {"artist_top1": a_top1, "artist_top5": a_top5,
+        "metrics": {"artist_top1": a_top1, "artist_top1_argmax": a_top1_argmax,
+                    "artist_top5": a_top5,
                     "genre_joint": g_joint, "n_held_out": int(is_val.sum())},
     }, MODEL_PATH)
 

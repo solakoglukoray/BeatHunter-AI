@@ -446,6 +446,31 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     reliable = conf.get("reliable", False)
     top5     = conf.get("artist_top5") or []
 
+    # Leads the report because it is the question people actually came with: what do I
+    # type into YouTube. The old layout answered "which artist" first even when the
+    # artist was the weakest thing we knew — on held-out tracks that policy could name
+    # an artist for only 10% of tracks, while this one puts a specific label on 97%.
+    rec = analysis.get("label_recommendation")
+    if rec and rec.get("qualifies"):
+        b = rec["best"]
+        kind_name = {"artist": "artist", "genre": "genre", "mood": "character"}[b["kind"]]
+        st.success(
+            f"🔎 **Most reliable label for this track — its {kind_name}:**\n"
+            f"## {b['label']}\n"
+            f"Search: `{rec['query']}`"
+        )
+        st.caption(
+            f"Chosen because it is right about {b['precision']*100:.0f}% of the time at "
+            f"this confidence ({b['evidence']}), measured on {b['n']} held-out tracks. "
+            "Artist, genre and character are compared on that one number — how often "
+            "each turns out to be correct — not on how confident the model sounds."
+        )
+    elif rec:
+        st.warning(
+            "🔎 **No single label is reliable enough for this track.** "
+            "The candidates below are the honest answer."
+        )
+
     c1, c2, c3, c4 = st.columns(4)
     if reliable:
         c1.success(f"🎧 **Closest style:**\n### {analysis['artist_type']} Type")

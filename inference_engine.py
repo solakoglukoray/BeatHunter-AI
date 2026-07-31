@@ -47,6 +47,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 import scipy.stats as stats
 
 import audio_features as AF
+import label_recommender as LR
 
 # --- CONFIGURATION ---
 TEMP_FOLDER   = "temp_inference"
@@ -351,6 +352,10 @@ def analyze_beat(audio_path):
     """
     Returns (formatted, recommendations, bpm, key, confidence, spec_path, mood).
 
+    `confidence["recommendation"]` carries the single label most worth showing — artist,
+    genre, or a mood axis — chosen by measured P(correct) weighted by how much the label
+    narrows the search. See label_recommender.
+
     `formatted` is "<artist> Type / <genre>". Mood is NOT part of it and is NOT a
     classifier output: it is measured from the audio on three axes and reported
     separately, because unlike artist/genre it is not a prediction that can be wrong
@@ -372,6 +377,13 @@ def analyze_beat(audio_path):
     # decoding the file again. Costs ~5s, dominated by HPSS.
     print("🎨 Measuring mood...")
     mood = AF.mood_from_audio(y, sr)
+
+    # Which of the three is worth leading with. Added as a field rather than an eighth
+    # tuple element so existing callers unpacking seven values keep working. Nothing is
+    # recomputed here — it reads the confidence and mood already in hand.
+    # None when models/label_reliability.json is missing; the caller then falls back to
+    # the old policy (single name only above the confidence bar, otherwise top-5).
+    confidence["recommendation"] = LR.recommend_label(confidence, mood)
 
     formatted = f"{artist} Type / {genre}"
 
@@ -399,6 +411,11 @@ if __name__ == "__main__":
         if mood:
             print("   mood: " + ", ".join(
                 f"{v['label']} ({v['score']:.2f})" for v in mood.values()))
+        rec = conf.get("recommendation")
+        if rec:
+            print(f"   en guvenilir etiket: {rec['reason']}")
+            if rec["query"]:
+                print(f"   ara: \"{rec['query']}\"")
         for i, r in enumerate(recs, 1):
             print(f"  {i}. {r['title']} — {r['score']:.1f}%")
     except Exception as e:

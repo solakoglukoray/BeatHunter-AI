@@ -16,7 +16,13 @@ projedeki her sayı bu split'ten):**
 | EfficientNetB3 (ImageNet) | ~%0.7 | 0.8x | — | ~%1.3 |
 | klasik MFCC 102-dim | %9.45 | 16.7x | %24.13 | %17.32 |
 | donuk PANNs (AudioSet) | %12.96 | 22.9x | %32.03 | %24.17 |
-| **fine-tuned PANNs** | **%15.35** | **27.1x** | **%37.72** | **%28.21** |
+| **fine-tuned PANNs** | **%16.16** | **28.5x** | **%37.72** | **%28.21** |
+
+⚠️ Top-1 sütunu **joint decoding** ile ölçülür (2026-07-31'de düzeltildi). Önceki
+%15.35, `Pa.argmax` içindi — ama `inference_engine.classify()` sanatçıyı joint skorla
+seçiyor, yani o sayı üretimde çalışmayan bir sistemi tarif ediyordu. Fark +0.81p
+(1.2 SE, anlamlı değil); önemli olan **ölçülen şeyin sunulan şey olması**. İlk üç satır
+kendi dönemlerinin argmax ölçümleri, aralarındaki karşılaştırma geçerli.
 
 İlk üç satırın dersi **kapasite değil domain**: EfficientNetB3 en büyüğüydü ve şansın
 altında kaldı, çünkü fotoğraftan transfer ediyor. PANNs 2M ses klibinden transfer ediyor.
@@ -49,6 +55,9 @@ Tek istisna top-5: uçtan uca model orada 2.7p (~3 SE) daha iyi, çünkü kendi 
 | `data_validator.py` | Dataset doğrulama |
 | `audio_features.py` | **Temsil — TEK KAYNAK.** PANNs embedding + klasik fallback + mood eksenleri + `fold_bpm` |
 | `calibrate_mood.py` | Mood eşiklerini korpustan türetir ve **doğrular** (bağımsızlık, tür, kulak) |
+| `label_recommender.py` | Hangi etiket söylenmeye değer — ortak birim P(doğru) |
+| `calibrate_label_choice.py` | Üç etiket türünün güvenilirlik eğrilerini ölçer |
+| `demo_label_choice.py` | Seçiciyi held-out örnekler + toplu sayılarla gösterir |
 | `train_classic.py` | Sınıflandırıcı + katalog + eşik kalibrasyonu üretir |
 | `inference_engine.py` | Çıkarım: sınıflandırma, benzerlik, BPM/key |
 | `model_trainer.py` | EfficientNetB3 eğitimi — **emekli**, yeniden denenirse duruyor |
@@ -220,7 +229,7 @@ python get_encoder.py        # ne var ne yok, stock ağırlıkları indirir
 Fine-tuned ağırlık için üç yol: **(1)** başka makineden kopyala (günlük kullanımda bu),
 **(2)** yeniden üret (`panns_finetune.py` ~2.8 sa GPU + `--extract-encoder`, sonra
 `train_classic.py --extract` ~45 dk), **(3)** onsuz çalış — stock ağırlıklar otomatik
-devreye girer, maliyeti artist top-1 %15.35 → %12.96; ardından `train_classic.py`
+devreye girer, maliyeti artist top-1 %16.16 → %12.96; ardından `train_classic.py`
 (dakikalar, embedding'ler cache'te).
 
 ⚠️ Git ikisini de takip etmiyor: her yeniden eğitimde değişen 327 MB binary LFS işi ve
@@ -235,14 +244,33 @@ dosya → hata). Bu kontrolü kaldırma; Tuzak 1'in tam deseni.
 ## Şu anki durum
 **Fine-tuned PANNs + PCA-128 üretimde** (2026-07-30). `analyze_beat` uçtan uca çalışıyor.
 
-Ölçülen (2,847 held-out parça): artist top-1 **%15.35** / top-5 **%37.72** (27.1x şans),
+Ölçülen (2,847 held-out parça): artist top-1 **%16.16** / top-5 **%37.72** (28.5x şans),
 genre **%28.21** (16.8x). Yol: EfficientNetB3 0.8x → klasik MFCC 16.7x → donuk PANNs
-22.9x → fine-tuned PANNs 27.1x.
+22.9x → fine-tuned PANNs 28.5x.
 
-⚠️ **Mutlak seviye hâlâ düşük.** Top-1 %15.35, yani 7 denemede 1. UI bunu saklamıyor:
-tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %11.1'i, o dilimde
-doğruluk %43.5), aksi halde top-5 aday listesi (%37.72). Eşik her eğitimde
+⚠️ **Mutlak seviye hâlâ düşük.** Top-1 %16.16, yani 6 denemede 1. UI bunu saklamıyor:
+tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %11.0'ı, o dilimde
+doğruluk %43.9), aksi halde top-5 aday listesi (%37.72). Eşik her eğitimde
 `train_classic.py` tarafından yeniden ölçülüyor — kopyalanmıyor.
+
+**Etiket seçici üretimde** (2026-07-31). Sanatçı/genre/mood'dan hangisinin söylenmeye
+değer olduğuna karar veriyor: `label_recommender.recommend_label()`, `analyze_beat`
+içinde `confidence["recommendation"]` alanına yazılıyor (7'li tuple bozulmadı).
+→ ⚠️ **Ortak birim "şansa göre kaç kat" DEĞİL.** Tavan sınıf sayısına bağlı: sanatçı
+194x, genre 65x, mood ekseni **3x**. O birimle kesin bir mood, umutsuz bir sanatçıya
+bile hep yenilir. Ortak birim **P(etiket doğru)** — üçü de aynı held-out split'te
+ölçüldü (`calibrate_label_choice.py` → `models/label_reliability.json`).
+→ ⚠️ **Sıralama ölçütü `information` = P(doğru) × log₂(seçenek), `reliability` DEĞİL.**
+Yalnız güvenilirlikle sıralamak dejenere oluyor: 371 seçimin 349'u mood (3 seçenekliyi
+bilmek kolay). `information` ile dağılım 29 artist / 133 genre / 209 mood.
+→ Kapsam %10.2 → **%96.6**; yer gerçeğiyle ölçülebilen seçimlerde doğruluk %43.6 →
+%42.6 ama etiketli parça sayısı 39 → 162.
+→ ⚠️ Orta terciller ("Moderate"/"Balanced") **aday değil** — "karaktersiz" demek.
+Kaldırılmadan önce, sanatçısı 161x'te doğru bilinmiş bir parçaya
+"balanced G-Funk type beat" öneriyordu.
+→ ⚠️ Mood etiketi **pencereye bağlı**: 0-30sn vs 30-60sn tutarlılığı energy %41
+(kayma +0.231, intro etkisi), brightness %57, aggression %67. Bu yüzden güvenilirlik
+eksen başına ölçülüyor. Çoklu pencere ortalaması bunu düzeltir — yapılmadı.
 
 **Mood artık ölçülüyor ve UI'da** (2026-07-30, Tuzak 5). Sınıflandırıcıdan bağımsız —
 BPM/key gibi sinyalden geliyor, o yüzden güven uyarısı taşımıyor. `analyze_beat` 7'li

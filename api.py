@@ -315,7 +315,11 @@ async def analyze_file_endpoint(
                 # percentiles — none of the three are affected by classifier accuracy.
                 # See inference_engine.classification_confidence().
                 "classification_confidence": confidence,
-                "mood": mood
+                "mood": mood,
+                # Which single label is worth leading with, and why. Surfaced here as
+                # well as inside classification_confidence because it is the headline
+                # answer, not a detail of the confidence breakdown.
+                "label_recommendation": confidence.get("recommendation")
             },
             "recommendations": recommendations
         }
@@ -360,7 +364,8 @@ async def background_youtube_worker(query: str, cache_key: str, username: str):
                 "key": key,
                 # See the note in analyze_file_endpoint — bpm/key/mood are unaffected.
                 "classification_confidence": confidence,
-                "mood": mood
+                "mood": mood,
+                "label_recommendation": confidence.get("recommendation")
             },
             "recommendations": recommendations
         }
