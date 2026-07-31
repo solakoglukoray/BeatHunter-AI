@@ -55,9 +55,10 @@ Tek istisna top-5: uçtan uca model orada 2.7p (~3 SE) daha iyi, çünkü kendi 
 | `data_validator.py` | Dataset doğrulama |
 | `audio_features.py` | **Temsil — TEK KAYNAK.** PANNs embedding + klasik fallback + mood eksenleri + `fold_bpm` |
 | `calibrate_mood.py` | Mood eşiklerini korpustan türetir ve **doğrular** (bağımsızlık, tür, kulak) |
-| `label_recommender.py` | Hangi etiket söylenmeye değer — ortak birim P(doğru) |
-| `calibrate_label_choice.py` | Üç etiket türünün güvenilirlik eğrilerini ölçer |
+| `label_recommender.py` | "YouTube'a şunu yaz" sorgusunu kurar — ölçülen sorgu faydasına göre |
+| `calibrate_label_choice.py` | Etiket türlerinin güvenilirlik eğrilerini ölçer |
 | `demo_label_choice.py` | Seçiciyi held-out örnekler + toplu sayılarla gösterir |
+| `validate_query_suggestions.py` | **Önerilen sorguyu YouTube'da fiilen test eder** (indirir, benzerlik ölçer) |
 | `train_classic.py` | Sınıflandırıcı + katalog + eşik kalibrasyonu üretir |
 | `inference_engine.py` | Çıkarım: sınıflandırma, benzerlik, BPM/key |
 | `model_trainer.py` | EfficientNetB3 eğitimi — **emekli**, yeniden denenirse duruyor |
@@ -253,24 +254,45 @@ tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %11.0'ı,
 doğruluk %43.9), aksi halde top-5 aday listesi (%37.72). Eşik her eğitimde
 `train_classic.py` tarafından yeniden ölçülüyor — kopyalanmıyor.
 
-**Etiket seçici üretimde** (2026-07-31). Sanatçı/genre/mood'dan hangisinin söylenmeye
-değer olduğuna karar veriyor: `label_recommender.recommend_label()`, `analyze_beat`
-içinde `confidence["recommendation"]` alanına yazılıyor (7'li tuple bozulmadı).
-→ ⚠️ **Ortak birim "şansa göre kaç kat" DEĞİL.** Tavan sınıf sayısına bağlı: sanatçı
-194x, genre 65x, mood ekseni **3x**. O birimle kesin bir mood, umutsuz bir sanatçıya
-bile hep yenilir. Ortak birim **P(etiket doğru)** — üçü de aynı held-out split'te
-ölçüldü (`calibrate_label_choice.py` → `models/label_reliability.json`).
-→ ⚠️ **Sıralama ölçütü `information` = P(doğru) × log₂(seçenek), `reliability` DEĞİL.**
-Yalnız güvenilirlikle sıralamak dejenere oluyor: 371 seçimin 349'u mood (3 seçenekliyi
-bilmek kolay). `information` ile dağılım 29 artist / 133 genre / 209 mood.
-→ Kapsam %10.2 → **%96.6**; yer gerçeğiyle ölçülebilen seçimlerde doğruluk %43.6 →
-%42.6 ama etiketli parça sayısı 39 → 162.
-→ ⚠️ Orta terciller ("Moderate"/"Balanced") **aday değil** — "karaktersiz" demek.
-Kaldırılmadan önce, sanatçısı 161x'te doğru bilinmiş bir parçaya
-"balanced G-Funk type beat" öneriyordu.
-→ ⚠️ Mood etiketi **pencereye bağlı**: 0-30sn vs 30-60sn tutarlılığı energy %41
-(kayma +0.231, intro etkisi), brightness %57, aggression %67. Bu yüzden güvenilirlik
-eksen başına ölçülüyor. Çoklu pencere ortalaması bunu düzeltir — yapılmadı.
+**Sorgu önericisi üretimde** (2026-07-31). Kullanıcıya "YouTube'a şunu yaz" diyor:
+`label_recommender.recommend_label()`, `analyze_beat` içinde
+`confidence["recommendation"]` alanına yazılıyor (7'li tuple bozulmadı).
+
+→ 🚨 **Hedef "en güvenilir etiket" DEĞİL, "en iyi arama terimi".** İkisi farklı şeyler
+ve bu ayrımı ölçüm öğretti. `validate_query_suggestions.py` 45 parça / 275 indirilen
+YouTube sonucu ile, **aynı biçimde ama rastgele etiketli** kontrol sorgusuna karşı:
+
+| sorgu türü | önerilen | kontrol | fayda | |
+|---|---|---|---|---|
+| artist | +0.136 | −0.011 | **+0.147** | 5.7 SE |
+| genre | +0.107 | −0.002 | **+0.109** | 3.8 SE |
+| mood | +0.011 | −0.008 | +0.018 | **1.1 SE — yok** |
+
+Taban (rastgele iki katalog parçası) −0.001. Kontaminasyon nötr: sonuçların %15.2'si
+(önerilen) / %16.0'ı (kontrol) korpusta, sorgulanan parçanın kendisi hiç dönmedi.
+
+→ ⚠️ **Mood sorgu adayı DEĞİL, ama UI'da duruyor.** Etiket doğru — sorun onu arama
+terimi yapmaktı. "chill type beat" gerçekten chill beat getiriyor ama chill beat'ler
+tüm türlere yayıldığı için tek bir parçaya benzemiyor. Genre çıpası yardım ediyor
+("chill Southern Hip-Hop type beat", +0.045 / 2.8 SE) ama yine artist/genre'nin
+altında. **Mood'u sorguya geri ekleme.**
+→ ⚠️ **Güven barajı yok, kasıtlı.** 150x'i geçmeyen etiketten de sorgu kuruluyor:
+genre kolu %49 hassasiyetle çalışırken bile kontrolü 3.8 SE geçti. Bir ismi *iddia*
+olarak göstermek ayrı karar, hâlâ `confidence["reliable"]`.
+→ ⚠️ **Yanlış sanatçı bile işe yarıyor** (+0.126; yanlış genre +0.078). Sınıflandırıcı
+sanatçıyı karıştırdığında sesçe komşu sanatçıyla karıştırıyor.
+→ ⚠️ `QUERY_UPLIFT_PER_PRECISION` ağırlıklandırması **şu an hiçbir kararı
+değiştirmiyor** — 2,847 parçanın hiçbirinde `query_utility` ile `reliability` ayrışmıyor.
+Davranışı değiştiren şey mood'un çıkarılması ve barajın kalkmasıydı. Ölçüt yine de
+duruyor çünkü doğru soru o; eğriler incelirse etkili olacak.
+→ Kapsam %10.2 → **%100** (artist 112 / genre 272 seçim, held-out 384'lük mood alt
+kümesinde).
+→ ⚠️ Mood **pencereye bağlı**: 0-30sn vs 30-60sn tutarlılığı energy %41 (kayma +0.231,
+intro etkisi), brightness %57, aggression %67. Çoklu pencere ortalaması düzeltir —
+yapılmadı.
+→ ⚠️ Ölçülen fayda rakamları, eski ölçütün o türü seçtiği güven aralığında toplandı
+(artist ~184x, genre ~42x). Çok daha düşük güvende ekstrapolasyon; sınıflandırıcı
+değişirse `validate_query_suggestions.py` yeniden koşulmalı.
 
 **Mood artık ölçülüyor ve UI'da** (2026-07-30, Tuzak 5). Sınıflandırıcıdan bağımsız —
 BPM/key gibi sinyalden geliyor, o yüzden güven uyarısı taşımıyor. `analyze_beat` 7'li

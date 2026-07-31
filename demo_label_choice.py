@@ -1,10 +1,11 @@
 """
-Shows the label chooser working on real held-out tracks, before anything is integrated.
+Shows the query chooser working on real held-out tracks.
 
 Deliberately picks three groups so the logic can be judged rather than trusted:
-  A) tracks whose artist clears the 150x bar     — artist should usually win
-  B) tracks whose artist is hopeless             — something else should win, or nothing
-  C) tracks with an extreme mood axis            — mood should win, and should deserve it
+  A) tracks whose artist clears the 150x bar  — artist should usually carry the query
+  B) tracks whose artist is hopeless          — genre should take over
+  C) tracks with an extreme mood axis         — mood is NOT a candidate; these exist to
+                                                confirm it never sneaks back in
 
 Ground truth is printed alongside, so "the chooser picked artist" can be checked against
 "the artist was actually right".
@@ -77,7 +78,7 @@ def show(tag, rows):
         print("    mood: " + ", ".join(
             f"{a}={v['label']} {v['score']:.2f}" for a, v in mood.items()))
 
-        for crit in ("reliability", "information"):
+        for crit in ("query_utility", "reliability"):
             rec = LR.recommend_label(c, mood, criterion=crit)
             mark = "OK " if rec["qualifies"] else "YOK"
             print(f"    [{crit:11s}] {mark} {rec['reason']}")
@@ -100,9 +101,9 @@ def summarise(rows):
     """
     Does the chooser actually beat the current policy, or does it just feel clever?
 
-    Only artist and genre picks can be scored against ground truth. Mood picks are
-    counted separately and honestly: their reliability is a stability measurement, not
-    an accuracy, so folding them into one precision number would be inventing evidence.
+    Every pick is now artist or genre, so every pick is checkable — mood was removed as
+    a query candidate after 275 downloaded search results showed mood queries were
+    indistinguishable from random ones (+0.018, 1.1 SE).
     """
     print("\n" + "=" * 78)
     print("TOPLU DEGERLENDIRME — tum held-out parcalar")
@@ -117,8 +118,8 @@ def summarise(rows):
     print(f"    tek etiket gosterilen: {prod_shown}/{len(rows)} "
           f"(%{prod_shown/len(rows)*100:.1f})   dogruluk %{prod_hit/max(prod_shown,1)*100:.1f}")
 
-    for crit in ("reliability", "information"):
-        kinds = {"artist": [0, 0], "genre": [0, 0], "mood": [0, 0]}
+    for crit in ("query_utility", "reliability"):
+        kinds = {"artist": [0, 0], "genre": [0, 0]}
         shown = 0
         for r in rows:
             rec = LR.recommend_label(r["conf"], r["mood"], criterion=crit)
@@ -138,11 +139,7 @@ def summarise(rows):
         for k, (cnt, hit) in kinds.items():
             if not cnt:
                 continue
-            if k == "mood":
-                print(f"      {k:7s} {cnt:4d} kez secildi   (dogruluk yer gercegiyle "
-                      f"olculemez — bkz. not)")
-            else:
-                print(f"      {k:7s} {cnt:4d} kez secildi   dogru %{hit/cnt*100:.1f}")
+            print(f"      {k:7s} {cnt:4d} kez secildi   dogru %{hit/cnt*100:.1f}")
         if checkable:
             print(f"    yer gercegiyle olculebilen {checkable} secimde dogruluk "
                   f"%{hits/checkable*100:.1f}")

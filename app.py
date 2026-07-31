@@ -453,22 +453,18 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     rec = analysis.get("label_recommendation")
     if rec and rec.get("qualifies"):
         b = rec["best"]
-        kind_name = {"artist": "artist", "genre": "genre", "mood": "character"}[b["kind"]]
         st.success(
-            f"🔎 **Most reliable label for this track — its {kind_name}:**\n"
-            f"## {b['label']}\n"
-            f"Search: `{rec['query']}`"
+            f"🔎 **Search YouTube for this:**\n"
+            f"## {rec['query']}"
         )
         st.caption(
-            f"Chosen because it is right about {b['precision']*100:.0f}% of the time at "
-            f"this confidence ({b['evidence']}), measured on {b['n']} held-out tracks. "
-            "Artist, genre and character are compared on that one number — how often "
-            "each turns out to be correct — not on how confident the model sounds."
-        )
-    elif rec:
-        st.warning(
-            "🔎 **No single label is reliable enough for this track.** "
-            "The candidates below are the honest answer."
+            f"Picked by what actually works as a search, not by what the model is most "
+            f"sure of. In a test of 275 downloaded results, {b['kind']} queries returned "
+            "beats measurably closer to the original than the same query with a random "
+            f"label swapped in. This one's label is right about {b['precision']*100:.0f}% "
+            f"of the time at this confidence ({b['evidence']}). Mood words were tried and "
+            "dropped: \"chill type beat\" does return chill beats, but they span every "
+            "genre, so none of them sound like any particular track."
         )
 
     c1, c2, c3, c4 = st.columns(4)

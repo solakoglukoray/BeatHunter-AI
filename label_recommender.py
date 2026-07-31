@@ -1,52 +1,81 @@
 """
-Picks which label — artist, genre, or a mood axis — is the most trustworthy thing to
-say about a track, and says why.
+Builds the "search this on YouTube" suggestion, and says how much it is worth.
 
 Consumes what analyze_beat already returns. Nothing here re-analyses audio.
 
-THE UNIT PROBLEM
-----------------
-The three signals arrive in incompatible units: artist and genre come as "ratio vs
-chance", mood as a corpus percentile. The tempting move is to put everything in ratio
-terms. It does not work, because the ceiling depends on how many classes there are:
+WHAT THIS OPTIMISES, AND WHY IT CHANGED
+---------------------------------------
+The first version ranked labels by P(this label is correct). That was the wrong target,
+and validate_query_suggestions.py is what showed it: being right and being a useful
+search term are different things.
 
-    artist      194 classes -> a ratio can reach 194x
-    genre        65 classes ->                    65x
-    mood axis     3 labels  ->                     3x
+Measured on 45 held-out tracks, 275 downloaded YouTube results, against a control arm
+that keeps the query template and swaps in a RANDOM label of the same kind (so the
+comparison is "did we pick the right label", not "is this kind of query any good"):
 
-Under that unit a certain mood loses to a hopeless artist guess, always. So the common
-unit is the one the user actually cares about:
+    query kind    suggested   control    uplift
+    artist          +0.136     -0.011    +0.147   (5.7 SE)
+    genre           +0.107     -0.002    +0.109   (3.8 SE)
+    mood            +0.011     -0.008    +0.018   (1.1 SE)  <- indistinguishable
 
-    P(this label is correct)
+Floor for reference: two random catalogue tracks sit at -0.001 cosine.
 
-measured for all three on the same held-out split by calibrate_label_choice.py. For
-artist and genre that is precision against ground truth. Mood has no ground truth to be
-wrong about — it is a measurement — so its number is the probability the label survives
-being measured on a different part of the track.
+MOOD IS NOT A QUERY
+-------------------
+Mood is measured correctly — that was validated separately, and it still ships as
+character information in the UI. It just does not work as a search term: "chill type
+beat" genuinely returns chill beats, but chill beats span every genre, so none of them
+resemble the specific track you started from. Anchoring it to the predicted genre helped
+("chill Southern Hip-Hop type beat", +0.045, 2.8 SE) yet stayed well under artist and
+genre, so mood is not a query candidate at all here.
 
-RELIABILITY IS NOT USEFULNESS
------------------------------
-Ranking purely by P(correct) has a bias nobody should walk into by accident: a 3-way
-label is easy to get right, so mood tends to win. But "Aggressive type beat" is a poor
-YouTube query and "Young Chop type beat" is a good one. So both criteria are computed:
+NO CONFIDENCE FLOOR ON THE QUERY
+--------------------------------
+A query is always built, even when the label is below the old 150x display bar, because
+the measurement says a low-confidence label still beats a random one: the genre arm ran
+at 49% precision and still cleared its control by 3.8 SE. Whether to SHOW a name as a
+claim is a separate question, still governed by confidence["reliable"].
 
-    reliability   P(correct)                      — how likely the label is true
-    information   P(correct) x log2(n_choices)    — how much it narrows the search
+Note what the split by correctness says about why artist queries hold up:
 
-`criterion` selects which one drives the pick. They disagree often, and the disagreement
-is the interesting part rather than a defect — see demo_label_choice.py.
+    artist, label correct   +0.165        genre, label correct   +0.176
+    artist, label wrong     +0.126        genre, label wrong     +0.078
+
+A wrong artist prediction is usually a stylistically adjacent artist, so the query still
+lands in the right neighbourhood. A wrong genre is a bigger miss.
 """
 
 import json
-import math
 import os
 
 RELIABILITY_PATH = "models/label_reliability.json"
 
-# Below this, no single label is worth leading with and the caller should show the
-# top-5 candidate list instead. Set at the artist classifier's own overall top-1
-# accuracy: a label that is not beating "just show the list" has not earned the spot.
-MIN_USEFUL_PRECISION = 0.35
+# Measured uplift per unit of P(correct): the arm's measured uplift divided by the mean
+# P(correct) of the tracks it was measured on (artist +0.147 at 0.529, genre +0.109 at
+# 0.491). Two anchors, linear between them — at P(correct) -> 0 the label carries no
+# information and the query degenerates to the control arm, which is uplift 0 by
+# definition. No functional form is invented beyond that straight line.
+#
+# ⚠️ Both arms were sampled where the old criterion chose them: artist around 184x,
+# genre around 42x. Far below that this extrapolates, and it will overstate a hopeless
+# guess. Re-run validate_query_suggestions.py if the classifier changes.
+QUERY_UPLIFT_PER_PRECISION = {
+    "artist": 0.147 / 0.529,     # 0.278
+    "genre":  0.109 / 0.491,     # 0.222
+}
+
+# ⚠️ HONEST NOTE: this weighting currently changes NOTHING. Ranking by expected uplift
+# prefers artist when P_artist > 0.80 * P_genre; ranking by precision alone prefers it
+# when P_artist > P_genre. Across all 2,847 held-out tracks not one lands in that band,
+# because the reliability curves are coarse bins and their discrete values never fall
+# there — the two criteria agree on 100% of tracks. What actually changed behaviour was
+# dropping mood as a candidate and removing the confidence floor.
+# It is kept because it is the correct question to be asking, it is grounded in
+# measurement rather than intuition, and it will start to bite the moment the curves get
+# finer or the classifier shifts. Do not read the criterion name as evidence that
+# something clever is happening today.
+
+DEFAULT_CRITERION = "query_utility"
 
 _cache = None
 _tried = False
@@ -79,19 +108,19 @@ def _lookup(curve, value):
     return None, 0, None
 
 
-def candidates(confidence, mood, reliability=None):
+def candidates(confidence, mood=None, reliability=None):
     """
-    Every label we could lead with, each scored in the common unit.
+    Labels that could carry the query, each scored in expected cosine uplift.
 
-    Returns a list of dicts, unsorted. `confidence` and `mood` are exactly what
-    analyze_beat returns; either may be missing pieces and this still works.
+    `mood` is accepted and ignored — kept in the signature so callers do not have to
+    care, and so the omission is visible here rather than looking like an oversight.
+    Mood ships to the UI on its own path.
     """
     rel = reliability if reliability is not None else load_reliability()
     if rel is None:
         return []
 
     out = []
-
     conf = confidence or {}
     for kind in ("artist", "genre"):
         c = conf.get(kind) or {}
@@ -103,141 +132,53 @@ def candidates(confidence, mood, reliability=None):
         p, n, se = _lookup(spec.get("curve") or [], float(ratio))
         if p is None:
             continue
-        choices = spec.get("n_classes") or 2
         out.append({
-            "kind": kind, "axis": None, "label": label,
+            "kind": kind, "label": label,
             "precision": p, "n": n, "se": se,
-            "choices": choices,
-            "information": p * math.log2(choices),
+            "ratio_vs_chance": float(ratio),
+            "expected_uplift": p * QUERY_UPLIFT_PER_PRECISION[kind],
             "evidence": f"{float(ratio):.0f}x sansin uzerinde",
         })
-
-    axes = (rel.get("mood") or {}).get("per_axis") or {}
-    middles = _middle_labels()
-    for axis, val in (mood or {}).items():
-        spec = axes.get(axis)
-        if not spec:
-            continue
-        # The middle tercile is never a recommendation. "Moderate" is a statement that
-        # the track has no character on this axis, so leading with it is useless however
-        # reliable it is — and it is not even reliable, since sitting mid-scale means
-        # sitting near a cut. Without this the chooser recommended "balanced G-Funk type
-        # beat" for a track whose artist had been correctly identified at 161x chance.
-        if val["label"] == middles.get(axis):
-            continue
-        score = float(val["score"])
-        # Distance from the nearest tercile cut — the same quantity the curve was
-        # measured against. Cuts live in the mood calibration, but the reliability file
-        # records the margin bins, so recover the margin from the score directly.
-        cuts = spec.get("cuts")
-        if cuts is None:
-            cuts = _axis_cuts(axis)
-        margin = min(abs(score - cuts[0]), abs(score - cuts[1])) if cuts else 0.0
-        p, n, se = _lookup(spec.get("curve") or [], margin)
-        if p is None:
-            continue
-        out.append({
-            "kind": "mood", "axis": axis, "label": val["label"],
-            "precision": p, "n": n, "se": se,
-            "choices": 3,
-            "information": p * math.log2(3),
-            "evidence": f"korpus yuzdeligi {score:.2f}, kesim noktasindan {margin:.2f} uzakta",
-        })
-
     return out
 
 
-def _middle_labels():
-    """The 'no character on this axis' label per axis, e.g. Moderate / Balanced."""
-    try:
-        import audio_features as AF
-        return {ax: names[1] for ax, names in AF.MOOD_AXES.items()}
-    except Exception:
-        return {}
-
-
-def _axis_cuts(axis):
-    """Tercile cuts for an axis, read from the mood calibration."""
-    try:
-        import audio_features as AF
-        calib = AF.load_mood_calibration()
-        return (calib or {}).get("axis_cuts", {}).get(axis)
-    except Exception:
-        return None
-
-
-DEFAULT_CRITERION = "information"
-
-
-def recommend_label(confidence, mood, reliability=None, criterion=DEFAULT_CRITERION):
+def recommend_label(confidence, mood=None, reliability=None,
+                    criterion=DEFAULT_CRITERION):
     """
-    The single label most worth showing, with the reason, or None if nothing qualifies.
+    The query worth suggesting, with the reason, or None if nothing is available.
 
-    criterion: "information" ranks by P(correct) x log2(n_choices); "reliability" ranks
-    by P(correct) alone.
-
-    "information" is the default because ranking on reliability alone degenerates.
-    Measured on 384 held-out tracks it chose a mood word 349 times out of 371 — a 3-way
-    label is simply easier to get right than a 194-way one, so the mechanism collapses
-    into saying "Mellow" about everything. Under "information" the same tracks split
-    29 artist / 133 genre / 209 mood, and the labels that can be checked against ground
-    truth are right 42.6% of the time versus 43.6% for the old 150x-artist-only policy —
-    while covering 162 tracks with a specific label instead of 39.
+    criterion: "query_utility" ranks by expected cosine uplift — P(correct) scaled by
+    that kind's measured value as a search term. "reliability" ranks by P(correct)
+    alone, which is kept only so the two can be compared; it prefers genre almost
+    always, because genre is likelier to be right while being a vaguer thing to search.
     """
     cands = candidates(confidence, mood, reliability)
     if not cands:
         return None
 
-    key = "precision" if criterion == "reliability" else "information"
-
-    # Filter FIRST, then rank. Ranking first and checking the winner's precision
-    # afterwards threw away perfectly good labels: under the information criterion a
-    # low-precision artist guess can top the ranking on cardinality alone, and the whole
-    # recommendation was then discarded even when a trustworthy genre sat right below it.
-    # The question is "among labels worth saying, which is most useful", in that order.
-    trusted = [c for c in cands if c["precision"] >= MIN_USEFUL_PRECISION]
-    qualifies = bool(trusted)
-    ranked = sorted(trusted or cands, key=lambda c: -c[key])
+    key = "expected_uplift" if criterion == "query_utility" else "precision"
+    ranked = sorted(cands, key=lambda c: -c[key])
     best = ranked[0]
     runner = ranked[1] if len(ranked) > 1 else None
 
-    name = best["label"] if best["kind"] != "mood" else f"{best['label']} ({best['axis']})"
-    if qualifies:
-        reason = (f"{name} — olculen dogruluk %{best['precision']*100:.0f} "
-                  f"({best['evidence']}, n={best['n']})")
-        if runner:
-            rname = (runner["label"] if runner["kind"] != "mood"
-                     else f"{runner['label']} ({runner['axis']})")
-            reason += (f"; sonraki en iyi {rname} %{runner['precision']*100:.0f}")
-    else:
-        reason = (f"guvenilir tek etiket yok — en iyisi {name} bile sadece "
-                  f"%{best['precision']*100:.0f}; aday listesini goster")
+    reason = (f"{best['label']} ({best['kind']}) — olculen dogruluk "
+              f"%{best['precision']*100:.0f} ({best['evidence']}, n={best['n']}), "
+              f"beklenen benzerlik kazanci {best['expected_uplift']:+.3f}")
+    if runner:
+        reason += (f"; alternatif {runner['label']} ({runner['kind']}) "
+                   f"{runner['expected_uplift']:+.3f}")
 
     return {
-        "qualifies": qualifies,
+        # A query is always built — see the module docstring. `reliable` on the
+        # confidence dict still governs whether a NAME is presented as a claim.
+        "qualifies": True,
         "best": best,
         "ranked": ranked,
         "reason": reason,
-        "query": suggest_query(best, confidence, ranked) if qualifies else None,
+        "query": suggest_query(best),
     }
 
 
-def suggest_query(best, confidence=None, ranked=None):
-    """
-    What to actually type into YouTube, given the winning label.
-
-    A mood word alone is a thin query, so it is paired with the genre — but ONLY if the
-    genre earned its place. Pairing unconditionally produced "dark Chillhop type beat"
-    for a track whose genre had been guessed at 3x chance: the query looked specific
-    while quietly carrying a label the chooser had just rejected as unreliable.
-    """
-    if best["kind"] in ("artist", "genre"):
-        return f"{best['label']} type beat"
-
-    genre = None
-    for c in (ranked or []):
-        if c["kind"] == "genre" and c["precision"] >= MIN_USEFUL_PRECISION:
-            genre = c["label"]
-            break
-    word = best["label"].lower()
-    return f"{word} {genre} type beat" if genre else f"{word} type beat"
+def suggest_query(best):
+    """What to actually type into YouTube."""
+    return f"{best['label']} type beat"

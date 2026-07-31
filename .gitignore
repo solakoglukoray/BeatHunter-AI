@@ -71,3 +71,6 @@ models/panns_finetune_*.pt
 models/panns_ft_encoder.pt
 models/panns_ft_features.npz
 models/panns_finetune_state.json
+
+# Query-validation working dir: downloaded YouTube clips, regenerable.
+temp_query_validation/
