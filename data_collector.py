@@ -67,7 +67,8 @@ def initialize_dataset():
 
     if not os.path.exists(config.METADATA_FILE):
         with open(config.METADATA_FILE, mode='w', newline='', encoding='utf-8') as f:
-            csv.writer(f).writerow(["filename", "genre", "artist_type", "mood"])
+            # 4th column is the scraper's query word, NOT a label — see config.TARGETS.
+            csv.writer(f).writerow(["filename", "genre", "artist_type", "search_hint"])
         print(f"📄 Metadata initialized: {config.METADATA_FILE}")
     else:
         # Resume: rebuild registries from existing metadata
@@ -94,7 +95,7 @@ def append_metadata(filename, target):
             filename,
             target['genre'],
             target['artist'],
-            target['mood']
+            target['search_hint']
         ])
 
 
@@ -132,7 +133,7 @@ def fetch_target_audio(target):
             print(f"\n⏭️  [{target['artist']}] already complete ({already_done} files). Skipping.")
             return
 
-    search_term   = f"{target['artist']} {target['mood']} {target['genre']} Type Beat"
+    search_term   = f"{target['artist']} {target['search_hint']} {target['genre']} Type Beat"
     candidate_cap = config.FILES_PER_TARGET * CANDIDATE_MULTIPLIER
 
     print(f"\n🔍 Mining: {search_term}")

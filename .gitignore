@@ -54,6 +54,10 @@ models/training_checkpoint.keras
 models/training_state.json
 models/subset_*.keras
 models/subset_*.json
+# Mood signal cache — derived from the audio, ~4 min to rebuild with calibrate_mood.py.
+# The calibration it produces IS tracked: without it audio_features silently returns no
+# mood at all, so it is a runtime dependency, not a build artefact.
+models/mood_signals.npz
 
 # Classical-feature extraction cache (regenerable: train_classic.py --extract, ~14 min)
 models/classic_features.npz

@@ -129,28 +129,13 @@ def _get_catalog():
 # ============================================================
 # BPM / KEY — measured from the signal, independent of any model
 # ============================================================
-BPM_RANGE  = (60, 200)
-# Deliberately wide at the top. Folding 70 -> 140 fixes the common half-time miss, but
-# a tight upper bound would also fold genuinely fast tempos: drill and jersey sit in the
-# 160-175 range, and halving those would be a new error introduced to fix an old one.
-BPM_TARGET = (78, 180)
-
-
-def _fold_bpm(bpm):
-    """Folds a tempo into the plausible range by repeated halving/doubling."""
-    if bpm <= 0:
-        return float(BPM_TARGET[0])
-    lo, hi = BPM_RANGE
-    while bpm < lo:
-        bpm *= 2
-    while bpm > hi:
-        bpm /= 2
-    t_lo, t_hi = BPM_TARGET
-    if bpm < t_lo and t_lo <= bpm * 2 <= hi:
-        bpm *= 2
-    elif bpm > t_hi and lo <= bpm / 2 <= hi:
-        bpm /= 2
-    return float(bpm)
+# Folding lives in audio_features so the BPM shown to the user and the tempo feeding the
+# mood energy axis can never diverge. They already had: mood used the raw beat_track
+# output and drill measured at the 44th tempo percentile, impossible for a ~140 BPM
+# genre. One quantity, one implementation — see audio_features.fold_bpm.
+BPM_RANGE  = AF.BPM_RANGE
+BPM_TARGET = AF.BPM_TARGET
+_fold_bpm  = AF.fold_bpm
 
 
 def extract_bpm_and_key(y, sr):
@@ -364,11 +349,13 @@ def separate_audio(input_path, out_folder=None):
 # ============================================================
 def analyze_beat(audio_path):
     """
-    Returns (formatted, recommendations, bpm, key, confidence, spec_path).
+    Returns (formatted, recommendations, bpm, key, confidence, spec_path, mood).
 
-    `formatted` is "<artist> Type / <genre>" — mood is deliberately absent; it is not
-    audio-linked (see the module docstring). Callers that need it can look it up from
-    models/taxonomy.json, but it is a property of the artist label, not a prediction.
+    `formatted` is "<artist> Type / <genre>". Mood is NOT part of it and is NOT a
+    classifier output: it is measured from the audio on three axes and reported
+    separately, because unlike artist/genre it is not a prediction that can be wrong
+    about a label — it is a description of the signal. `mood` is None when
+    models/mood_calibration.json is absent.
     """
     os.makedirs(TEMP_FOLDER, exist_ok=True)
 
@@ -381,6 +368,11 @@ def analyze_beat(audio_path):
     artist, genre, confidence = classify(y, sr)
     recommendations = find_similar(y, sr)
 
+    # Reuses the waveform already in memory (resampled to 22.05 kHz inside) rather than
+    # decoding the file again. Costs ~5s, dominated by HPSS.
+    print("🎨 Measuring mood...")
+    mood = AF.mood_from_audio(y, sr)
+
     formatted = f"{artist} Type / {genre}"
 
     # Per-request filename: a fixed path meant two concurrent analyses overwrote each
@@ -391,7 +383,7 @@ def analyze_beat(audio_path):
     with open(spec_path, "wb") as f:
         f.write(render_spectrogram_png(y[mid: mid + int(SEGMENT_DURATION * sr)], sr))
 
-    return formatted, recommendations, int(bpm), str(key), confidence, spec_path
+    return formatted, recommendations, int(bpm), str(key), confidence, spec_path, mood
 
 
 if __name__ == "__main__":
@@ -400,10 +392,13 @@ if __name__ == "__main__":
         mp3 = download_youtube_audio(query)
         beat = separate_audio(mp3)
         print("\n🧠 Analyzing...")
-        result, recs, bpm, key, conf, _ = analyze_beat(beat)
+        result, recs, bpm, key, conf, _, mood = analyze_beat(beat)
         print(f"\n🎯 {result} | BPM: {bpm} | Key: {key}")
         print(f"   confidence: {conf['artist']['ratio_vs_chance']:.1f}x chance "
               f"(reliable={conf['reliable']})")
+        if mood:
+            print("   mood: " + ", ".join(
+                f"{v['label']} ({v['score']:.2f})" for v in mood.values()))
         for i, r in enumerate(recs, 1):
             print(f"  {i}. {r['title']} — {r['score']:.1f}%")
     except Exception as e:

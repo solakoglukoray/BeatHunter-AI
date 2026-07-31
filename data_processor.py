@@ -104,7 +104,6 @@ def process_single_track(args):
                     "filename":    img_filename,
                     "genre":       row['genre'],
                     "artist_type": row['artist_type'],
-                    "mood":        row['mood']
                 })
                 continue
 
@@ -114,7 +113,6 @@ def process_single_track(args):
                 "filename":    img_filename,
                 "genre":       row['genre'],
                 "artist_type": row['artist_type'],
-                "mood":        row['mood']
             })
 
 

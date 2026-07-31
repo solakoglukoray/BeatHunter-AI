@@ -294,7 +294,7 @@ async def analyze_file_endpoint(
             beat_path = file_path
 
         # Run Vector Inference in a separate thread
-        formatted_result, recommendations, bpm, key, confidence, spec_path = await loop.run_in_executor(None, analyze_beat, beat_path)
+        formatted_result, recommendations, bpm, key, confidence, spec_path, mood = await loop.run_in_executor(None, analyze_beat, beat_path)
         # ---------------------------------------------------------
 
         tags = formatted_result.split(" / ")
@@ -310,16 +310,18 @@ async def analyze_file_endpoint(
                 "genre": tags[1],
                 "bpm": bpm,
                 "key": key,
-                # Only genre/artist/mood are model predictions and can be unreliable.
-                # bpm/key come from librosa and are unaffected. See inference_engine
-                # .classification_confidence().
-                "classification_confidence": confidence
+                # Only genre/artist are model predictions and can be unreliable. bpm/key
+                # come from librosa, and mood is measured from the audio against corpus
+                # percentiles — none of the three are affected by classifier accuracy.
+                # See inference_engine.classification_confidence().
+                "classification_confidence": confidence,
+                "mood": mood
             },
             "recommendations": recommendations
         }
 
         api_cache.set(cache_key, response_data, expire=604800)
-        
+
         # Log to DB
         _save_search_history(current_user.username, file.filename, "local_file", cache_key)
         
@@ -341,7 +343,7 @@ async def background_youtube_worker(query: str, cache_key: str, username: str):
             loop = asyncio.get_running_loop()
             file_path = await loop.run_in_executor(None, _download_to_folder, query, task_folder)
             beat_path = await loop.run_in_executor(None, _separate_to_folder, file_path, task_folder)
-            formatted_result, recommendations, bpm, key, confidence, spec_path = await loop.run_in_executor(None, analyze_beat, beat_path)
+            formatted_result, recommendations, bpm, key, confidence, spec_path, mood = await loop.run_in_executor(None, analyze_beat, beat_path)
 
         tags = formatted_result.split(" / ")
 
@@ -356,8 +358,9 @@ async def background_youtube_worker(query: str, cache_key: str, username: str):
                 "genre": tags[1],
                 "bpm": bpm,
                 "key": key,
-                # See the note in analyze_file_endpoint — bpm/key are unaffected.
-                "classification_confidence": confidence
+                # See the note in analyze_file_endpoint — bpm/key/mood are unaffected.
+                "classification_confidence": confidence,
+                "mood": mood
             },
             "recommendations": recommendations
         }

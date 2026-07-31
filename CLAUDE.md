@@ -47,7 +47,8 @@ Tek istisna top-5: uçtan uca model orada 2.7p (~3 SE) daha iyi, çünkü kendi 
 | `data_collector.py` | YouTube veri madenciliği (yt-dlp) |
 | `data_processor.py` | Ses → spektrogram pipeline (eğitim tarafı) |
 | `data_validator.py` | Dataset doğrulama |
-| `audio_features.py` | **Temsil — TEK KAYNAK.** PANNs embedding + klasik fallback |
+| `audio_features.py` | **Temsil — TEK KAYNAK.** PANNs embedding + klasik fallback + mood eksenleri + `fold_bpm` |
+| `calibrate_mood.py` | Mood eşiklerini korpustan türetir ve **doğrular** (bağımsızlık, tür, kulak) |
 | `train_classic.py` | Sınıflandırıcı + katalog + eşik kalibrasyonu üretir |
 | `inference_engine.py` | Çıkarım: sınıflandırma, benzerlik, BPM/key |
 | `model_trainer.py` | EfficientNetB3 eğitimi — **emekli**, yeniden denenirse duruyor |
@@ -148,13 +149,35 @@ tarama (80, 112) zaman kaybı. Boyutla düşüş ise gerçek: 384 vs 96 arası 2
    yanıltıcı yüksek. Düzeltme: `GroupShuffleSplit`, grup anahtarı `filename.split('_slice')[0]`.
    **Bir sonraki eğitim turuna kadar bu val accuracy sayılarına güvenme.**
 
-5. **Mood hedef olmaktan çıkarıldı (✅ 2026-07-29)**
-   Üç bağımsız ölçüm: Cohen d +0.023 (CNN embedding), +0.094 (MFCC), k-NN 1.4x şans.
-   Mood sesle ilişkili değil — `config.py`'de sanatçı başına elle atanmış.
-   `analyze_beat` artık mood döndürmüyor, API ve UI'da da yok.
+5. **Elle atanmış mood silindi, yerine ölçülen mood geldi (✅ 2026-07-30)**
+   Eski etiket üç bağımsız ölçümde sesle ilişkisiz çıktı: Cohen d +0.023 (CNN
+   embedding), +0.094 (MFCC), k-NN 1.4x şans. **Hedef olmaktan çıkarıldı ve
+   `config.py`'den de kaldırıldı** — oradaki string `search_hint` olarak duruyor
+   çünkü aslında hiç etiket değildi, YouTube arama sorgusunun bir kelimesiydi
+   (silinirse `dataset/` yeniden üretilemez). Etiket değil, tahmin edilmiyor.
    → Genre hâlâ tahmin ediliyor ama **joint decoding** ile: `skor(a) = log P(artist=a)
    + log P(genre=G[a])`. Ölçüldü — doğrudan tahminden iyi (%24.17 vs %22.87) ve
    taksonomide var olmayan çift üretemiyor.
+   → **Yeni mood tahmin değil, ölçüm.** `audio_features.classify_mood()` üç eksende
+   korpus yüzdeliği veriyor (`calibrate_mood.py` → `models/mood_calibration.json`):
+
+   | eksen | sinyaller | doğrulama |
+   |---|---|---|
+   | energy | onset_density + rms_norm | ayrım +0.167 |
+   | brightness | centroid − minor_lean | ayrım +0.041 — **tür bu ekseni doğrulamıyor** |
+   | aggression | low_ratio + hf_ratio | ayrım +0.162 |
+
+   Eksen korelasyonu en fazla 0.40 (bağımsız). Tür **girdi değil**; agresyon tepesi
+   Georgia Trap/Rage/Trap/Crunk/Chicago Drill, dibi Lofi %31/Chillhop/Trip Hop.
+   Drill enerjide düşük (.34) ama agresyonda yüksek (.59) — çelişki değil, tek
+   eksenin söyleyemeyeceği şey.
+   → ⚠️ **Hiçbir eşik elle seçilmedi.** Etiket kesimleri eksen skoru dağılımının
+   yüzdelikleri — sabit 1/3-2/3 kullanmak parçaların %70'ini "Moderate" yapıyordu
+   (yüzdelik ortalaması merkezi limit yüzünden 0.5 civarında toplanır).
+   → ⚠️ Elenmiş sinyaller **tekrar eklenmesin**: `perc_ratio` (hiçbir türü ayırmıyor,
+   0.47-0.54, üstelik en pahalısı), `tempo` (enerjide +0.01 — bu korpusta tüm türler
+   120-150 BPM), `onset_contrast` (ters yönde), `dynamic_range` (-0.00),
+   `rolloff_mean` (centroid ile r=0.97). Gerekçeler `audio_features.py`'de.
 
 6. **Sınıf dengesizliği** — class_weight yok, genre'de 46x, artist'te 28x oran var.
    Nadir sınıflar pratikte hiç tahmin edilmiyor. (Eğitim gerektirir, ertelendi.)
@@ -220,6 +243,11 @@ genre **%28.21** (16.8x). Yol: EfficientNetB3 0.8x → klasik MFCC 16.7x → don
 tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %11.1'i, o dilimde
 doğruluk %43.5), aksi halde top-5 aday listesi (%37.72). Eşik her eğitimde
 `train_classic.py` tarafından yeniden ölçülüyor — kopyalanmıyor.
+
+**Mood artık ölçülüyor ve UI'da** (2026-07-30, Tuzak 5). Sınıflandırıcıdan bağımsız —
+BPM/key gibi sinyalden geliyor, o yüzden güven uyarısı taşımıyor. `analyze_beat` 7'li
+tuple döndürüyor; `models/mood_calibration.json` yoksa mood `None` olur ve UI hiçbir şey
+göstermez (uydurma nötr değer yok). Çıkarım ~1.0 sn/parça.
 
 **Denenmiş ve kapanmış:** PCA boyut taraması (64-128 platosu), tam uçtan uca fine-tune
 (top-5'te +2.7p daha iyi ama inference'ı baştan yazmayı gerektiriyor; temsil kazancının

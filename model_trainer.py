@@ -817,6 +817,18 @@ def train_model(subset_artists=0, subset_per_artist=0, epochs_p1=None, epochs_p2
     print(f"   Mood classes:   {df['mood'].nunique()}\n")
 
     # ── 2. One-Hot Encoding (global, before split) ────────────────
+    # ⚠️ THE MOOD HEAD IS VESTIGIAL (2026-07-30). 'mood' was removed as a target — it was
+    # hand-assigned per artist and three independent tests found it unrelated to the audio
+    # (Cohen d +0.023 / +0.094, k-NN 1.4x chance). data_processor.py no longer emits the
+    # column, so this only works against the OLD metadata_processed.csv still on disk.
+    # If Phase B revives this file, drop the third head rather than resurrecting the label;
+    # real mood now comes from audio_features.classify_mood().
+    if 'mood' not in df.columns:
+        raise SystemExit(
+            "metadata_processed.csv has no 'mood' column — it was regenerated after the\n"
+            "mood target was removed. Drop the third head (see the comment above) before\n"
+            "training; do not re-add the hand-assigned label."
+        )
     df_genre  = pd.get_dummies(df['genre'],       prefix='genre')
     df_artist = pd.get_dummies(df['artist_type'], prefix='artist')
     df_mood   = pd.get_dummies(df['mood'],        prefix='mood')

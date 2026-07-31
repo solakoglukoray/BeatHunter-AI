@@ -29,307 +29,322 @@ FILES_PER_TARGET = 75
 # Rules enforced:
 # - Every genre has minimum 3 artists
 # - No artist appears more than once
-# - Mood reflects dominant sonic character of the artist's beats
 # - Artists selected for strong YouTube "Type Beat" search signal
+#
+# "search_hint" WAS CALLED "mood" AND WAS NOT A MOOD (renamed 2026-07-30)
+# ----------------------------------------------------------------------
+# It is a hand-written word that data_collector.py pastes into the YouTube query
+# ("Metro Boomin Dark Trap Type Beat"). For a while it was ALSO used as a third
+# classification target, which was a mistake: nobody ever measured whether it matched
+# the audio, and when finally measured it did not — Cohen d +0.023 (CNN embedding),
+# +0.094 (MFCC), k-NN 1.4x chance. Three independent tests, all negative.
+#
+# It is kept, under an honest name, for exactly one reason: it is part of how the
+# corpus was collected, so deleting it would make dataset/ unreproducible. It is not
+# a label, it is not predicted, and nothing downstream may treat it as ground truth.
+#
+# Real mood now comes from the audio: audio_features.classify_mood() scores three
+# axes (energy / brightness / aggression) against corpus percentiles measured by
+# calibrate_mood.py. See that file for the axis-independence and genre checks.
 # ============================================================
 TARGETS = [
 
     # ================================================================
     # ALTERNATIVE & EXPERIMENTAL
     # ================================================================
-    {"artist": "Tyler, The Creator",    "mood": "Chill",        "genre": "Alternative Hip-Hop"},
-    {"artist": "Outkast",               "mood": "Energetic",    "genre": "Alternative Hip-Hop"},
-    {"artist": "Pharrell Williams",     "mood": "Energetic",    "genre": "Alternative Hip-Hop"},
-    {"artist": "JPEGMAFIA",             "mood": "Aggressive",   "genre": "Experimental Hip-Hop"},
-    {"artist": "Death Grips",           "mood": "Dark",         "genre": "Experimental Hip-Hop"},
-    {"artist": "clipping.",             "mood": "Dark",         "genre": "Experimental Hip-Hop"},
-    {"artist": "Childish Gambino",      "mood": "Chill",        "genre": "Hipster Hop"},
-    {"artist": "Kid Cudi",              "mood": "Melancholic",  "genre": "Hipster Hop"},
-    {"artist": "Emile Haynie",          "mood": "Chill",        "genre": "Hipster Hop"},
+    {"artist": "Tyler, The Creator",        "search_hint": "Chill",       "genre": "Alternative Hip-Hop"},
+    {"artist": "Outkast",                   "search_hint": "Energetic",   "genre": "Alternative Hip-Hop"},
+    {"artist": "Pharrell Williams",         "search_hint": "Energetic",   "genre": "Alternative Hip-Hop"},
+    {"artist": "JPEGMAFIA",                 "search_hint": "Aggressive",  "genre": "Experimental Hip-Hop"},
+    {"artist": "Death Grips",               "search_hint": "Dark",        "genre": "Experimental Hip-Hop"},
+    {"artist": "clipping.",                 "search_hint": "Dark",        "genre": "Experimental Hip-Hop"},
+    {"artist": "Childish Gambino",          "search_hint": "Chill",       "genre": "Hipster Hop"},
+    {"artist": "Kid Cudi",                  "search_hint": "Melancholic", "genre": "Hipster Hop"},
+    {"artist": "Emile Haynie",              "search_hint": "Chill",       "genre": "Hipster Hop"},
 
     # ================================================================
     # BOOM BAP
     # ================================================================
-    {"artist": "DJ Premier",            "mood": "Soulful",      "genre": "Boom Bap"},
-    {"artist": "Nas",                   "mood": "Soulful",      "genre": "Boom Bap"},
-    {"artist": "Wu-Tang Clan",          "mood": "Dark",         "genre": "Boom Bap"},
-    {"artist": "Pete Rock",             "mood": "Soulful",      "genre": "Boom Bap"},
+    {"artist": "DJ Premier",                "search_hint": "Soulful",     "genre": "Boom Bap"},
+    {"artist": "Nas",                       "search_hint": "Soulful",     "genre": "Boom Bap"},
+    {"artist": "Wu-Tang Clan",              "search_hint": "Dark",        "genre": "Boom Bap"},
+    {"artist": "Pete Rock",                 "search_hint": "Soulful",     "genre": "Boom Bap"},
 
     # ================================================================
     # BOUNCE & BRITISH
     # ================================================================
-    {"artist": "Mannie Fresh",          "mood": "Energetic",    "genre": "Bounce"},
-    {"artist": "Big Freedia",           "mood": "Energetic",    "genre": "Bounce"},
-    {"artist": "Juvenile",              "mood": "Energetic",    "genre": "Bounce"},
-    {"artist": "Dave",                  "mood": "Melancholic",  "genre": "British Hip-Hop"},
-    {"artist": "Little Simz",           "mood": "Energetic",    "genre": "British Hip-Hop"},
-    {"artist": "Inflo",                 "mood": "Soulful",      "genre": "British Hip-Hop"},
-    {"artist": "Giggs",                 "mood": "Dark",         "genre": "Road Rap"},
-    {"artist": "Nines",                 "mood": "Dark",         "genre": "Road Rap"},
-    {"artist": "Carns Hill",            "mood": "Dark",         "genre": "Road Rap"},
+    {"artist": "Mannie Fresh",              "search_hint": "Energetic",   "genre": "Bounce"},
+    {"artist": "Big Freedia",               "search_hint": "Energetic",   "genre": "Bounce"},
+    {"artist": "Juvenile",                  "search_hint": "Energetic",   "genre": "Bounce"},
+    {"artist": "Dave",                      "search_hint": "Melancholic", "genre": "British Hip-Hop"},
+    {"artist": "Little Simz",               "search_hint": "Energetic",   "genre": "British Hip-Hop"},
+    {"artist": "Inflo",                     "search_hint": "Soulful",     "genre": "British Hip-Hop"},
+    {"artist": "Giggs",                     "search_hint": "Dark",        "genre": "Road Rap"},
+    {"artist": "Nines",                     "search_hint": "Dark",        "genre": "Road Rap"},
+    {"artist": "Carns Hill",                "search_hint": "Dark",        "genre": "Road Rap"},
 
     # ================================================================
     # CHOPPED & CHOPPER
     # ================================================================
-    {"artist": "DJ Screw",              "mood": "Chill",        "genre": "Chopped and Screwed"},
-    {"artist": "Paul Wall",             "mood": "Chill",        "genre": "Chopped and Screwed"},
-    {"artist": "Z-Ro",                  "mood": "Dark",         "genre": "Chopped and Screwed"},
-    {"artist": "Tech N9ne",             "mood": "Energetic",    "genre": "Chopper"},
-    {"artist": "Twista",                "mood": "Energetic",    "genre": "Chopper"},
-    {"artist": "Busta Rhymes",          "mood": "Energetic",    "genre": "Chopper"},
+    {"artist": "DJ Screw",                  "search_hint": "Chill",       "genre": "Chopped and Screwed"},
+    {"artist": "Paul Wall",                 "search_hint": "Chill",       "genre": "Chopped and Screwed"},
+    {"artist": "Z-Ro",                      "search_hint": "Dark",        "genre": "Chopped and Screwed"},
+    {"artist": "Tech N9ne",                 "search_hint": "Energetic",   "genre": "Chopper"},
+    {"artist": "Twista",                    "search_hint": "Energetic",   "genre": "Chopper"},
+    {"artist": "Busta Rhymes",              "search_hint": "Energetic",   "genre": "Chopper"},
 
     # ================================================================
     # CLOUD RAP
     # ================================================================
-    {"artist": "Clams Casino",          "mood": "Chill",        "genre": "Cloud Rap"},
-    {"artist": "A$AP Rocky",            "mood": "Chill",        "genre": "Cloud Rap"},
-    {"artist": "Yung Lean",             "mood": "Melancholic",  "genre": "Cloud Rap"},
+    {"artist": "Clams Casino",              "search_hint": "Chill",       "genre": "Cloud Rap"},
+    {"artist": "A$AP Rocky",                "search_hint": "Chill",       "genre": "Cloud Rap"},
+    {"artist": "Yung Lean",                 "search_hint": "Melancholic", "genre": "Cloud Rap"},
 
     # ================================================================
     # COMEDY HIP-HOP  (was single-artist — now 3)
     # ================================================================
-    {"artist": "Lil Dicky",             "mood": "Energetic",    "genre": "Comedy Hip-Hop"},
-    {"artist": "The Lonely Island",     "mood": "Energetic",    "genre": "Comedy Hip-Hop"},
-    {"artist": "Weird Al Yankovic",     "mood": "Energetic",    "genre": "Comedy Hip-Hop"},
+    {"artist": "Lil Dicky",                 "search_hint": "Energetic",   "genre": "Comedy Hip-Hop"},
+    {"artist": "The Lonely Island",         "search_hint": "Energetic",   "genre": "Comedy Hip-Hop"},
+    {"artist": "Weird Al Yankovic",         "search_hint": "Energetic",   "genre": "Comedy Hip-Hop"},
 
     # ================================================================
     # CRUNK & CRUNKCORE
     # ================================================================
-    {"artist": "Lil Jon",               "mood": "Aggressive",   "genre": "Crunk"},
-    {"artist": "Ying Yang Twins",       "mood": "Aggressive",   "genre": "Crunk"},
-    {"artist": "Lil Scrappy",           "mood": "Aggressive",   "genre": "Crunk"},
-    {"artist": "Brokencyde",            "mood": "Aggressive",   "genre": "Crunkcore"},
-    {"artist": "3OH!3",                 "mood": "Aggressive",   "genre": "Crunkcore"},
-    {"artist": "Hollywood Undead",      "mood": "Aggressive",   "genre": "Crunkcore"},
+    {"artist": "Lil Jon",                   "search_hint": "Aggressive",  "genre": "Crunk"},
+    {"artist": "Ying Yang Twins",           "search_hint": "Aggressive",  "genre": "Crunk"},
+    {"artist": "Lil Scrappy",               "search_hint": "Aggressive",  "genre": "Crunk"},
+    {"artist": "Brokencyde",                "search_hint": "Aggressive",  "genre": "Crunkcore"},
+    {"artist": "3OH!3",                     "search_hint": "Aggressive",  "genre": "Crunkcore"},
+    {"artist": "Hollywood Undead",          "search_hint": "Aggressive",  "genre": "Crunkcore"},
 
     # ================================================================
     # DIGICORE  (was single-artist — now 3)
     # ================================================================
-    {"artist": "dltzk",                 "mood": "Energetic",    "genre": "Digicore"},
-    {"artist": "glaive",                "mood": "Energetic",    "genre": "Digicore"},
-    {"artist": "ericdoa",               "mood": "Energetic",    "genre": "Digicore"},
+    {"artist": "dltzk",                     "search_hint": "Energetic",   "genre": "Digicore"},
+    {"artist": "glaive",                    "search_hint": "Energetic",   "genre": "Digicore"},
+    {"artist": "ericdoa",                   "search_hint": "Energetic",   "genre": "Digicore"},
 
     # ================================================================
     # DRILL
     # ================================================================
-    {"artist": "Chief Keef",            "mood": "Aggressive",   "genre": "Chicago Drill"},
-    {"artist": "King Von",              "mood": "Aggressive",   "genre": "Chicago Drill"},
-    {"artist": "Young Chop",            "mood": "Aggressive",   "genre": "Chicago Drill"},
-    {"artist": "Pop Smoke",             "mood": "Dark",         "genre": "Brooklyn Drill"},
-    {"artist": "808Melo",               "mood": "Dark",         "genre": "Brooklyn Drill"},
-    {"artist": "Fivio Foreign",         "mood": "Dark",         "genre": "Brooklyn Drill"},
-    {"artist": "Central Cee",           "mood": "Dark",         "genre": "UK Drill"},
-    {"artist": "Headie One",            "mood": "Dark",         "genre": "UK Drill"},
-    {"artist": "Ghosty",                "mood": "Dark",         "genre": "UK Drill"},
-    {"artist": "Natanael Cano",         "mood": "Dark",         "genre": "Mexican Drill"},
-    {"artist": "Junior H",              "mood": "Dark",         "genre": "Mexican Drill"},
-    {"artist": "Peso Pluma",            "mood": "Aggressive",   "genre": "Mexican Drill"},
-    {"artist": "Rondodasosa",           "mood": "Dark",         "genre": "Afro Drill"},
-    {"artist": "SL",                    "mood": "Aggressive",   "genre": "Afro Drill"},
-    {"artist": "Unknown T",             "mood": "Dark",         "genre": "Afro Drill"},
+    {"artist": "Chief Keef",                "search_hint": "Aggressive",  "genre": "Chicago Drill"},
+    {"artist": "King Von",                  "search_hint": "Aggressive",  "genre": "Chicago Drill"},
+    {"artist": "Young Chop",                "search_hint": "Aggressive",  "genre": "Chicago Drill"},
+    {"artist": "Pop Smoke",                 "search_hint": "Dark",        "genre": "Brooklyn Drill"},
+    {"artist": "808Melo",                   "search_hint": "Dark",        "genre": "Brooklyn Drill"},
+    {"artist": "Fivio Foreign",             "search_hint": "Dark",        "genre": "Brooklyn Drill"},
+    {"artist": "Central Cee",               "search_hint": "Dark",        "genre": "UK Drill"},
+    {"artist": "Headie One",                "search_hint": "Dark",        "genre": "UK Drill"},
+    {"artist": "Ghosty",                    "search_hint": "Dark",        "genre": "UK Drill"},
+    {"artist": "Natanael Cano",             "search_hint": "Dark",        "genre": "Mexican Drill"},
+    {"artist": "Junior H",                  "search_hint": "Dark",        "genre": "Mexican Drill"},
+    {"artist": "Peso Pluma",                "search_hint": "Aggressive",  "genre": "Mexican Drill"},
+    {"artist": "Rondodasosa",               "search_hint": "Dark",        "genre": "Afro Drill"},
+    {"artist": "SL",                        "search_hint": "Aggressive",  "genre": "Afro Drill"},
+    {"artist": "Unknown T",                 "search_hint": "Dark",        "genre": "Afro Drill"},
 
     # ================================================================
     # EAST & WEST COAST
     # ================================================================
-    {"artist": "Jay-Z",                 "mood": "Soulful",      "genre": "East Coast Hip-Hop"},
-    {"artist": "The Notorious B.I.G.",  "mood": "Soulful",      "genre": "East Coast Hip-Hop"},
-    {"artist": "RZA",                   "mood": "Dark",         "genre": "East Coast Hip-Hop"},
-    {"artist": "2Pac",                  "mood": "Soulful",      "genre": "West Coast Hip-Hop"},
-    {"artist": "Dr. Dre",               "mood": "Chill",        "genre": "West Coast Hip-Hop"},
-    {"artist": "DJ Quik",               "mood": "Chill",        "genre": "West Coast Hip-Hop"},
-    {"artist": "MF DOOM",               "mood": "Soulful",      "genre": "Underground Hip-Hop"},
-    {"artist": "Madlib",                "mood": "Soulful",      "genre": "Underground Hip-Hop"},
-    {"artist": "Aesop Rock",            "mood": "Dark",         "genre": "Underground Hip-Hop"},
+    {"artist": "Jay-Z",                     "search_hint": "Soulful",     "genre": "East Coast Hip-Hop"},
+    {"artist": "The Notorious B.I.G.",      "search_hint": "Soulful",     "genre": "East Coast Hip-Hop"},
+    {"artist": "RZA",                       "search_hint": "Dark",        "genre": "East Coast Hip-Hop"},
+    {"artist": "2Pac",                      "search_hint": "Soulful",     "genre": "West Coast Hip-Hop"},
+    {"artist": "Dr. Dre",                   "search_hint": "Chill",       "genre": "West Coast Hip-Hop"},
+    {"artist": "DJ Quik",                   "search_hint": "Chill",       "genre": "West Coast Hip-Hop"},
+    {"artist": "MF DOOM",                   "search_hint": "Soulful",     "genre": "Underground Hip-Hop"},
+    {"artist": "Madlib",                    "search_hint": "Soulful",     "genre": "Underground Hip-Hop"},
+    {"artist": "Aesop Rock",                "search_hint": "Dark",        "genre": "Underground Hip-Hop"},
 
     # ================================================================
     # G-FUNK
     # ================================================================
-    {"artist": "Snoop Dogg",            "mood": "Chill",        "genre": "G-Funk"},
-    {"artist": "Nate Dogg",             "mood": "Chill",        "genre": "G-Funk"},
-    {"artist": "Warren G",              "mood": "Chill",        "genre": "G-Funk"},
+    {"artist": "Snoop Dogg",                "search_hint": "Chill",       "genre": "G-Funk"},
+    {"artist": "Nate Dogg",                 "search_hint": "Chill",       "genre": "G-Funk"},
+    {"artist": "Warren G",                  "search_hint": "Chill",       "genre": "G-Funk"},
 
     # ================================================================
     # GANGSTA & HARDCORE
     # ================================================================
-    {"artist": "Mobb Deep",             "mood": "Dark",         "genre": "Hardcore Hip-Hop"},
-    {"artist": "Onyx",                  "mood": "Aggressive",   "genre": "Hardcore Hip-Hop"},
-    {"artist": "Snowgoons",             "mood": "Dark",         "genre": "Hardcore Hip-Hop"},
-    {"artist": "Ice Cube",              "mood": "Aggressive",   "genre": "Gangsta Rap"},
-    {"artist": "NWA",                   "mood": "Aggressive",   "genre": "Gangsta Rap"},
-    {"artist": "Eazy-E",                "mood": "Aggressive",   "genre": "Gangsta Rap"},
-    {"artist": "The Alchemist",         "mood": "Soulful",      "genre": "Mafioso Rap"},
-    {"artist": "Raekwon",               "mood": "Dark",         "genre": "Mafioso Rap"},
-    {"artist": "Kool G Rap",            "mood": "Dark",         "genre": "Mafioso Rap"},
+    {"artist": "Mobb Deep",                 "search_hint": "Dark",        "genre": "Hardcore Hip-Hop"},
+    {"artist": "Onyx",                      "search_hint": "Aggressive",  "genre": "Hardcore Hip-Hop"},
+    {"artist": "Snowgoons",                 "search_hint": "Dark",        "genre": "Hardcore Hip-Hop"},
+    {"artist": "Ice Cube",                  "search_hint": "Aggressive",  "genre": "Gangsta Rap"},
+    {"artist": "NWA",                       "search_hint": "Aggressive",  "genre": "Gangsta Rap"},
+    {"artist": "Eazy-E",                    "search_hint": "Aggressive",  "genre": "Gangsta Rap"},
+    {"artist": "The Alchemist",             "search_hint": "Soulful",     "genre": "Mafioso Rap"},
+    {"artist": "Raekwon",                   "search_hint": "Dark",        "genre": "Mafioso Rap"},
+    {"artist": "Kool G Rap",                "search_hint": "Dark",        "genre": "Mafioso Rap"},
 
     # ================================================================
     # HORRORCORE  (NEW)
     # ================================================================
-    {"artist": "Insane Clown Posse",    "mood": "Dark",         "genre": "Horrorcore"},
-    {"artist": "Gravediggaz",           "mood": "Dark",         "genre": "Horrorcore"},
-    {"artist": "Brotha Lynch Hung",     "mood": "Dark",         "genre": "Horrorcore"},
+    {"artist": "Insane Clown Posse",        "search_hint": "Dark",        "genre": "Horrorcore"},
+    {"artist": "Gravediggaz",               "search_hint": "Dark",        "genre": "Horrorcore"},
+    {"artist": "Brotha Lynch Hung",         "search_hint": "Dark",        "genre": "Horrorcore"},
 
     # ================================================================
     # HYPHY  (was single-artist — now 3)
     # ================================================================
-    {"artist": "E-40",                  "mood": "Energetic",    "genre": "Hyphy"},
-    {"artist": "Mac Dre",               "mood": "Energetic",    "genre": "Hyphy"},
-    {"artist": "Keak da Sneak",         "mood": "Energetic",    "genre": "Hyphy"},
+    {"artist": "E-40",                      "search_hint": "Energetic",   "genre": "Hyphy"},
+    {"artist": "Mac Dre",                   "search_hint": "Energetic",   "genre": "Hyphy"},
+    {"artist": "Keak da Sneak",             "search_hint": "Energetic",   "genre": "Hyphy"},
 
     # ================================================================
     # LOFI & CHILL  (expanded + new subgenres)
     # ================================================================
-    {"artist": "Nujabes",               "mood": "Chill",        "genre": "Lofi Hip-Hop"},
-    {"artist": "Jinsang",               "mood": "Melancholic",  "genre": "Lofi Hip-Hop"},
-    {"artist": "Idealism",              "mood": "Chill",        "genre": "Lofi Hip-Hop"},
-    {"artist": "Philanthrope",          "mood": "Melancholic",  "genre": "Lofi Hip-Hop"},
-    {"artist": "Birocratic",            "mood": "Chill",        "genre": "Chillhop"},
-    {"artist": "Tomppabeats",           "mood": "Chill",        "genre": "Chillhop"},
-    {"artist": "Kupla",                 "mood": "Melancholic",  "genre": "Chillhop"},
-    {"artist": "Mexikodro",             "mood": "Chill",        "genre": "Plugg"},
-    {"artist": "Diego Money",           "mood": "Chill",        "genre": "Plugg"},
-    {"artist": "Tony Shhnow",           "mood": "Chill",        "genre": "Plugg"},
-    {"artist": "Goyxrd",                "mood": "Melancholic",  "genre": "Pluggnb"},
-    {"artist": "Summrs",                "mood": "Melancholic",  "genre": "Pluggnb"},
-    {"artist": "Autumn!",               "mood": "Melancholic",  "genre": "Pluggnb"},
+    {"artist": "Nujabes",                   "search_hint": "Chill",       "genre": "Lofi Hip-Hop"},
+    {"artist": "Jinsang",                   "search_hint": "Melancholic", "genre": "Lofi Hip-Hop"},
+    {"artist": "Idealism",                  "search_hint": "Chill",       "genre": "Lofi Hip-Hop"},
+    {"artist": "Philanthrope",              "search_hint": "Melancholic", "genre": "Lofi Hip-Hop"},
+    {"artist": "Birocratic",                "search_hint": "Chill",       "genre": "Chillhop"},
+    {"artist": "Tomppabeats",               "search_hint": "Chill",       "genre": "Chillhop"},
+    {"artist": "Kupla",                     "search_hint": "Melancholic", "genre": "Chillhop"},
+    {"artist": "Mexikodro",                 "search_hint": "Chill",       "genre": "Plugg"},
+    {"artist": "Diego Money",               "search_hint": "Chill",       "genre": "Plugg"},
+    {"artist": "Tony Shhnow",               "search_hint": "Chill",       "genre": "Plugg"},
+    {"artist": "Goyxrd",                    "search_hint": "Melancholic", "genre": "Pluggnb"},
+    {"artist": "Summrs",                    "search_hint": "Melancholic", "genre": "Pluggnb"},
+    {"artist": "Autumn!",                   "search_hint": "Melancholic", "genre": "Pluggnb"},
 
     # ================================================================
     # MEMPHIS & SOUTHERN
     # ================================================================
-    {"artist": "Three 6 Mafia",         "mood": "Dark",         "genre": "Memphis Rap"},
-    {"artist": "DJ Paul",               "mood": "Dark",         "genre": "Memphis Rap"},
-    {"artist": "Project Pat",           "mood": "Dark",         "genre": "Memphis Rap"},
-    {"artist": "Cypress Hill",          "mood": "Chill",        "genre": "Stoner Rap"},
-    {"artist": "Redman",                "mood": "Chill",        "genre": "Stoner Rap"},
-    {"artist": "Method Man",            "mood": "Chill",        "genre": "Stoner Rap"},
+    {"artist": "Three 6 Mafia",             "search_hint": "Dark",        "genre": "Memphis Rap"},
+    {"artist": "DJ Paul",                   "search_hint": "Dark",        "genre": "Memphis Rap"},
+    {"artist": "Project Pat",               "search_hint": "Dark",        "genre": "Memphis Rap"},
+    {"artist": "Cypress Hill",              "search_hint": "Chill",       "genre": "Stoner Rap"},
+    {"artist": "Redman",                    "search_hint": "Chill",       "genre": "Stoner Rap"},
+    {"artist": "Method Man",                "search_hint": "Chill",       "genre": "Stoner Rap"},
 
     # ================================================================
     # SLAB MUSIC  (NEW)
     # ================================================================
-    {"artist": "Lil Keke",              "mood": "Chill",        "genre": "Slab Music"},
-    {"artist": "Trae tha Truth",        "mood": "Dark",         "genre": "Slab Music"},
-    {"artist": "Killa Kyleon",          "mood": "Dark",         "genre": "Slab Music"},
+    {"artist": "Lil Keke",                  "search_hint": "Chill",       "genre": "Slab Music"},
+    {"artist": "Trae tha Truth",            "search_hint": "Dark",        "genre": "Slab Music"},
+    {"artist": "Killa Kyleon",              "search_hint": "Dark",        "genre": "Slab Music"},
 
     # ================================================================
     # SNAP MUSIC  (NEW)
     # ================================================================
-    {"artist": "D4L",                   "mood": "Energetic",    "genre": "Snap Music"},
-    {"artist": "Dem Franchize Boyz",    "mood": "Energetic",    "genre": "Snap Music"},
-    {"artist": "Mr. Collipark",         "mood": "Energetic",    "genre": "Snap Music"},
+    {"artist": "D4L",                       "search_hint": "Energetic",   "genre": "Snap Music"},
+    {"artist": "Dem Franchize Boyz",        "search_hint": "Energetic",   "genre": "Snap Music"},
+    {"artist": "Mr. Collipark",             "search_hint": "Energetic",   "genre": "Snap Music"},
 
     # ================================================================
     # MODERN TRAP, RAGE & PHONK
     # ================================================================
-    {"artist": "Playboi Carti",         "mood": "Energetic",    "genre": "Mumble Rap"},
-    {"artist": "Lil Pump",              "mood": "Energetic",    "genre": "Mumble Rap"},
-    {"artist": "Pi'erre Bourne",        "mood": "Energetic",    "genre": "Mumble Rap"},
-    {"artist": "Metro Boomin",          "mood": "Dark",         "genre": "Trap"},
-    {"artist": "Future",                "mood": "Dark",         "genre": "Trap"},
-    {"artist": "Migos",                 "mood": "Dark",         "genre": "Trap"},
-    {"artist": "21 Savage",             "mood": "Dark",         "genre": "Trap"},
-    {"artist": "Bad Bunny",             "mood": "Energetic",    "genre": "Latin Trap"},
-    {"artist": "Tainy",                 "mood": "Energetic",    "genre": "Latin Trap"},
-    {"artist": "Anuel AA",              "mood": "Energetic",    "genre": "Latin Trap"},
-    {"artist": "Kordhell",              "mood": "Aggressive",   "genre": "Phonk"},
-    {"artist": "Soudiere",              "mood": "Aggressive",   "genre": "Phonk"},
-    {"artist": "Ghostface Playa",       "mood": "Aggressive",   "genre": "Phonk"},
-    {"artist": "Yeat",                  "mood": "Aggressive",   "genre": "Rage"},
-    {"artist": "F1lthy",                "mood": "Aggressive",   "genre": "Rage"},
-    {"artist": "Ken Carson",            "mood": "Aggressive",   "genre": "Rage"},
+    {"artist": "Playboi Carti",             "search_hint": "Energetic",   "genre": "Mumble Rap"},
+    {"artist": "Lil Pump",                  "search_hint": "Energetic",   "genre": "Mumble Rap"},
+    {"artist": "Pi'erre Bourne",            "search_hint": "Energetic",   "genre": "Mumble Rap"},
+    {"artist": "Metro Boomin",              "search_hint": "Dark",        "genre": "Trap"},
+    {"artist": "Future",                    "search_hint": "Dark",        "genre": "Trap"},
+    {"artist": "Migos",                     "search_hint": "Dark",        "genre": "Trap"},
+    {"artist": "21 Savage",                 "search_hint": "Dark",        "genre": "Trap"},
+    {"artist": "Bad Bunny",                 "search_hint": "Energetic",   "genre": "Latin Trap"},
+    {"artist": "Tainy",                     "search_hint": "Energetic",   "genre": "Latin Trap"},
+    {"artist": "Anuel AA",                  "search_hint": "Energetic",   "genre": "Latin Trap"},
+    {"artist": "Kordhell",                  "search_hint": "Aggressive",  "genre": "Phonk"},
+    {"artist": "Soudiere",                  "search_hint": "Aggressive",  "genre": "Phonk"},
+    {"artist": "Ghostface Playa",           "search_hint": "Aggressive",  "genre": "Phonk"},
+    {"artist": "Yeat",                      "search_hint": "Aggressive",  "genre": "Rage"},
+    {"artist": "F1lthy",                    "search_hint": "Aggressive",  "genre": "Rage"},
+    {"artist": "Ken Carson",                "search_hint": "Aggressive",  "genre": "Rage"},
 
     # ================================================================
     # CONSCIOUS & PROGRESSIVE
     # ================================================================
-    {"artist": "Kendrick Lamar",        "mood": "Soulful",      "genre": "Conscious Hip-Hop"},
-    {"artist": "9th Wonder",            "mood": "Soulful",      "genre": "Conscious Hip-Hop"},
-    {"artist": "Common",                "mood": "Soulful",      "genre": "Conscious Hip-Hop"},
-    {"artist": "Kanye West",            "mood": "Soulful",      "genre": "Progressive Rap"},
-    {"artist": "Lupe Fiasco",           "mood": "Soulful",      "genre": "Progressive Rap"},
-    {"artist": "J. Cole",               "mood": "Soulful",      "genre": "Progressive Rap"},
-    {"artist": "T.I.",                  "mood": "Soulful",      "genre": "Southern Hip-Hop"},
-    {"artist": "Organized Noize",       "mood": "Soulful",      "genre": "Southern Hip-Hop"},
-    {"artist": "UGK",                   "mood": "Soulful",      "genre": "Southern Hip-Hop"},
+    {"artist": "Kendrick Lamar",            "search_hint": "Soulful",     "genre": "Conscious Hip-Hop"},
+    {"artist": "9th Wonder",                "search_hint": "Soulful",     "genre": "Conscious Hip-Hop"},
+    {"artist": "Common",                    "search_hint": "Soulful",     "genre": "Conscious Hip-Hop"},
+    {"artist": "Kanye West",                "search_hint": "Soulful",     "genre": "Progressive Rap"},
+    {"artist": "Lupe Fiasco",               "search_hint": "Soulful",     "genre": "Progressive Rap"},
+    {"artist": "J. Cole",                   "search_hint": "Soulful",     "genre": "Progressive Rap"},
+    {"artist": "T.I.",                      "search_hint": "Soulful",     "genre": "Southern Hip-Hop"},
+    {"artist": "Organized Noize",           "search_hint": "Soulful",     "genre": "Southern Hip-Hop"},
+    {"artist": "UGK",                       "search_hint": "Soulful",     "genre": "Southern Hip-Hop"},
 
     # ================================================================
     # POLITICAL HIP-HOP  (NEW)
     # ================================================================
-    {"artist": "Public Enemy",          "mood": "Aggressive",   "genre": "Political Hip-Hop"},
-    {"artist": "dead prez",             "mood": "Aggressive",   "genre": "Political Hip-Hop"},
-    {"artist": "Immortal Technique",    "mood": "Dark",         "genre": "Political Hip-Hop"},
+    {"artist": "Public Enemy",              "search_hint": "Aggressive",  "genre": "Political Hip-Hop"},
+    {"artist": "dead prez",                 "search_hint": "Aggressive",  "genre": "Political Hip-Hop"},
+    {"artist": "Immortal Technique",        "search_hint": "Dark",        "genre": "Political Hip-Hop"},
 
     # ================================================================
     # CHICANO RAP  (NEW)
     # ================================================================
-    {"artist": "Kid Frost",             "mood": "Aggressive",   "genre": "Chicano Rap"},
-    {"artist": "Lil Rob",               "mood": "Chill",        "genre": "Chicano Rap"},
-    {"artist": "B-Real",                "mood": "Aggressive",   "genre": "Chicano Rap"},
+    {"artist": "Kid Frost",                 "search_hint": "Aggressive",  "genre": "Chicano Rap"},
+    {"artist": "Lil Rob",                   "search_hint": "Chill",       "genre": "Chicano Rap"},
+    {"artist": "B-Real",                    "search_hint": "Aggressive",  "genre": "Chicano Rap"},
 
     # ================================================================
     # FUSION GENRES
     # ================================================================
-    {"artist": "Juice WRLD",            "mood": "Melancholic",  "genre": "Emo Rap"},
-    {"artist": "Lil Peep",              "mood": "Melancholic",  "genre": "Emo Rap"},
-    {"artist": "XXXTentacion",          "mood": "Melancholic",  "genre": "Emo Rap"},
-    {"artist": "Mary J. Blige",         "mood": "Soulful",      "genre": "Hip-Hop Soul"},
-    {"artist": "Erykah Badu",           "mood": "Chill",        "genre": "Hip-Hop Soul"},
-    {"artist": "Puff Daddy",            "mood": "Soulful",      "genre": "Hip-Hop Soul"},
-    {"artist": "The Soulquarians",      "mood": "Soulful",      "genre": "Neo Soul"},
-    {"artist": "D'Angelo",              "mood": "Chill",        "genre": "Neo Soul"},
-    {"artist": "Lauryn Hill",           "mood": "Soulful",      "genre": "Neo Soul"},
-    {"artist": "El-P",                  "mood": "Aggressive",   "genre": "Industrial Hip-Hop"},
-    {"artist": "Nine Inch Nails",       "mood": "Dark",         "genre": "Industrial Hip-Hop"},
-    {"artist": "Ho99o9",                "mood": "Aggressive",   "genre": "Industrial Hip-Hop"},
-    {"artist": "A Tribe Called Quest",  "mood": "Chill",        "genre": "Jazz Rap"},
-    {"artist": "Digable Planets",       "mood": "Chill",        "genre": "Jazz Rap"},
-    {"artist": "Q-Tip",                 "mood": "Chill",        "genre": "Jazz Rap"},
-    {"artist": "Drake",                 "mood": "Chill",        "genre": "Pop Rap"},
-    {"artist": "Post Malone",           "mood": "Chill",        "genre": "Pop Rap"},
-    {"artist": "Macklemore",            "mood": "Energetic",    "genre": "Pop Rap"},
-    {"artist": "Travis Scott",          "mood": "Dark",         "genre": "Psychedelic Rap"},
-    {"artist": "Flying Lotus",          "mood": "Dark",         "genre": "Psychedelic Rap"},
-    {"artist": "BROCKHAMPTON",          "mood": "Energetic",    "genre": "Psychedelic Rap"},
-    {"artist": "Machine Gun Kelly",     "mood": "Energetic",    "genre": "Punk Rap"},
-    {"artist": "slowthai",              "mood": "Aggressive",   "genre": "Punk Rap"},
-    {"artist": "Fever 333",             "mood": "Aggressive",   "genre": "Punk Rap"},
-    {"artist": "Linkin Park",           "mood": "Aggressive",   "genre": "Rap Rock"},
-    {"artist": "Rage Against the Machine", "mood": "Aggressive","genre": "Rap Rock"},
-    {"artist": "Run-DMC",               "mood": "Energetic",    "genre": "Rap Rock"},
-    {"artist": "Limp Bizkit",           "mood": "Aggressive",   "genre": "Nu Metal"},
-    {"artist": "Korn",                  "mood": "Dark",         "genre": "Nu Metal"},
-    {"artist": "Slipknot",              "mood": "Aggressive",   "genre": "Nu Metal"},
-    {"artist": "Ghostemane",            "mood": "Dark",         "genre": "Trap Metal"},
-    {"artist": "Ronny J",               "mood": "Aggressive",   "genre": "Trap Metal"},
-    {"artist": "Scarlxrd",              "mood": "Aggressive",   "genre": "Trap Metal"},
-    {"artist": "Massive Attack",        "mood": "Melancholic",  "genre": "Trip Hop"},
-    {"artist": "Portishead",            "mood": "Melancholic",  "genre": "Trip Hop"},
-    {"artist": "Tricky",                "mood": "Dark",         "genre": "Trip Hop"},
-    {"artist": "Lil Nas X",             "mood": "Energetic",    "genre": "Country Rap"},
-    {"artist": "Bubba Sparxxx",         "mood": "Energetic",    "genre": "Country Rap"},
-    {"artist": "Colt Ford",             "mood": "Energetic",    "genre": "Country Rap"},
+    {"artist": "Juice WRLD",                "search_hint": "Melancholic", "genre": "Emo Rap"},
+    {"artist": "Lil Peep",                  "search_hint": "Melancholic", "genre": "Emo Rap"},
+    {"artist": "XXXTentacion",              "search_hint": "Melancholic", "genre": "Emo Rap"},
+    {"artist": "Mary J. Blige",             "search_hint": "Soulful",     "genre": "Hip-Hop Soul"},
+    {"artist": "Erykah Badu",               "search_hint": "Chill",       "genre": "Hip-Hop Soul"},
+    {"artist": "Puff Daddy",                "search_hint": "Soulful",     "genre": "Hip-Hop Soul"},
+    {"artist": "The Soulquarians",          "search_hint": "Soulful",     "genre": "Neo Soul"},
+    {"artist": "D'Angelo",                  "search_hint": "Chill",       "genre": "Neo Soul"},
+    {"artist": "Lauryn Hill",               "search_hint": "Soulful",     "genre": "Neo Soul"},
+    {"artist": "El-P",                      "search_hint": "Aggressive",  "genre": "Industrial Hip-Hop"},
+    {"artist": "Nine Inch Nails",           "search_hint": "Dark",        "genre": "Industrial Hip-Hop"},
+    {"artist": "Ho99o9",                    "search_hint": "Aggressive",  "genre": "Industrial Hip-Hop"},
+    {"artist": "A Tribe Called Quest",      "search_hint": "Chill",       "genre": "Jazz Rap"},
+    {"artist": "Digable Planets",           "search_hint": "Chill",       "genre": "Jazz Rap"},
+    {"artist": "Q-Tip",                     "search_hint": "Chill",       "genre": "Jazz Rap"},
+    {"artist": "Drake",                     "search_hint": "Chill",       "genre": "Pop Rap"},
+    {"artist": "Post Malone",               "search_hint": "Chill",       "genre": "Pop Rap"},
+    {"artist": "Macklemore",                "search_hint": "Energetic",   "genre": "Pop Rap"},
+    {"artist": "Travis Scott",              "search_hint": "Dark",        "genre": "Psychedelic Rap"},
+    {"artist": "Flying Lotus",              "search_hint": "Dark",        "genre": "Psychedelic Rap"},
+    {"artist": "BROCKHAMPTON",              "search_hint": "Energetic",   "genre": "Psychedelic Rap"},
+    {"artist": "Machine Gun Kelly",         "search_hint": "Energetic",   "genre": "Punk Rap"},
+    {"artist": "slowthai",                  "search_hint": "Aggressive",  "genre": "Punk Rap"},
+    {"artist": "Fever 333",                 "search_hint": "Aggressive",  "genre": "Punk Rap"},
+    {"artist": "Linkin Park",               "search_hint": "Aggressive",  "genre": "Rap Rock"},
+    {"artist": "Rage Against the Machine",  "search_hint": "Aggressive",  "genre": "Rap Rock"},
+    {"artist": "Run-DMC",                   "search_hint": "Energetic",   "genre": "Rap Rock"},
+    {"artist": "Limp Bizkit",               "search_hint": "Aggressive",  "genre": "Nu Metal"},
+    {"artist": "Korn",                      "search_hint": "Dark",        "genre": "Nu Metal"},
+    {"artist": "Slipknot",                  "search_hint": "Aggressive",  "genre": "Nu Metal"},
+    {"artist": "Ghostemane",                "search_hint": "Dark",        "genre": "Trap Metal"},
+    {"artist": "Ronny J",                   "search_hint": "Aggressive",  "genre": "Trap Metal"},
+    {"artist": "Scarlxrd",                  "search_hint": "Aggressive",  "genre": "Trap Metal"},
+    {"artist": "Massive Attack",            "search_hint": "Melancholic", "genre": "Trip Hop"},
+    {"artist": "Portishead",                "search_hint": "Melancholic", "genre": "Trip Hop"},
+    {"artist": "Tricky",                    "search_hint": "Dark",        "genre": "Trip Hop"},
+    {"artist": "Lil Nas X",                 "search_hint": "Energetic",   "genre": "Country Rap"},
+    {"artist": "Bubba Sparxxx",             "search_hint": "Energetic",   "genre": "Country Rap"},
+    {"artist": "Colt Ford",                 "search_hint": "Energetic",   "genre": "Country Rap"},
 
     # ================================================================
     # ELECTRONIC & REGIONAL
     # ================================================================
-    {"artist": "Skepta",                "mood": "Aggressive",   "genre": "Grime"},
-    {"artist": "Wiley",                 "mood": "Energetic",    "genre": "Grime"},
-    {"artist": "Stormzy",               "mood": "Aggressive",   "genre": "Grime"},
-    {"artist": "Daddy Yankee",          "mood": "Energetic",    "genre": "Reggaeton"},
-    {"artist": "J Balvin",              "mood": "Energetic",    "genre": "Reggaeton"},
-    {"artist": "Luny Tunes",            "mood": "Energetic",    "genre": "Reggaeton"},
-    {"artist": "Questlove",             "mood": "Soulful",      "genre": "Philadelphia Hip-Hop"},
-    {"artist": "Meek Mill",             "mood": "Aggressive",   "genre": "Philadelphia Hip-Hop"},
-    {"artist": "The Roots",             "mood": "Soulful",      "genre": "Philadelphia Hip-Hop"},
-    {"artist": "Eminem",                "mood": "Aggressive",   "genre": "Detroit Hip-Hop"},
-    {"artist": "Big Sean",              "mood": "Energetic",    "genre": "Detroit Hip-Hop"},
-    {"artist": "D12",                   "mood": "Aggressive",   "genre": "Detroit Hip-Hop"},
-    {"artist": "Zaytoven",              "mood": "Energetic",    "genre": "Georgia Trap"},
-    {"artist": "Southside",             "mood": "Dark",         "genre": "Georgia Trap"},
-    {"artist": "Gucci Mane",            "mood": "Dark",         "genre": "Georgia Trap"},
-    {"artist": "DJ Muggs",              "mood": "Dark",         "genre": "Latino Hip-Hop"},
-    {"artist": "Snow Tha Product",      "mood": "Aggressive",   "genre": "Latino Hip-Hop"},
-    {"artist": "Delinquent Habits",     "mood": "Energetic",    "genre": "Latino Hip-Hop"},
-    {"artist": "J Dilla",               "mood": "Soulful",      "genre": "Instrumental Hip-Hop"},
-    {"artist": "DJ Shadow",             "mood": "Dark",         "genre": "Instrumental Hip-Hop"},
-    {"artist": "Blockhead",             "mood": "Chill",        "genre": "Instrumental Hip-Hop"},
+    {"artist": "Skepta",                    "search_hint": "Aggressive",  "genre": "Grime"},
+    {"artist": "Wiley",                     "search_hint": "Energetic",   "genre": "Grime"},
+    {"artist": "Stormzy",                   "search_hint": "Aggressive",  "genre": "Grime"},
+    {"artist": "Daddy Yankee",              "search_hint": "Energetic",   "genre": "Reggaeton"},
+    {"artist": "J Balvin",                  "search_hint": "Energetic",   "genre": "Reggaeton"},
+    {"artist": "Luny Tunes",                "search_hint": "Energetic",   "genre": "Reggaeton"},
+    {"artist": "Questlove",                 "search_hint": "Soulful",     "genre": "Philadelphia Hip-Hop"},
+    {"artist": "Meek Mill",                 "search_hint": "Aggressive",  "genre": "Philadelphia Hip-Hop"},
+    {"artist": "The Roots",                 "search_hint": "Soulful",     "genre": "Philadelphia Hip-Hop"},
+    {"artist": "Eminem",                    "search_hint": "Aggressive",  "genre": "Detroit Hip-Hop"},
+    {"artist": "Big Sean",                  "search_hint": "Energetic",   "genre": "Detroit Hip-Hop"},
+    {"artist": "D12",                       "search_hint": "Aggressive",  "genre": "Detroit Hip-Hop"},
+    {"artist": "Zaytoven",                  "search_hint": "Energetic",   "genre": "Georgia Trap"},
+    {"artist": "Southside",                 "search_hint": "Dark",        "genre": "Georgia Trap"},
+    {"artist": "Gucci Mane",                "search_hint": "Dark",        "genre": "Georgia Trap"},
+    {"artist": "DJ Muggs",                  "search_hint": "Dark",        "genre": "Latino Hip-Hop"},
+    {"artist": "Snow Tha Product",          "search_hint": "Aggressive",  "genre": "Latino Hip-Hop"},
+    {"artist": "Delinquent Habits",         "search_hint": "Energetic",   "genre": "Latino Hip-Hop"},
+    {"artist": "J Dilla",                   "search_hint": "Soulful",     "genre": "Instrumental Hip-Hop"},
+    {"artist": "DJ Shadow",                 "search_hint": "Dark",        "genre": "Instrumental Hip-Hop"},
+    {"artist": "Blockhead",                 "search_hint": "Chill",       "genre": "Instrumental Hip-Hop"},
 ]
 
 # ============================================================
@@ -337,7 +352,7 @@ TARGETS = [
 # ============================================================
 UNIQUE_GENRES  = sorted(list(set(t["genre"]  for t in TARGETS)))
 UNIQUE_ARTISTS = sorted(list(set(t["artist"] for t in TARGETS)))
-UNIQUE_MOODS   = sorted(list(set(t["mood"]   for t in TARGETS)))
+# No UNIQUE_MOODS: search_hint is a scraper query term, not a class list. See above.
 
 
 # ============================================================
@@ -371,17 +386,10 @@ if __name__ == "__main__":
     else:
         print("✅ All genres have 3+ artists.")
 
-    mood_counts = Counter(t["mood"] for t in TARGETS)
-    print("\n📊 Mood Distribution:")
-    for mood, count in sorted(mood_counts.items(), key=lambda x: -x[1]):
-        bar = "█" * (count // 2)
-        print(f"   {mood:<15} {count:>3}  {bar}")
-
     print(f"\n📦 Summary:")
     print(f"   Total Targets:   {len(TARGETS)}")
     print(f"   Unique Genres:   {len(UNIQUE_GENRES)}")
     print(f"   Unique Artists:  {len(UNIQUE_ARTISTS)}")
-    print(f"   Unique Moods:    {len(UNIQUE_MOODS)}")
     total_videos = len(TARGETS) * FILES_PER_TARGET
     total_specs  = total_videos * 58
     print(f"\n💾 Estimated Dataset Size:")

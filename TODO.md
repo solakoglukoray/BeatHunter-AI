@@ -434,10 +434,30 @@ sample weight'ler, accuracy tabanlı callback'ler, epoch başına train/val/şan
   EfficientNetB3 aynı val parçalarında **0.8x** — şansın altında, naif baseline'ın
   7 katı gerisinde. Sorun etiketlerde değil, modelde/temsilde.
 
-- [ ] **4.3 — `[EĞİTİM GEREKİR]` Taksonomi kararı (kalan kısım)**
-  Mood'u sesten türetmek mi (librosa özellikleri / yeniden etiketleme), yoksa tek head
-  (artist) + genre/mood'u lookup ile türetmek mi — bu bir mimari karar, Faz 2'deki
-  joint decoding yeterli görülürse ertelenebilir.
+- [x] **4.3 — Taksonomi kararı: mood sesten türetiliyor** — *2026-07-30* — eğitim gerekmedi
+  Elle atanmış etiket `config.py`'den kaldırıldı (`search_hint` olarak duruyor; etiket
+  değil, korpusu indiren YouTube sorgusunun kelimesi — silinirse `dataset/` yeniden
+  üretilemez). Yerine kural tabanlı, korpus-kalibreli üç eksen: `audio_features`
+  `extract_mood_signals` → `classify_mood`, eşikler `calibrate_mood.py`'den.
+
+  | eksen | sinyaller | tür ayrımı |
+  |---|---|---|
+  | energy | onset_density + rms_norm | +0.167 |
+  | brightness | centroid − minor_lean | +0.041 (zayıf, raporda öyle yazıyor) |
+  | aggression | low_ratio + hf_ratio | +0.162 |
+
+  Eksen korelasyonu ≤0.40. Tür girdi değil: agresyon tepesi Georgia Trap/Rage/Trap/
+  Crunk/Chicago Drill, dip Lofi %31. Drill enerjide düşük + agresyonda yüksek.
+
+  ⚠️ Yol boyunca **dört ölçüm hipotezimi çürüttü**, hepsi kodda kayıtlı: `perc_ratio`
+  hiçbir türü ayırmıyordu (0.47-0.54) ve en pahalıydı; `onset_contrast` ters yönde
+  çalıştı (agresif müzik seyrek değil, sıkışık); `tempo` enerjide +0.01 verdi; ilk
+  agresyon üçlüsü vinil cızırtısını agresyon sanıp bir lo-fi parçasını 2,000 içinde
+  3. sıraya koydu (şimdi 346.). HPSS de gereksiz çıktı (r=0.981) — çıkarım 5.0 → 1.0 sn.
+
+  ⚠️ Kalan kusur: o lo-fi parçası hâlâ "Aggressive" etiketi alıyor. Sinyalleri türü
+  için gerçekten uç (low_ratio 0.88 vs lo-fi medyanı 0.60, flatness 13x, zcr 4x), yani
+  eksen değil parça atipik — ama tekil etiket yanlış görünüyor, kayıtta dursun.
 - [ ] **4.4 — `[EĞİTİM GEREKİR]` Class weight ekle**
   Genre'de 46x, artist'te 28x dengesizlik var; nadir sınıflar pratikte hiç tahmin
   edilmiyor.

@@ -438,8 +438,10 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     # for the original EfficientNetB3. Top-1 is still only 15.35%, so a single name is not
     # a fact; top-5 hits 37.72%, which is why it leads here.
     #
-    # Tempo and Key are measured from the signal by librosa and are always shown.
-    # Mood is gone: three independent measurements found it is not audio-linked.
+    # Tempo, Key and Mood are measured from the signal, not predicted, so they are shown
+    # without a confidence caveat. The OLD mood label (hand-assigned per artist) was
+    # deleted after three measurements found it unrelated to the audio; this one is
+    # computed per track against corpus percentiles. Different thing, same word.
     conf     = analysis.get("classification_confidence") or {}
     reliable = conf.get("reliable", False)
     top5     = conf.get("artist_top5") or []
@@ -452,6 +454,20 @@ if st.session_state.api_response and st.session_state.api_response.get("status")
     c2.success(f"🎹 **Genre:**\n### {analysis['genre']}")
     c3.error(f"⏱️ **Tempo:**\n### {analysis['bpm']} BPM")
     c4.info(f"🎵 **Key:**\n### {analysis['key']}")
+
+    # Mood: three measured axes. Absent when models/mood_calibration.json was never built,
+    # in which case nothing is shown rather than a fabricated neutral reading.
+    mood = analysis.get("mood")
+    if mood:
+        st.markdown("**Character** — measured from the audio, relative to the catalogue:")
+        mc = st.columns(len(mood))
+        for col, (axis, val) in zip(mc, mood.items()):
+            col.metric(axis.capitalize(), val["label"])
+            col.progress(min(1.0, max(0.0, val["score"])))
+        st.caption(
+            "Each axis is this track's position against the catalogue: 50% is average, "
+            "so \"Dark\" means darker than most beats here, not dark in absolute terms."
+        )
 
     if top5:
         st.markdown("**Sounds closest to:**")
