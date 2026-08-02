@@ -33,6 +33,7 @@ import csv
 import hashlib
 import json
 import os
+import random
 import time
 from collections import Counter, deque
 
@@ -73,6 +74,12 @@ MAX_CONSECUTIVE_FAILURES = 12    # a throttled run fails every attempt, not some
 FAILURE_WINDOW           = 30    # rolling window of download attempts
 MAX_WINDOW_FAILURE_RATE  = 0.5
 MAX_EMPTY_TARGETS        = 2     # targets that yielded nothing despite having candidates
+
+# Pause between downloads. Back-to-back requests with no gap are the bot signature, and
+# on 2026-08-02 YouTube escalated from scattered 403s to "Sign in to confirm you're not
+# a bot" partway through a repair run — which halts collection entirely, so the delay
+# buys far more than it costs. Randomised because a fixed interval is itself a pattern.
+DOWNLOAD_DELAY = (2.0, 4.0)
 
 LOG_PATH = "collection_log.json"
 
@@ -221,7 +228,7 @@ def get_audio_duration(filepath):
         return None
 
 
-def fetch_target_audio(target, stats, simple_query=False):
+def fetch_target_audio(target, stats, simple_query=False, delay=True):
     """
     Tops one target up to FILES_PER_TARGET valid, unique audio files.
 
@@ -328,6 +335,9 @@ def fetch_target_audio(target, stats, simple_query=False):
             'noprogress':   True,
         }
 
+        if delay:
+            time.sleep(random.uniform(*DOWNLOAD_DELAY))
+
         try:
             with yt_dlp.YoutubeDL(dl_opts) as ydl:
                 ydl.download([f"https://www.youtube.com/watch?v={yt_id}"])
@@ -405,6 +415,8 @@ def main():
                     help="yalnizca bu sanatcilari topla")
     ap.add_argument("--simple-query", action="store_true",
                     help="arama terimini sadeleştir (<artist> Type Beat)")
+    ap.add_argument("--no-delay", action="store_true",
+                    help="indirmeler arasi gecikmeyi kapat (blok riskini artirir)")
     ap.add_argument("--dry-run", action="store_true",
                     help="ne yapilacagini yazdir, hicbir sey indirme")
     args = ap.parse_args()
@@ -430,6 +442,8 @@ def main():
     print(f"   Target per category: {config.FILES_PER_TARGET} files")
     print(f"   Candidate multiplier: {CANDIDATE_MULTIPLIER}x")
     print(f"   Targets this run: {len(targets)}")
+    print(f"   Download delay: "
+          f"{'kapali' if args.no_delay else f'{DOWNLOAD_DELAY[0]:.0f}-{DOWNLOAD_DELAY[1]:.0f}s'}")
     print(f"   Failure guard: {MAX_CONSECUTIVE_FAILURES} ardisik / "
           f"%{MAX_WINDOW_FAILURE_RATE*100:.0f} pencere / "
           f"{MAX_EMPTY_TARGETS} bos hedef\n")
@@ -445,7 +459,8 @@ def main():
     try:
         for i, target in enumerate(targets, 1):
             print(f"\n[{i}/{len(targets)}]", end="")
-            fetch_target_audio(target, stats, simple_query=args.simple_query)
+            fetch_target_audio(target, stats, simple_query=args.simple_query,
+                               delay=not args.no_delay)
     except CollectionHalted as e:
         halted = str(e)
         print(f"\n\n🛑 TOPLAMA DURDURULDU: {e}")
