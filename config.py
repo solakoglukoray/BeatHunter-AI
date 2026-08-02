@@ -100,22 +100,13 @@ TARGETS = [
     {"artist": "A$AP Rocky",                "search_hint": "Chill",       "genre": "Cloud Rap"},
     {"artist": "Yung Lean",                 "search_hint": "Melancholic", "genre": "Cloud Rap"},
 
-    # ================================================================
-    # COMEDY HIP-HOP  (was single-artist — now 3)
-    # ================================================================
-    {"artist": "Lil Dicky",                 "search_hint": "Energetic",   "genre": "Comedy Hip-Hop"},
-    {"artist": "The Lonely Island",         "search_hint": "Energetic",   "genre": "Comedy Hip-Hop"},
-    {"artist": "Weird Al Yankovic",         "search_hint": "Energetic",   "genre": "Comedy Hip-Hop"},
 
     # ================================================================
-    # CRUNK & CRUNKCORE
+    # CRUNK
     # ================================================================
     {"artist": "Lil Jon",                   "search_hint": "Aggressive",  "genre": "Crunk"},
     {"artist": "Ying Yang Twins",           "search_hint": "Aggressive",  "genre": "Crunk"},
     {"artist": "Lil Scrappy",               "search_hint": "Aggressive",  "genre": "Crunk"},
-    {"artist": "Brokencyde",                "search_hint": "Aggressive",  "genre": "Crunkcore"},
-    {"artist": "3OH!3",                     "search_hint": "Aggressive",  "genre": "Crunkcore"},
-    {"artist": "Hollywood Undead",          "search_hint": "Aggressive",  "genre": "Crunkcore"},
 
     # ================================================================
     # DIGICORE  (was single-artist — now 3)
@@ -130,15 +121,17 @@ TARGETS = [
     {"artist": "Chief Keef",                "search_hint": "Aggressive",  "genre": "Chicago Drill"},
     {"artist": "King Von",                  "search_hint": "Aggressive",  "genre": "Chicago Drill"},
     {"artist": "Young Chop",                "search_hint": "Aggressive",  "genre": "Chicago Drill"},
+    {"artist": "Lil Durk",                  "search_hint": "Melancholic", "genre": "Chicago Drill"},
+    {"artist": "Polo G",                    "search_hint": "Melancholic", "genre": "Chicago Drill"},
     {"artist": "Pop Smoke",                 "search_hint": "Dark",        "genre": "Brooklyn Drill"},
     {"artist": "808Melo",                   "search_hint": "Dark",        "genre": "Brooklyn Drill"},
     {"artist": "Fivio Foreign",             "search_hint": "Dark",        "genre": "Brooklyn Drill"},
     {"artist": "Central Cee",               "search_hint": "Dark",        "genre": "UK Drill"},
     {"artist": "Headie One",                "search_hint": "Dark",        "genre": "UK Drill"},
     {"artist": "Ghosty",                    "search_hint": "Dark",        "genre": "UK Drill"},
-    {"artist": "Natanael Cano",             "search_hint": "Dark",        "genre": "Mexican Drill"},
-    {"artist": "Junior H",                  "search_hint": "Dark",        "genre": "Mexican Drill"},
-    {"artist": "Peso Pluma",                "search_hint": "Aggressive",  "genre": "Mexican Drill"},
+    {"artist": "Natanael Cano",             "search_hint": "Dark",        "genre": "Corridos Tumbados"},
+    {"artist": "Junior H",                  "search_hint": "Dark",        "genre": "Corridos Tumbados"},
+    {"artist": "Peso Pluma",                "search_hint": "Aggressive",  "genre": "Corridos Tumbados"},
     {"artist": "Rondodasosa",               "search_hint": "Dark",        "genre": "Afro Drill"},
     {"artist": "SL",                        "search_hint": "Aggressive",  "genre": "Afro Drill"},
     {"artist": "Unknown T",                 "search_hint": "Dark",        "genre": "Afro Drill"},
@@ -152,9 +145,13 @@ TARGETS = [
     {"artist": "2Pac",                      "search_hint": "Soulful",     "genre": "West Coast Hip-Hop"},
     {"artist": "Dr. Dre",                   "search_hint": "Chill",       "genre": "West Coast Hip-Hop"},
     {"artist": "DJ Quik",                   "search_hint": "Chill",       "genre": "West Coast Hip-Hop"},
+    {"artist": "DJ Mustard",                "search_hint": "Energetic",   "genre": "West Coast Hip-Hop"},
+    {"artist": "Cardo",                     "search_hint": "Chill",       "genre": "West Coast Hip-Hop"},
+    {"artist": "Roddy Ricch",               "search_hint": "Melancholic", "genre": "West Coast Hip-Hop"},
     {"artist": "MF DOOM",                   "search_hint": "Soulful",     "genre": "Underground Hip-Hop"},
     {"artist": "Madlib",                    "search_hint": "Soulful",     "genre": "Underground Hip-Hop"},
     {"artist": "Aesop Rock",                "search_hint": "Dark",        "genre": "Underground Hip-Hop"},
+    {"artist": "Kenny Beats",               "search_hint": "Chill",       "genre": "Underground Hip-Hop"},
 
     # ================================================================
     # G-FUNK
@@ -176,12 +173,6 @@ TARGETS = [
     {"artist": "Raekwon",                   "search_hint": "Dark",        "genre": "Mafioso Rap"},
     {"artist": "Kool G Rap",                "search_hint": "Dark",        "genre": "Mafioso Rap"},
 
-    # ================================================================
-    # HORRORCORE  (NEW)
-    # ================================================================
-    {"artist": "Insane Clown Posse",        "search_hint": "Dark",        "genre": "Horrorcore"},
-    {"artist": "Gravediggaz",               "search_hint": "Dark",        "genre": "Horrorcore"},
-    {"artist": "Brotha Lynch Hung",         "search_hint": "Dark",        "genre": "Horrorcore"},
 
     # ================================================================
     # HYPHY  (was single-artist — now 3)
@@ -213,23 +204,9 @@ TARGETS = [
     {"artist": "Three 6 Mafia",             "search_hint": "Dark",        "genre": "Memphis Rap"},
     {"artist": "DJ Paul",                   "search_hint": "Dark",        "genre": "Memphis Rap"},
     {"artist": "Project Pat",               "search_hint": "Dark",        "genre": "Memphis Rap"},
-    {"artist": "Cypress Hill",              "search_hint": "Chill",       "genre": "Stoner Rap"},
-    {"artist": "Redman",                    "search_hint": "Chill",       "genre": "Stoner Rap"},
-    {"artist": "Method Man",                "search_hint": "Chill",       "genre": "Stoner Rap"},
-
-    # ================================================================
-    # SLAB MUSIC  (NEW)
-    # ================================================================
-    {"artist": "Lil Keke",                  "search_hint": "Chill",       "genre": "Slab Music"},
-    {"artist": "Trae tha Truth",            "search_hint": "Dark",        "genre": "Slab Music"},
-    {"artist": "Killa Kyleon",              "search_hint": "Dark",        "genre": "Slab Music"},
-
-    # ================================================================
-    # SNAP MUSIC  (NEW)
-    # ================================================================
-    {"artist": "D4L",                       "search_hint": "Energetic",   "genre": "Snap Music"},
-    {"artist": "Dem Franchize Boyz",        "search_hint": "Energetic",   "genre": "Snap Music"},
-    {"artist": "Mr. Collipark",             "search_hint": "Energetic",   "genre": "Snap Music"},
+    {"artist": "Tay Keith",                 "search_hint": "Aggressive",  "genre": "Memphis Rap"},
+    {"artist": "Hitkidd",                   "search_hint": "Aggressive",  "genre": "Memphis Rap"},
+    {"artist": "Key Glock",                 "search_hint": "Dark",        "genre": "Memphis Rap"},
 
     # ================================================================
     # MODERN TRAP, RAGE & PHONK
@@ -237,10 +214,15 @@ TARGETS = [
     {"artist": "Playboi Carti",             "search_hint": "Energetic",   "genre": "Mumble Rap"},
     {"artist": "Lil Pump",                  "search_hint": "Energetic",   "genre": "Mumble Rap"},
     {"artist": "Pi'erre Bourne",            "search_hint": "Energetic",   "genre": "Mumble Rap"},
+    {"artist": "Turbo",                     "search_hint": "Energetic",   "genre": "Mumble Rap"},
+    {"artist": "Gunna",                     "search_hint": "Chill",       "genre": "Mumble Rap"},
+    {"artist": "Lil Uzi Vert",              "search_hint": "Energetic",   "genre": "Mumble Rap"},
     {"artist": "Metro Boomin",              "search_hint": "Dark",        "genre": "Trap"},
     {"artist": "Future",                    "search_hint": "Dark",        "genre": "Trap"},
     {"artist": "Migos",                     "search_hint": "Dark",        "genre": "Trap"},
     {"artist": "21 Savage",                 "search_hint": "Dark",        "genre": "Trap"},
+    {"artist": "TM88",                      "search_hint": "Dark",        "genre": "Trap"},
+    {"artist": "Murda Beatz",               "search_hint": "Energetic",   "genre": "Trap"},
     {"artist": "Bad Bunny",                 "search_hint": "Energetic",   "genre": "Latin Trap"},
     {"artist": "Tainy",                     "search_hint": "Energetic",   "genre": "Latin Trap"},
     {"artist": "Anuel AA",                  "search_hint": "Energetic",   "genre": "Latin Trap"},
@@ -250,6 +232,8 @@ TARGETS = [
     {"artist": "Yeat",                      "search_hint": "Aggressive",  "genre": "Rage"},
     {"artist": "F1lthy",                    "search_hint": "Aggressive",  "genre": "Rage"},
     {"artist": "Ken Carson",                "search_hint": "Aggressive",  "genre": "Rage"},
+    {"artist": "Bnyx",                      "search_hint": "Aggressive",  "genre": "Rage"},
+    {"artist": "Destroy Lonely",            "search_hint": "Aggressive",  "genre": "Rage"},
 
     # ================================================================
     # CONSCIOUS & PROGRESSIVE
@@ -257,12 +241,16 @@ TARGETS = [
     {"artist": "Kendrick Lamar",            "search_hint": "Soulful",     "genre": "Conscious Hip-Hop"},
     {"artist": "9th Wonder",                "search_hint": "Soulful",     "genre": "Conscious Hip-Hop"},
     {"artist": "Common",                    "search_hint": "Soulful",     "genre": "Conscious Hip-Hop"},
+    {"artist": "Hit-Boy",                   "search_hint": "Soulful",     "genre": "Conscious Hip-Hop"},
     {"artist": "Kanye West",                "search_hint": "Soulful",     "genre": "Progressive Rap"},
     {"artist": "Lupe Fiasco",               "search_hint": "Soulful",     "genre": "Progressive Rap"},
     {"artist": "J. Cole",                   "search_hint": "Soulful",     "genre": "Progressive Rap"},
     {"artist": "T.I.",                      "search_hint": "Soulful",     "genre": "Southern Hip-Hop"},
     {"artist": "Organized Noize",           "search_hint": "Soulful",     "genre": "Southern Hip-Hop"},
     {"artist": "UGK",                       "search_hint": "Soulful",     "genre": "Southern Hip-Hop"},
+    {"artist": "Mike Will Made-It",         "search_hint": "Energetic",   "genre": "Southern Hip-Hop"},
+    {"artist": "Jetsonmade",                "search_hint": "Energetic",   "genre": "Southern Hip-Hop"},
+    {"artist": "NBA YoungBoy",              "search_hint": "Melancholic", "genre": "Southern Hip-Hop"},
 
     # ================================================================
     # POLITICAL HIP-HOP  (NEW)
@@ -284,6 +272,8 @@ TARGETS = [
     {"artist": "Juice WRLD",                "search_hint": "Melancholic", "genre": "Emo Rap"},
     {"artist": "Lil Peep",                  "search_hint": "Melancholic", "genre": "Emo Rap"},
     {"artist": "XXXTentacion",              "search_hint": "Melancholic", "genre": "Emo Rap"},
+    {"artist": "Nick Mira",                 "search_hint": "Melancholic", "genre": "Emo Rap"},
+    {"artist": "Rod Wave",                  "search_hint": "Melancholic", "genre": "Emo Rap"},
     {"artist": "Mary J. Blige",             "search_hint": "Soulful",     "genre": "Hip-Hop Soul"},
     {"artist": "Erykah Badu",               "search_hint": "Chill",       "genre": "Hip-Hop Soul"},
     {"artist": "Puff Daddy",                "search_hint": "Soulful",     "genre": "Hip-Hop Soul"},
@@ -291,7 +281,7 @@ TARGETS = [
     {"artist": "D'Angelo",                  "search_hint": "Chill",       "genre": "Neo Soul"},
     {"artist": "Lauryn Hill",               "search_hint": "Soulful",     "genre": "Neo Soul"},
     {"artist": "El-P",                      "search_hint": "Aggressive",  "genre": "Industrial Hip-Hop"},
-    {"artist": "Nine Inch Nails",           "search_hint": "Dark",        "genre": "Industrial Hip-Hop"},
+    {"artist": "Backxwash",                 "search_hint": "Dark",        "genre": "Industrial Hip-Hop"},
     {"artist": "Ho99o9",                    "search_hint": "Aggressive",  "genre": "Industrial Hip-Hop"},
     {"artist": "A Tribe Called Quest",      "search_hint": "Chill",       "genre": "Jazz Rap"},
     {"artist": "Digable Planets",           "search_hint": "Chill",       "genre": "Jazz Rap"},
@@ -299,9 +289,12 @@ TARGETS = [
     {"artist": "Drake",                     "search_hint": "Chill",       "genre": "Pop Rap"},
     {"artist": "Post Malone",               "search_hint": "Chill",       "genre": "Pop Rap"},
     {"artist": "Macklemore",                "search_hint": "Energetic",   "genre": "Pop Rap"},
+    {"artist": "Boi-1da",                   "search_hint": "Soulful",     "genre": "Pop Rap"},
     {"artist": "Travis Scott",              "search_hint": "Dark",        "genre": "Psychedelic Rap"},
     {"artist": "Flying Lotus",              "search_hint": "Dark",        "genre": "Psychedelic Rap"},
     {"artist": "BROCKHAMPTON",              "search_hint": "Energetic",   "genre": "Psychedelic Rap"},
+    {"artist": "OZ",                        "search_hint": "Dark",        "genre": "Psychedelic Rap"},
+    {"artist": "Don Toliver",               "search_hint": "Chill",       "genre": "Psychedelic Rap"},
     {"artist": "Machine Gun Kelly",         "search_hint": "Energetic",   "genre": "Punk Rap"},
     {"artist": "slowthai",                  "search_hint": "Aggressive",  "genre": "Punk Rap"},
     {"artist": "Fever 333",                 "search_hint": "Aggressive",  "genre": "Punk Rap"},
@@ -336,9 +329,14 @@ TARGETS = [
     {"artist": "Eminem",                    "search_hint": "Aggressive",  "genre": "Detroit Hip-Hop"},
     {"artist": "Big Sean",                  "search_hint": "Energetic",   "genre": "Detroit Hip-Hop"},
     {"artist": "D12",                       "search_hint": "Aggressive",  "genre": "Detroit Hip-Hop"},
+    {"artist": "Helluva",                   "search_hint": "Energetic",   "genre": "Detroit Hip-Hop"},
+    {"artist": "Babyface Ray",              "search_hint": "Chill",       "genre": "Detroit Hip-Hop"},
     {"artist": "Zaytoven",                  "search_hint": "Energetic",   "genre": "Georgia Trap"},
     {"artist": "Southside",                 "search_hint": "Dark",        "genre": "Georgia Trap"},
     {"artist": "Gucci Mane",                "search_hint": "Dark",        "genre": "Georgia Trap"},
+    {"artist": "Wheezy",                    "search_hint": "Dark",        "genre": "Georgia Trap"},
+    {"artist": "ATL Jacob",                 "search_hint": "Dark",        "genre": "Georgia Trap"},
+    {"artist": "Young Thug",                "search_hint": "Energetic",   "genre": "Georgia Trap"},
     {"artist": "DJ Muggs",                  "search_hint": "Dark",        "genre": "Latino Hip-Hop"},
     {"artist": "Snow Tha Product",          "search_hint": "Aggressive",  "genre": "Latino Hip-Hop"},
     {"artist": "Delinquent Habits",         "search_hint": "Energetic",   "genre": "Latino Hip-Hop"},

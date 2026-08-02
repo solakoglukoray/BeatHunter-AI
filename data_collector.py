@@ -162,6 +162,44 @@ class Stats:
         return s
 
 
+def sweep_interrupted_downloads(known_filenames):
+    """
+    Clears what an abrupt kill leaves behind. Called before every run.
+
+    A SIGKILL mid-download leaves two kinds of debris, both measured in a real kill test:
+
+      .webm / .part / .temp.mp4   yt-dlp's working files, never cleaned up because the
+                                  postprocessor never ran. Pure waste, and they pile up
+                                  on a laptop that dies in a bag most days.
+
+      orphan .mp3                 downloaded and validated, but the process died between
+                                  writing the file and appending its metadata row. It is
+                                  invisible to the registries, which are rebuilt from
+                                  metadata, so it would be downloaded a second time.
+
+    Orphans are deleted rather than adopted: the filename is a YouTube id and carries no
+    record of which target's search produced it, so there is no honest way to label it.
+    Re-downloading costs seconds; guessing its artist would corrupt the dataset.
+    """
+    if not os.path.isdir(config.AUDIO_DIR):
+        return 0, 0
+    temps, orphans = [], []
+    for name in os.listdir(config.AUDIO_DIR):
+        if not name.endswith(".mp3"):
+            temps.append(name)
+        elif name not in known_filenames:
+            orphans.append(name)
+    for name in temps + orphans:
+        try:
+            os.remove(os.path.join(config.AUDIO_DIR, name))
+        except OSError:
+            pass
+    if temps or orphans:
+        print(f"🧹 kesintiden kalan temizlendi: {len(temps)} yarim dosya, "
+              f"{len(orphans)} yetim mp3")
+    return len(temps), len(orphans)
+
+
 def compute_md5(filepath, chunk_size=8192):
     """Computes MD5 hash of a file to detect duplicates regardless of filename."""
     h = hashlib.md5()
@@ -189,9 +227,11 @@ def initialize_dataset():
     else:
         # Resume: rebuild registries from existing metadata
         print(f"📄 Existing metadata found — loading registries for resume...")
+        known = set()
         with open(config.METADATA_FILE, mode='r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
+                known.add(row['filename'])
                 filepath = os.path.join(config.AUDIO_DIR, row['filename'])
                 if os.path.exists(filepath):
                     file_hash = compute_md5(filepath)
@@ -201,6 +241,8 @@ def initialize_dataset():
                     yt_id = os.path.splitext(row['filename'])[0]
                     DOWNLOADED_IDS.add(yt_id)
 
+        # Must run AFTER `known` is built, or every mp3 looks like an orphan.
+        sweep_interrupted_downloads(known)
         print(f"   ✅ Loaded {len(DOWNLOADED_HASHES)} hashes, {len(DOWNLOADED_IDS)} IDs from existing data.\n")
 
 
