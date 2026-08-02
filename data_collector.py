@@ -81,6 +81,23 @@ MAX_EMPTY_TARGETS        = 2     # targets that yielded nothing despite having c
 # buys far more than it costs. Randomised because a fixed interval is itself a pattern.
 DOWNLOAD_DELAY = (2.0, 4.0)
 
+# Retries for network-class failures only — see the call site for why this does not
+# blunt the guard. "Sign in to confirm you're not a bot" and 403 are NOT in here: those
+# are decisions YouTube has made, and hammering them is what earns a longer block.
+NETWORK_RETRIES = 3
+NETWORK_BACKOFF = (5, 15, 45)
+_TRANSIENT_MARKERS = (
+    "getaddrinfo", "TransportError", "Temporary failure in name resolution",
+    "Connection reset", "Connection aborted", "timed out", "Read timed out",
+    "Remote end closed", "HTTP Error 5",   # any 5xx is the server's problem, not ours
+)
+
+
+def _is_transient(exc):
+    text = str(exc)
+    return any(m.lower() in text.lower() for m in _TRANSIENT_MARKERS)
+
+
 LOG_PATH = "collection_log.json"
 
 
@@ -380,11 +397,32 @@ def fetch_target_audio(target, stats, simple_query=False, delay=True):
         if delay:
             time.sleep(random.uniform(*DOWNLOAD_DELAY))
 
-        try:
-            with yt_dlp.YoutubeDL(dl_opts) as ydl:
-                ydl.download([f"https://www.youtube.com/watch?v={yt_id}"])
-        except Exception as e:
-            print(f"   ❌ Download error ({yt_id}): {str(e)[:120]}")
+        # Transient network faults get a few backed-off retries. A dropped Wi-Fi link
+        # killed an 11-hour run after 12 consecutive DNS failures — correct behaviour,
+        # but the network was back seconds later and the guard cannot tell "gone for
+        # good" from "gone for ten seconds" without waiting.
+        #
+        # This deliberately does NOT weaken the guard: only network-class errors are
+        # retried, and if every retry fails it still records one download_error, so a
+        # real outage trips the breaker exactly as before. Retrying everything would
+        # re-create the silent-failure problem this whole guard exists to fix.
+        err = None
+        for attempt in range(NETWORK_RETRIES + 1):
+            try:
+                with yt_dlp.YoutubeDL(dl_opts) as ydl:
+                    ydl.download([f"https://www.youtube.com/watch?v={yt_id}"])
+                err = None
+                break
+            except Exception as e:
+                err = e
+                if attempt == NETWORK_RETRIES or not _is_transient(e):
+                    break
+                wait = NETWORK_BACKOFF[attempt]
+                print(f"   ⏳ ag hatasi, {wait}s sonra tekrar "
+                      f"({attempt + 1}/{NETWORK_RETRIES}): {yt_id}")
+                time.sleep(wait)
+        if err is not None:
+            print(f"   ❌ Download error ({yt_id}): {str(err)[:120]}")
             stats.record(target['artist'], "download_error")
             continue
 

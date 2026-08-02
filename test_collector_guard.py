@@ -107,5 +107,35 @@ def no_candidates():
 
 case("aday yokken bos donen hedefler (arz sorunu)", no_candidates, False)
 
+
+# ---------------------------------------------------------------------------
+# Transient-vs-permanent classification.
+#
+# Only network faults may be retried. Retrying a bot-block or a 403 hammers a door
+# YouTube has already closed and earns a longer ban; retrying "video unavailable"
+# is pure waste. Getting this boundary wrong in either direction is expensive, and
+# it is one string-match away at all times.
+# ---------------------------------------------------------------------------
+print("\n  --- gecici mi kalici mi ---")
+CLASSIFY = [
+    ("getaddrinfo failed", True),
+    ("TransportError('[Errno 11001] getaddrinfo failed')", True),
+    ("Connection reset by peer", True),
+    ("Read timed out", True),
+    ("HTTP Error 503: Service Unavailable", True),
+    ("HTTP Error 500: Internal Server Error", True),
+    ("Sign in to confirm you're not a bot", False),
+    ("HTTP Error 403: Forbidden", False),
+    ("This video is not available", False),
+    ("Sign in to confirm your age", False),
+    ("Private video", False),
+]
+for msg, want in CLASSIFY:
+    got = DC._is_transient(Exception(msg))
+    good = got == want
+    ok &= good
+    print(f"  {'PASS' if good else 'FAIL'}  "
+          f"{'tekrar dene' if got else 'tekrar deneme':14s} <- {msg[:46]}")
+
 print("\n" + ("TUM TESTLER GECTI" if ok else "!!! BASARISIZ TEST VAR"))
 sys.exit(0 if ok else 1)
