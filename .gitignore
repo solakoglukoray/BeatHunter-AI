@@ -74,3 +74,6 @@ models/panns_finetune_state.json
 
 # Query-validation working dir: downloaded YouTube clips, regenerable.
 temp_query_validation/
+
+# Collector run log — regenerated every run.
+collection_log.json
