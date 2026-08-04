@@ -71,14 +71,41 @@ N_RECOMMENDATIONS = 5
 _cache_lock    = threading.Lock()
 _cached_model  = None
 _cached_catalog = None
+_model_stamp   = None      # (mtime, size) of the bundle behind _cached_model
+
+
+def model_fingerprint():
+    """
+    Cheap identity for the current model bundle: (mtime, size).
+
+    Anything that caches an ANALYSIS has to key on this. A response describes the model
+    that produced it, and both caches here outlived a retrain: the API held a stale
+    bundle in memory and the disk cache replayed answers computed by a model that no
+    longer exists. After re-labelling 1,171 tracks the running server still answered
+    "Tyler, The Creator" for a beat the new model calls Kanye West.
+
+    mtime+size rather than a content hash — this is consulted per request, and a 1.4 MB
+    hash per call would cost more than the guard is worth.
+    """
+    try:
+        st = os.stat(MODEL_PATH)
+        return (int(st.st_mtime), st.st_size)
+    except OSError:
+        return None
 
 
 def _get_model():
-    """scaler + artist/genre classifiers + class names, loaded once."""
-    global _cached_model
-    if _cached_model is None:
+    """scaler + artist/genre classifiers + class names, reloaded when the file changes."""
+    global _cached_model, _model_stamp
+    stamp = model_fingerprint()
+    if _cached_model is None or stamp != _model_stamp:
         with _cache_lock:
+            stamp = model_fingerprint()
+            if _cached_model is not None and stamp != _model_stamp:
+                print(f"♻️  model dosyasi degisti — yeniden yukleniyor ({MODEL_PATH})")
+                _cached_model = None
             if _cached_model is None:
+                _model_stamp = stamp
                 if not os.path.exists(MODEL_PATH):
                     raise FileNotFoundError(
                         f"{MODEL_PATH} not found. Build it with: python train_classic.py")
@@ -108,12 +135,32 @@ def _get_model():
     return _cached_model
 
 
+def _catalog_fingerprint():
+    try:
+        st = os.stat(CATALOG_NPZ)
+        return (int(st.st_mtime), st.st_size)
+    except OSError:
+        return None
+
+
+_catalog_stamp = None
+
+
 def _get_catalog():
-    """L2-normalised track vectors + their labels, for similarity search."""
-    global _cached_catalog
-    if _cached_catalog is None:
+    """L2-normalised track vectors + their labels, reloaded when the file changes."""
+    global _cached_catalog, _catalog_stamp
+    # Same staleness problem as the model, and worse in effect: the catalogue is what
+    # "similar beats" comes from, so a stale one recommends tracks under labels the
+    # corpus no longer uses. train_classic.py rewrites both files together.
+    stamp = _catalog_fingerprint()
+    if _cached_catalog is None or stamp != _catalog_stamp:
         with _cache_lock:
+            stamp = _catalog_fingerprint()
+            if _cached_catalog is not None and stamp != _catalog_stamp:
+                print(f"♻️  katalog degisti — yeniden yukleniyor ({CATALOG_NPZ})")
+                _cached_catalog = None
             if _cached_catalog is None:
+                _catalog_stamp = stamp
                 if not os.path.exists(CATALOG_NPZ):
                     raise FileNotFoundError(
                         f"{CATALOG_NPZ} not found. Build it with: python train_classic.py")

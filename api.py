@@ -28,6 +28,7 @@ from datetime import datetime
 
 api_cache = Cache("api_cache_dir")
 
+
 # Import custom inference engine modules
 from inference_engine import (
     download_youtube_audio,
@@ -35,6 +36,25 @@ from inference_engine import (
     analyze_beat,
     TEMP_FOLDER
 )
+import inference_engine as IE
+
+
+def _model_tag():
+    """
+    Short id of the model bundle currently on disk, mixed into every cache key.
+
+    Without it a cached response outlives the model that produced it. After 1,171 tracks
+    were re-labelled and the classifier rebuilt, the app kept serving the old answer and
+    reported a cache hit — correctly, from its point of view: the key was a hash of the
+    AUDIO, and the audio had not changed. What changed was the model, and the key knew
+    nothing about it.
+
+    Retraining now invalidates the cache by itself. Old entries are not deleted; they
+    simply stop being addressable and expire on their own TTL.
+    """
+    fp = IE.model_fingerprint()
+    return "nomodel" if fp is None else f"{fp[0]:x}"
+
 
 import auth
 
@@ -263,7 +283,7 @@ async def analyze_file_endpoint(
     try:
         file_content = await file.read()
         file_hash    = hashlib.md5(file_content).hexdigest()
-        cache_key    = f"file_{file_hash}_{skip_demucs}"
+        cache_key    = f"file_{file_hash}_{skip_demucs}_{_model_tag()}"
 
         cached_result = api_cache.get(cache_key)
         if cached_result:
@@ -445,7 +465,8 @@ async def analyze_youtube_endpoint(
         # slashes, so the bug only showed for URLs.
         # Hashing keeps the cache behaviour identical (same query -> same key) while
         # guaranteeing the id survives a round trip. The upload path already did this.
-        cache_key     = f"yt_{hashlib.sha256(query.strip().lower().encode('utf-8')).hexdigest()[:16]}"
+        cache_key     = (f"yt_{hashlib.sha256(query.strip().lower().encode('utf-8')).hexdigest()[:16]}"
+                         f"_{_model_tag()}")
         cached_result = api_cache.get(cache_key)
 
         if cached_result:
