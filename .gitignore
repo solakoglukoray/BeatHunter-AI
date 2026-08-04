@@ -77,3 +77,10 @@ temp_query_validation/
 
 # Collector run log — regenerated every run.
 collection_log.json
+
+# API response cache (diskcache) — runtime artefact.
+api_cache_dir/
+
+# Label-noise audit output — regenerate with measure_label_noise.py.
+label_noise_sample.csv
+label_noise_report.txt

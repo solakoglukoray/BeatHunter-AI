@@ -38,7 +38,11 @@ import time
 from collections import Counter, deque
 
 import yt_dlp
+import artist_match
 import config
+
+# Built once — the patterns cover every artist in the taxonomy and are reused per title.
+_PATTERNS = artist_match.build_patterns([t["artist"] for t in config.TARGETS])
 
 # ============================================================
 # GLOBAL REGISTRIES
@@ -67,7 +71,8 @@ CANDIDATE_MULTIPLIER = 5
 # files are supposed to happen — they are the filter working. Download and search
 # failures are infrastructure. Only the latter trips the breaker; counting rejections
 # as failures would halt healthy runs.
-REJECTIONS   = {"duplicate_hash", "duplicate_id", "too_short", "unhashable"}
+REJECTIONS   = {"duplicate_hash", "duplicate_id", "too_short", "unhashable",
+                "title_mismatch"}
 FAILURES     = {"download_error", "missing_after_download", "search_failed"}
 
 MAX_CONSECUTIVE_FAILURES = 12    # a throttled run fails every attempt, not some
@@ -229,6 +234,36 @@ def compute_md5(filepath, chunk_size=8192):
         return None
 
 
+# filename, genre, artist_type, search_hint, title.
+#   search_hint — the scraper's query word, NOT a label. See config.TARGETS.
+#   title       — what YouTube actually returned. Added 2026-08-04, because its absence
+#                 is why 10.1% of the corpus is mislabelled and nobody could tell:
+#                 the row recorded what we asked for and kept no record of what arrived.
+COLUMNS = ["filename", "genre", "artist_type", "search_hint", "title"]
+
+
+def migrate_metadata_schema():
+    """
+    Brings an older metadata.csv up to COLUMNS in place, once.
+
+    Appending 5-field rows to a 4-column file produces a ragged CSV that pandas either
+    rejects or misparses, and every consumer reads this file. Rows collected before the
+    title was recorded get an empty title — honestly blank rather than back-filled with
+    a guess.
+    """
+    import pandas as pd
+    df = pd.read_csv(config.METADATA_FILE)
+    if list(df.columns) == COLUMNS:
+        return
+    df = df.rename(columns={"mood": "search_hint"})
+    for col in COLUMNS:
+        if col not in df.columns:
+            df[col] = ""
+    df[COLUMNS].to_csv(config.METADATA_FILE, index=False)
+    print(f"📄 metadata.csv semasi guncellendi -> {', '.join(COLUMNS)} "
+          f"({len(df):,} satir, eski satirlarda title bos)")
+
+
 def initialize_dataset():
     """
     Creates dataset directories and metadata CSV if they don't exist.
@@ -238,10 +273,10 @@ def initialize_dataset():
 
     if not os.path.exists(config.METADATA_FILE):
         with open(config.METADATA_FILE, mode='w', newline='', encoding='utf-8') as f:
-            # 4th column is the scraper's query word, NOT a label — see config.TARGETS.
-            csv.writer(f).writerow(["filename", "genre", "artist_type", "search_hint"])
+            csv.writer(f).writerow(COLUMNS)
         print(f"📄 Metadata initialized: {config.METADATA_FILE}")
     else:
+        migrate_metadata_schema()
         # Resume: rebuild registries from existing metadata
         print(f"📄 Existing metadata found — loading registries for resume...")
         known = set()
@@ -263,14 +298,15 @@ def initialize_dataset():
         print(f"   ✅ Loaded {len(DOWNLOADED_HASHES)} hashes, {len(DOWNLOADED_IDS)} IDs from existing data.\n")
 
 
-def append_metadata(filename, target):
+def append_metadata(filename, target, title=""):
     """Appends a single validated file entry to the metadata CSV."""
     with open(config.METADATA_FILE, mode='a', newline='', encoding='utf-8') as f:
         csv.writer(f).writerow([
             filename,
             target['genre'],
             target['artist'],
-            target['search_hint']
+            target['search_hint'],
+            title,
         ])
 
 
@@ -373,6 +409,23 @@ def fetch_target_audio(target, stats, simple_query=False, delay=True):
             stats.record(target['artist'], "duplicate_id")
             continue
 
+        # Reject before downloading when the title names a DIFFERENT target artist.
+        # A search for "NWA ... Type Beat" returned a video titled "Eminem x Dr. Dre
+        # Old School Hip Hop Type Beat" and it was stored as NWA, because the label
+        # recorded what we asked for and nobody looked at what came back. Measured on
+        # 700 sampled tracks, 10.1% of the corpus is mislabelled this way — 14.4% of
+        # the tracks a title can adjudicate.
+        # Titles naming nobody (26% of results) are KEPT: most type beat titles
+        # describe a vibe, and rejecting those would discard a quarter of every search
+        # on no evidence.
+        title = candidate.get("title") or ""
+        if title and artist_match.verdict(title, target["artist"], _PATTERNS) == "mismatch":
+            named = ", ".join(n for n in artist_match.names_in(title, _PATTERNS)
+                              if n != target["artist"])
+            print(f"   🚫 Baslik baska sanatciyi anıyor ({named}): {title[:52]}")
+            stats.record(target['artist'], "title_mismatch")
+            continue
+
         expected_mp3 = os.path.join(config.AUDIO_DIR, f"{yt_id}.mp3")
 
         # Download this single video
@@ -459,7 +512,7 @@ def fetch_target_audio(target, stats, simple_query=False, delay=True):
         DOWNLOADED_IDS.add(yt_id)
 
         filename = f"{yt_id}.mp3"
-        append_metadata(filename, target)
+        append_metadata(filename, target, title)
         valid_count += 1
         stats.record(target['artist'], "saved")
 

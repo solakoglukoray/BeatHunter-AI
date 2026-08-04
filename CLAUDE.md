@@ -68,6 +68,8 @@ Tek istisna top-5: uçtan uca model orada 2.7p (~3 SE) daha iyi, çünkü kendi 
 | `label_recommender.py` | "YouTube'a şunu yaz" sorgusunu kurar — ölçülen sorgu faydasına göre |
 | `calibrate_label_choice.py` | Etiket türlerinin güvenilirlik eğrilerini ölçer |
 | `demo_label_choice.py` | Seçiciyi held-out örnekler + toplu sayılarla gösterir |
+| `artist_match.py` | **Sanatçı adı eşleştirme — TEK KAYNAK.** Toplayıcı ve denetleyici aynı kodu kullanır |
+| `measure_label_noise.py` | Başlık vs etiket uyuşmazlığını ölçer (bkz. Tuzak 9) |
 | `validate_query_suggestions.py` | **Önerilen sorguyu YouTube'da fiilen test eder** (indirir, benzerlik ölçer) |
 | `train_classic.py` | Sınıflandırıcı + katalog + eşik kalibrasyonu üretir |
 | `inference_engine.py` | Çıkarım: sınıflandırma, benzerlik, BPM/key |
@@ -212,6 +214,48 @@ tarama (80, 112) zaman kaybı. Boyutla düşüş ise gerçek: 384 vs 96 arası 2
    `train_classic.py` her eğitimde ölçüp bundle'a yazıyor, `inference_engine` oradan
    okuyor. Klasik modelde 100x %26.1 hassasiyet veriyordu; PANNs modelinde 100x %25.9
    ve %35 barajı için 150x gerekiyor. Eşiği kodda sabitleme.
+
+9. **🚨 ETİKET GÜRÜLTÜSÜ — bilinen ve ÖLÇÜLMÜŞ veri tavanı (2026-08-04)**
+   Korpus `"<artist> <hint> <genre> Type Beat"` aramasının ilk sonuçları alınarak
+   toplandı ve **dönen şeyin sorulan şey olduğu hiç doğrulanmadı**. Etiket, *istediğimizi*
+   söylüyor; *aldığımızı* değil. `measure_label_noise.py`, 700 parçalık örneklemde
+   video başlıklarını çekip ölçtü:
+
+   | | n | oran |
+   |---|---|---|
+   | başlıkta atanan sanatçı geçiyor | 423 | %60.4 |
+   | **başlıkta BAŞKA bir hedef sanatçı geçiyor** | **71** | **%10.1** |
+   | başlık hiçbir hedef sanatçıyı anmıyor | 185 | %26.4 |
+   | video özel/silinmiş | 21 | %3.0 |
+
+   **Başlıkla karar verilebilen 494 parçada uyuşmazlık %14.4 (±1.6).** Gerçek oran
+   %10.1 (alt sınır) ile %14.4 arasında — "undetermined" temiz değil, *bilinmiyor*.
+
+   Kırılım: **tür-içi %5.9** (aynı genre'den komşu sanatçı; genre etiketi doğru kalır,
+   yalnızca artist kayar — Wiley↔Skepta, OZ↔Travis Scott) / **tür-dışı %8.5** (ikisi de
+   bozulur — Common↔J. Cole, J Dilla↔MF DOOM).
+   → ⚠️ Tür-dışı rakamı **şişkin okunmalı**: taksonomi drill'i beşe, hip-hop'ı düzinelerce
+   alt türe bölüyor, o yüzden sesçe bitişik çiftler bile tür-dışı sayılıyor.
+
+   En çok etkilenenler **yapımcılar ve efsane isimler**: J Dilla 4/4, Wiley 4/4,
+   Pharrell 3/4, The Roots 3/4, 808Melo 3/5, Metro Boomin 2/4. Bu isimler bir sanatçıdan
+   çok bir *stili* tarif ediyor ve YouTube da öyle yorumluyor — "J Dilla type beat"
+   araması MF DOOM ve Joey Bada$$ getiriyor.
+
+   → **Bu, top-1 %17.81'in tavanının bir kısmını açıklıyor.** Sınıflandırıcı bozuk değil;
+   etiketlerin en az %10'u yanlış ve model onları öğrenmek zorunda.
+   → Daha önce ölçtüğümüz "**yanlış sanatçı bile +0.126 sorgu faydası veriyor**" bulgusu
+   da buradan geliyor: model komşu sanatçıyla karıştırıyordu çünkü **etiketler zaten öyle
+   karışmış**.
+   → ✅ **İleriye dönük düzeltildi**: `data_collector.py` artık başlığı kaydediyor
+   (`metadata.csv`'de `title` kolonu) ve başlığında *başka* bir hedef sanatçı geçen
+   sonuçları indirmeden önce reddediyor (`title_mismatch`). Hiç isim anmayan başlıklar
+   KABUL ediliyor — sonuçların %26'sı öyle ve onları atmak her aramanın dörtte birini
+   kanıtsız çöpe atardı. Eşleştirme `artist_match.py`'de, toplayıcı ve denetleyici
+   aynı kodu kullanıyor.
+   → ⚠️ **Mevcut 16,169 parça temizlenmedi**, bilerek ertelendi. Temizlik model/katalog/
+   eşik/mood zincirinin tamamını yeniden koşmayı gerektiriyor; yeni genre eklendiğinde
+   (Afrobeats, Jersey, Amapiano…) taksonomi zaten değişeceği için o turla birleştirilecek.
 
 ## Kurallar
 - **CNN eğitimi emekli** — `model_trainer.py` duruyor ama üretim yolunda değil.
