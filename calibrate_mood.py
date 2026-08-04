@@ -36,10 +36,11 @@ import numpy as np, pandas as pd
 from multiprocessing import Pool
 
 import audio_features as AF
+import corpus
 
 CALIB_PATH = "models/mood_calibration.json"
 CACHE_PATH = "models/mood_signals.npz"
-TRACK_META = "models/vector_meta_track.csv"
+TRACK_META = corpus.TRACK_META
 SIGNALS = AF.MOOD_SIGNAL_NAMES
 
 # Genres whose character is not in dispute, one contrast PER AXIS. They are never
@@ -76,12 +77,22 @@ def collect(n_tracks, workers=12):
         # still line up by position, so it would silently calibrate the new axes against
         # the old measurements. Refuse it instead.
         cached_ver = int(z["version"][()]) if "version" in z else 0
+        current = set(pd.read_csv(TRACK_META)["track"])
+        alive = np.isin(z["tracks"], list(current))
         if cached_ver != AF.MOOD_SIGNAL_VERSION:
             print(f"cache is signal version {cached_ver}, code is "
                   f"{AF.MOOD_SIGNAL_VERSION} — re-extracting from scratch")
-        elif len(z["tracks"]) >= n_tracks:
-            print(f"cached mood signals for {len(z['tracks']):,} tracks")
-            return pd.DataFrame(z["X"], columns=SIGNALS), z["tracks"]
+        elif alive.sum() < n_tracks:
+            # The calibration IS the corpus distribution, so a sample drawn from an
+            # older corpus calibrates against a corpus that no longer exists. After the
+            # taxonomy change 100 cached tracks had been pruned and none of the 2,385
+            # new ones were represented at all.
+            print(f"cache'in {int(alive.sum()):,} parcasi guncel korpusta "
+                  f"({n_tracks:,} isteniyor) — yeniden cikariliyor")
+        else:
+            print(f"cached mood signals for {int(alive.sum()):,} tracks")
+            return (pd.DataFrame(z["X"][alive], columns=SIGNALS),
+                    z["tracks"][alive])
 
     meta = pd.read_csv(TRACK_META)
     meta["path"] = meta["track"].map(lambda t: f"dataset/audio/{t}.mp3")

@@ -31,6 +31,7 @@ from sklearn.decomposition import PCA
 from sklearn.model_selection import GroupShuffleSplit
 
 import audio_features as AF
+import corpus
 
 MODEL_DIR    = "models"
 # Cache path follows the active encoder, so switching encoders cannot reuse the
@@ -41,8 +42,7 @@ CLASSIC_CACHE = os.path.join(MODEL_DIR, "classic_features.npz")
 MODEL_PATH   = os.path.join(MODEL_DIR, "classic_model.joblib")
 CATALOG_NPZ  = os.path.join(MODEL_DIR, "classic_catalog.npz")
 CATALOG_CSV  = os.path.join(MODEL_DIR, "classic_catalog.csv")
-TRACK_META   = os.path.join(MODEL_DIR, "vector_meta_track.csv")
-SLICE_META   = "dataset_processed/metadata_processed.csv"
+TRACK_META   = corpus.TRACK_META
 TAXONOMY     = os.path.join(MODEL_DIR, "taxonomy.json")
 
 
@@ -74,10 +74,35 @@ def extract_panns(batch=16, save_every=1000):
             buf.clear(); buf_t.clear()
 
     def save():
+        """
+        Checkpoint the embeddings so far. NEVER fatal.
+
+        os.replace fails with WinError 5 on this machine: the repo lives inside OneDrive,
+        and the sync engine (or the AV scanner) holds a transient handle on the
+        destination. It killed a run at 1,000/2,625 — the tmp file held every embedding,
+        the original was intact, and the process died between them over a rename.
+        A checkpoint exists to protect work, so failing to write one must never destroy
+        the work it was protecting. Same lesson as the training checkpoint, relearned on
+        a different filesystem.
+        """
         tmp = _panns_cache() + ".tmp.npz"
-        np.savez_compressed(tmp, X=np.stack(emb_out).astype(np.float32),
-                            tracks=np.array(tracks_out))
-        os.replace(tmp, _panns_cache())
+        try:
+            np.savez_compressed(tmp, X=np.stack(emb_out).astype(np.float32),
+                                tracks=np.array(tracks_out))
+        except Exception as e:
+            print(f"  ⚠️  checkpoint yazilamadi ({type(e).__name__}: {e}) — devam")
+            return
+        for attempt in range(6):
+            try:
+                os.replace(tmp, _panns_cache())
+                return
+            except PermissionError:
+                time.sleep(1.5 * (attempt + 1))     # transient lock, back off
+            except Exception as e:
+                print(f"  ⚠️  checkpoint yerine konulamadi ({e}) — devam")
+                return
+        print(f"  ⚠️  checkpoint kilitli kaldi, {tmp} olarak birakildi — "
+              f"kosu devam ediyor, sonraki checkpoint tekrar dener")
 
     for i, (t, p) in enumerate(zip(todo["track"], todo["path"]), 1):
         y = AF.load_audio(p)
@@ -95,14 +120,7 @@ def extract_panns(batch=16, save_every=1000):
     return np.stack(emb_out).astype(np.float32), np.array(tracks_out)
 
 
-def held_out(tracks):
-    """The exact val tracks every published figure in this project was measured on."""
-    m = pd.read_csv(SLICE_META)
-    m["track"] = m["filename"].str.split("_slice").str[0]
-    _, va = next(GroupShuffleSplit(n_splits=1, test_size=0.2,
-                                   random_state=42).split(m, groups=m["track"]))
-    val = set(m.iloc[va]["track"].unique())
-    return np.array([t in val for t in tracks])
+held_out = corpus.held_out_mask
 
 
 def calibrate_threshold(Pa, truth, classes, n_classes, pick):
@@ -170,6 +188,18 @@ def main():
 
     meta = pd.read_csv(TRACK_META).set_index("track")
     taxonomy = json.load(open(TAXONOMY, encoding="utf-8"))
+
+    # The embedding cache is append-only and outlives taxonomy changes, so it still
+    # holds vectors for tracks that have since been pruned out of the corpus. Keeping
+    # them would train on artists that no longer exist and crash the label lookup.
+    keep = np.isin(tracks, meta.index.to_numpy())
+    if not keep.all():
+        print(f"cache'te korpus disi {(~keep).sum():,} parca var (kirpilmis) — atlaniyor")
+        X, tracks = X[keep], tracks[keep]
+    missing = set(meta.index) - set(tracks)
+    if missing:
+        print(f"⚠️  {len(missing):,} parcanin embedding'i yok — --extract gerekiyor")
+
     is_val = held_out(tracks)
     print(f"train {(~is_val).sum():,} / held-out {is_val.sum():,} tracks")
 

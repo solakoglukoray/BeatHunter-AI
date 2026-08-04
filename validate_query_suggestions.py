@@ -47,33 +47,27 @@ import numpy as np
 import pandas as pd
 import yt_dlp
 from concurrent.futures import ThreadPoolExecutor
-from sklearn.model_selection import GroupShuffleSplit
-
 import audio_features as AF
+import corpus
 import config
 import inference_engine as IE
 import label_recommender as LR
 
 WORK_DIR   = "temp_query_validation"
 STATE_PATH = os.path.join(WORK_DIR, "state.json")
-TRACK_META = "models/vector_meta_track.csv"
-SLICE_META = "dataset_processed/metadata_processed.csv"
+TRACK_META = corpus.TRACK_META
 
-# What the information criterion actually picks, measured on held-out tracks. Used to
-# weight the per-kind results into one honest overall number — the per-kind samples are
+# What the criterion actually picks, measured on the current held-out set. Used to weight
+# the per-kind results into one honest overall number — the per-kind samples are
 # deliberately equal-sized so each is measurable, which is NOT the real mix.
-REAL_MIX = {"artist": 29 / 371, "genre": 133 / 371, "mood": 209 / 371}
+# Mood is gone as a candidate; it stays in the dict at zero so the arm can still be
+# MEASURED (--mood-anchor) without being credited in the weighted total.
+REAL_MIX = {"artist": 154 / 506, "genre": 352 / 506, "mood": 0.0}
 
 MOOD_WORDS = [w for names in AF.MOOD_AXES.values() for w in (names[0], names[2])]
 
 
-def held_out_mask(tracks):
-    m = pd.read_csv(SLICE_META)
-    m["track"] = m["filename"].str.split("_slice").str[0]
-    _, va = next(GroupShuffleSplit(n_splits=1, test_size=0.2,
-                                   random_state=42).split(m, groups=m["track"]))
-    val = set(m.iloc[va]["track"].unique())
-    return np.array([t in val for t in tracks])
+held_out_mask = corpus.held_out_mask
 
 
 def build_confidence(m, row):

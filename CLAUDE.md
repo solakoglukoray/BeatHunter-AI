@@ -5,24 +5,33 @@ Ses girdisi alır → Demucs ile vokal ayırır → **PANNs embedding'i** çıka
 (AudioSet'te ön-eğitilmiş, kendi verimizle fine-tune edilmiş CNN, 2048 → PCA-128)
 → LogisticRegression ile
 artist/genre sınıflandırır (joint decoding ile tutarlı çift) → aynı 128-boyutlu
-vektörle 14,235 parçalık katalogda kosinüs benzerliği ile benzer beat önerir.
+vektörle 16,169 parçalık katalogda kosinüs benzerliği ile benzer beat önerir.
 BPM ve key librosa'dan (modelden bağımsız).
 
-**Ölçülen (2,847 held-out parça, `GroupShuffleSplit` track bazlı, `random_state=42` —
-projedeki her sayı bu split'ten):**
+**Ölçülen — GÜNCEL (2026-08-04, 3,234 held-out parça, 213 sanatçı / 60 genre):**
+
+| | artist top-1 | oran | top-5 | genre (joint) |
+|---|---|---|---|---|
+| **fine-tuned PANNs, yeni korpus** | **%17.81** | **35.4x** | **%38.81** | **%30.33** |
+
+**Temsil karşılaştırması (eski 2,847 parçalık split, 194 sanatçı — kendi içinde geçerli):**
 
 | temsil | artist top-1 | oran | top-5 | genre (joint) |
 |---|---|---|---|---|
 | EfficientNetB3 (ImageNet) | ~%0.7 | 0.8x | — | ~%1.3 |
 | klasik MFCC 102-dim | %9.45 | 16.7x | %24.13 | %17.32 |
 | donuk PANNs (AudioSet) | %12.96 | 22.9x | %32.03 | %24.17 |
-| **fine-tuned PANNs** | **%16.16** | **28.5x** | **%37.72** | **%28.21** |
+| fine-tuned PANNs | %16.16 | 28.5x | %37.72 | %28.21 |
 
-⚠️ Top-1 sütunu **joint decoding** ile ölçülür (2026-07-31'de düzeltildi). Önceki
-%15.35, `Pa.argmax` içindi — ama `inference_engine.classify()` sanatçıyı joint skorla
-seçiyor, yani o sayı üretimde çalışmayan bir sistemi tarif ediyordu. Fark +0.81p
-(1.2 SE, anlamlı değil); önemli olan **ölçülen şeyin sunulan şey olması**. İlk üç satır
-kendi dönemlerinin argmax ölçümleri, aralarındaki karşılaştırma geçerli.
+🚨 **İki tablo BİRBİRİYLE KARŞILAŞTIRILAMAZ.** Taksonomi değişiminde hem korpus
+(14,235→16,169), hem sınıf sayısı (194→213 sanatçı, 65→60 genre), hem de split
+değişti. Şans seviyesi %0.57'den %0.50'ye indiği için oran, ham doğruluktan daha
+çok arttı. Üstteki satır bugünkü sistemi, alttaki tablo temsil seçimini anlatır.
+
+⚠️ Top-1 **joint decoding** ile ölçülür (2026-07-31'de düzeltildi). `Pa.argmax`
+%16.88 verirdi ama `inference_engine.classify()` sanatçıyı joint skorla seçiyor —
+o sayı üretimde çalışmayan bir sistemi tarif ederdi. `train_classic.py` ikisini de
+basıyor ki bir daha sessizce ayrışmasınlar.
 
 İlk üç satırın dersi **kapasite değil domain**: EfficientNetB3 en büyüğüydü ve şansın
 altında kaldı, çünkü fotoğraftan transfer ediyor. PANNs 2M ses klibinden transfer ediyor.
@@ -55,6 +64,7 @@ Tek istisna top-5: uçtan uca model orada 2.7p (~3 SE) daha iyi, çünkü kendi 
 | `data_validator.py` | Dataset doğrulama |
 | `audio_features.py` | **Temsil — TEK KAYNAK.** PANNs embedding + klasik fallback + mood eksenleri + `fold_bpm` |
 | `calibrate_mood.py` | Mood eşiklerini korpustan türetir ve **doğrular** (bağımsızlık, tür, kulak) |
+| `corpus.py` | **Korpus + split + taksonomi — TEK KAYNAK.** Bayat artefaktları yeniden üretir |
 | `label_recommender.py` | "YouTube'a şunu yaz" sorgusunu kurar — ölçülen sorgu faydasına göre |
 | `calibrate_label_choice.py` | Etiket türlerinin güvenilirlik eğrilerini ölçer |
 | `demo_label_choice.py` | Seçiciyi held-out örnekler + toplu sayılarla gösterir |
@@ -171,13 +181,13 @@ tarama (80, 112) zaman kaybı. Boyutla düşüş ise gerçek: 384 vs 96 arası 2
    → **Yeni mood tahmin değil, ölçüm.** `audio_features.classify_mood()` üç eksende
    korpus yüzdeliği veriyor (`calibrate_mood.py` → `models/mood_calibration.json`):
 
-   | eksen | sinyaller | doğrulama |
+   | eksen | sinyaller | ayrım (2026-08-04) |
    |---|---|---|
-   | energy | onset_density + rms_norm | ayrım +0.167 |
-   | brightness | centroid − minor_lean | ayrım +0.041 — **tür bu ekseni doğrulamıyor** |
-   | aggression | low_ratio + hf_ratio | ayrım +0.162 |
+   | energy | onset_density + rms_norm | **+0.188** |
+   | brightness | centroid − minor_lean | +0.042 — **tür bu ekseni doğrulamıyor** |
+   | aggression | low_ratio + hf_ratio | **+0.178** |
 
-   Eksen korelasyonu en fazla 0.40 (bağımsız). Tür **girdi değil**; agresyon tepesi
+   Eksen korelasyonu en fazla 0.42 (bağımsız). Kalibrasyon 2,500 parça. Tür **girdi değil**; agresyon tepesi
    Georgia Trap/Rage/Trap/Crunk/Chicago Drill, dibi Lofi %31/Chillhop/Trip Hop.
    Drill enerjide düşük (.34) ama agresyonda yüksek (.59) — çelişki değil, tek
    eksenin söyleyemeyeceği şey.
@@ -243,16 +253,30 @@ ağırlık hash'ini saklıyor; `inference_engine` yüklemede ikisini de doğrula
 dosya → hata). Bu kontrolü kaldırma; Tuzak 1'in tam deseni.
 
 ## Şu anki durum
-**Fine-tuned PANNs + PCA-128 üretimde** (2026-07-30). `analyze_beat` uçtan uca çalışıyor.
+**Fine-tuned PANNs + PCA-128 üretimde.** Korpus **16,169 parça / 213 sanatçı / 60 genre**
+(2026-08-04 taksonomi revizyonu). `analyze_beat` uçtan uca çalışıyor.
 
-Ölçülen (2,847 held-out parça): artist top-1 **%16.16** / top-5 **%37.72** (28.5x şans),
-genre **%28.21** (16.8x). Yol: EfficientNetB3 0.8x → klasik MFCC 16.7x → donuk PANNs
-22.9x → fine-tuned PANNs 28.5x.
+Ölçülen (3,234 held-out parça): artist top-1 **%17.81** / top-5 **%38.81** (35.4x şans),
+genre **%30.33** (16.5x).
 
-⚠️ **Mutlak seviye hâlâ düşük.** Top-1 %16.16, yani 6 denemede 1. UI bunu saklamıyor:
-tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %11.0'ı, o dilimde
-doğruluk %43.9), aksi halde top-5 aday listesi (%37.72). Eşik her eğitimde
+⚠️ **Mutlak seviye hâlâ düşük.** Top-1 %17.81, yani ~6 denemede 1. UI bunu saklamıyor:
+tek isim ancak **150x** eşiğini geçince gösteriliyor (parçaların %13.8'i, o dilimde
+doğruluk %44.3), aksi halde top-5 aday listesi (%38.81). Eşik her eğitimde
 `train_classic.py` tarafından yeniden ölçülüyor — kopyalanmıyor.
+→ Yeni bir basamak açıldı: **200x'te %64.9 hassasiyet**, ama parçaların yalnızca %3.5'i.
+
+🚨 **`corpus.py` KORPUSUN VE SPLIT'İN TEK KAYNAĞI (2026-08-04).** Öncesinde
+`models/vector_meta_track.csv` 8 script tarafından okunuyor, **hiçbiri tarafından
+üretilmiyordu**; taksonomi değişince eski 14,235 parçalık korpusu tarif etmeye devam etti.
+Split ise `dataset_processed/metadata_processed.csv`'den (eski spektrogram dilimleri)
+geliyordu — yeni parçalar orada olmadığı için hepsi eğitime giderdi ve 213 sınıflı model
+yalnızca eski 194 sanatçıdan oluşan bir test setinde ölçülürdü. `taxonomy.json` de aynı
+durumdaydı. Üçü de artık `config.py` + `dataset/metadata.csv`'den türetiliyor.
+→ ⚠️ **Genre, CSV'den okunmaz, sanatçıdan TÜRETİLİR.** Her satır indirildiği andaki
+genre'yi taşıyor; "Mexican Drill → Corridos Tumbados" yeniden adlandırması 225 satırı
+eski isimde bıraktı ve joint decoding veride olmayan bir genre'yi arayıp çöktü.
+→ ⚠️ Embedding cache append-only: kırpılan parçaların vektörleri içinde kalıyor.
+`train_classic` korpus dışı olanları eleyip devam ediyor (son koşuda 691 tane).
 
 **Sorgu önericisi üretimde** (2026-07-31). Kullanıcıya "YouTube'a şunu yaz" diyor:
 `label_recommender.recommend_label()`, `analyze_beat` içinde
@@ -262,14 +286,18 @@ doğruluk %43.9), aksi halde top-5 aday listesi (%37.72). Eşik her eğitimde
 ve bu ayrımı ölçüm öğretti. `validate_query_suggestions.py` 45 parça / 275 indirilen
 YouTube sonucu ile, **aynı biçimde ama rastgele etiketli** kontrol sorgusuna karşı:
 
-| sorgu türü | önerilen | kontrol | fayda | |
-|---|---|---|---|---|
-| artist | +0.136 | −0.011 | **+0.147** | 5.7 SE |
-| genre | +0.107 | −0.002 | **+0.109** | 3.8 SE |
-| mood | +0.011 | −0.008 | +0.018 | **1.1 SE — yok** |
+| sorgu türü | 2026-08-01 | **2026-08-04 (güncel)** | |
+|---|---|---|---|
+| artist | +0.147 (5.7 SE) | **+0.114** | 4.7 SE |
+| genre | +0.109 (3.8 SE) | **+0.052** | 2.6 SE |
+| mood | +0.018 (1.1 SE) | *aday değil* | |
 
-Taban (rastgele iki katalog parçası) −0.001. Kontaminasyon nötr: sonuçların %15.2'si
-(önerilen) / %16.0'ı (kontrol) korpusta, sorgulanan parçanın kendisi hiç dönmedi.
+Taban (rastgele iki katalog parçası) ~0.00. Kontaminasyon: sonuçların %23.5'i (önerilen)
+/ %20.2'si (kontrol) korpusta — fark 1.2 SE, gürültü içinde; sorgulanan parçanın kendisi
+hiç dönmedi.
+→ ⚠️ **İki fayda da düştü, genre yarı yarıya.** Genre sayısı 65→60'a inince bir genre
+etiketi daha geniş bir alanı kapsıyor ve sesi daha az sabitliyor. Artist hâlâ açık ara
+önde, `QUERY_UPLIFT_PER_PRECISION` bu yüzden onu daha ağır tartıyor (k: 0.375 vs 0.176).
 
 → ⚠️ **Mood sorgu adayı DEĞİL, ama UI'da duruyor.** Etiket doğru — sorun onu arama
 terimi yapmaktı. "chill type beat" gerçekten chill beat getiriyor ama chill beat'ler
@@ -281,12 +309,14 @@ genre kolu %49 hassasiyetle çalışırken bile kontrolü 3.8 SE geçti. Bir ism
 olarak göstermek ayrı karar, hâlâ `confidence["reliable"]`.
 → ⚠️ **Yanlış sanatçı bile işe yarıyor** (+0.126; yanlış genre +0.078). Sınıflandırıcı
 sanatçıyı karıştırdığında sesçe komşu sanatçıyla karıştırıyor.
-→ ⚠️ `QUERY_UPLIFT_PER_PRECISION` ağırlıklandırması **şu an hiçbir kararı
-değiştirmiyor** — 2,847 parçanın hiçbirinde `query_utility` ile `reliability` ayrışmıyor.
-Davranışı değiştiren şey mood'un çıkarılması ve barajın kalkmasıydı. Ölçüt yine de
-duruyor çünkü doğru soru o; eğriler incelirse etkili olacak.
-→ Kapsam %10.2 → **%100** (artist 112 / genre 272 seçim, held-out 384'lük mood alt
-kümesinde).
+→ ⚠️ `QUERY_UPLIFT_PER_PRECISION` ağırlıklandırması **artık etkili** (2026-08-04).
+Eski eğrilerde `query_utility` ile `reliability` 2,847 parçanın hiçbirinde ayrışmıyordu;
+yeni eğrilerde üçte birinde ayrışıyor (artist 154 vs 86 seçim). Hangisinin doğru olduğu
+buradan çıkmıyor: `reliability` yer gerçeğinde daha iyi (%27.3 vs %25.3), ama
+`query_utility` **aramanın işe yaraması**nı optimize ediyor ve varsayılan o.
+→ Kapsam %13.0 → **%100** (artist 154 / genre 352 seçim, 506 parçalık held-out alt
+kümesinde). Yer gerçeğiyle ölçülebilen isabet %25.3 (eski politika %43.9 ama yalnızca
+%13 kapsamda).
 → ⚠️ Mood **pencereye bağlı**: 0-30sn vs 30-60sn tutarlılığı energy %41 (kayma +0.231,
 intro etkisi), brightness %57, aggression %67. Çoklu pencere ortalaması düzeltir —
 yapılmadı.

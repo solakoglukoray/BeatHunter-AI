@@ -23,23 +23,15 @@ warnings.filterwarnings("ignore")
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import GroupShuffleSplit
-
 import audio_features as AF
+import corpus
 import label_recommender as LR
 
 MODEL_PATH = "models/classic_model.joblib"
-TRACK_META = "models/vector_meta_track.csv"
-SLICE_META = "dataset_processed/metadata_processed.csv"
+TRACK_META = corpus.TRACK_META
 
 
-def held_out_mask(tracks):
-    m = pd.read_csv(SLICE_META)
-    m["track"] = m["filename"].str.split("_slice").str[0]
-    _, va = next(GroupShuffleSplit(n_splits=1, test_size=0.2,
-                                   random_state=42).split(m, groups=m["track"]))
-    val = set(m.iloc[va]["track"].unique())
-    return np.array([t in val for t in tracks])
+held_out_mask = corpus.held_out_mask
 
 
 def build_confidence(m, Xs_row):

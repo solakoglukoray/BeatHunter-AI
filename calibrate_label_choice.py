@@ -50,13 +50,11 @@ import librosa
 import numpy as np
 import pandas as pd
 from multiprocessing import Pool
-from sklearn.model_selection import GroupShuffleSplit
-
 import audio_features as AF
+import corpus
 
 MODEL_PATH  = "models/classic_model.joblib"
-TRACK_META  = "models/vector_meta_track.csv"
-SLICE_META  = "dataset_processed/metadata_processed.csv"
+TRACK_META  = corpus.TRACK_META
 OUT_PATH    = "models/label_reliability.json"
 
 # Bin edges in ratio-vs-chance. Bins, not cumulative thresholds: to estimate P(correct)
@@ -69,12 +67,8 @@ MOOD_SAMPLE = 700
 
 
 def held_out(tracks):
-    """The exact val tracks every published figure in this project was measured on."""
-    m = pd.read_csv(SLICE_META)
-    m["track"] = m["filename"].str.split("_slice").str[0]
-    _, va = next(GroupShuffleSplit(n_splits=1, test_size=0.2,
-                                   random_state=42).split(m, groups=m["track"]))
-    return set(m.iloc[va]["track"].unique())
+    """Canonical split — see corpus.held_out_mask."""
+    return set(np.asarray(tracks)[corpus.held_out_mask(tracks)])
 
 
 def curve(ratios, correct, bins, label, fmt="{:.0f}"):

@@ -9,16 +9,19 @@ The first version ranked labels by P(this label is correct). That was the wrong 
 and validate_query_suggestions.py is what showed it: being right and being a useful
 search term are different things.
 
-Measured on 45 held-out tracks, 275 downloaded YouTube results, against a control arm
-that keeps the query template and swaps in a RANDOM label of the same kind (so the
-comparison is "did we pick the right label", not "is this kind of query any good"):
+Measured against a control arm that keeps the query template and swaps in a RANDOM label
+of the same kind, so the comparison is "did we pick the right label", not "is this kind
+of query any good". Two random catalogue tracks sit at ~0.00 cosine — that is the floor.
 
-    query kind    suggested   control    uplift
-    artist          +0.136     -0.011    +0.147   (5.7 SE)
-    genre           +0.107     -0.002    +0.109   (3.8 SE)
-    mood            +0.011     -0.008    +0.018   (1.1 SE)  <- indistinguishable
+    query kind    2026-08-01 corpus      2026-08-04 corpus (current)
+    artist          +0.147 (5.7 SE)        +0.114 (4.7 SE)
+    genre           +0.109 (3.8 SE)        +0.052 (2.6 SE)
+    mood            +0.018 (1.1 SE)        not a candidate
 
-Floor for reference: two random catalogue tracks sit at -0.001 cosine.
+Both fell after the taxonomy change, genre by half. The corpus grew from 194 to 213
+artists and 65 to 60 genres, so a genre label now covers more ground and pins down the
+sound less. Artist still clears its control by a wide margin, which is why the criterion
+below weights it more heavily than it did.
 
 MOOD IS NOT A QUERY
 -------------------
@@ -60,20 +63,23 @@ RELIABILITY_PATH = "models/label_reliability.json"
 # genre around 42x. Far below that this extrapolates, and it will overstate a hopeless
 # guess. Re-run validate_query_suggestions.py if the classifier changes.
 QUERY_UPLIFT_PER_PRECISION = {
-    "artist": 0.147 / 0.529,     # 0.278
-    "genre":  0.109 / 0.491,     # 0.222
+    "artist": 0.114 / 0.304,     # 0.375
+    "genre":  0.052 / 0.295,     # 0.176
 }
 
-# ⚠️ HONEST NOTE: this weighting currently changes NOTHING. Ranking by expected uplift
-# prefers artist when P_artist > 0.80 * P_genre; ranking by precision alone prefers it
-# when P_artist > P_genre. Across all 2,847 held-out tracks not one lands in that band,
-# because the reliability curves are coarse bins and their discrete values never fall
-# there — the two criteria agree on 100% of tracks. What actually changed behaviour was
-# dropping mood as a candidate and removing the confidence floor.
-# It is kept because it is the correct question to be asking, it is grounded in
-# measurement rather than intuition, and it will start to bite the moment the curves get
-# finer or the classifier shifts. Do not read the criterion name as evidence that
-# something clever is happening today.
+# This weighting was inert when it was written: on the old curves, query_utility and
+# reliability picked the same label for all 2,847 held-out tracks, and the note here said
+# so. It stopped being inert after the taxonomy change — on the 2026-08-04 corpus the two
+# criteria now disagree on a third of tracks (artist chosen 154 times vs 86), because the
+# retrained curves moved precision values into the band where P_artist > 0.80 * P_genre
+# but P_artist < P_genre.
+#
+# Which is the right call is NOT settled by that: reliability picks the likelier-correct
+# label and scores 27.3% against query_utility's 25.3% on ground truth. query_utility is
+# the default anyway, because the measured thing it optimises — how close the returned
+# beats actually sound — is what a search is for, and an artist query beat its control by
+# +0.147 against genre's +0.109. Re-run validate_query_suggestions.py before trusting
+# that trade-off again; the uplift constants below predate this corpus.
 
 DEFAULT_CRITERION = "query_utility"
 

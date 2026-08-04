@@ -1,778 +1,854 @@
 {
-  "21 Savage": {
-    "genre": "Trap",
-    "mood": "Dark"
-  },
-  "2Pac": {
-    "genre": "West Coast Hip-Hop",
-    "mood": "Soulful"
-  },
-  "3OH!3": {
-    "genre": "Crunkcore",
-    "mood": "Aggressive"
-  },
-  "808Melo": {
-    "genre": "Brooklyn Drill",
-    "mood": "Dark"
-  },
-  "9th Wonder": {
-    "genre": "Conscious Hip-Hop",
-    "mood": "Soulful"
-  },
-  "A Tribe Called Quest": {
-    "genre": "Jazz Rap",
-    "mood": "Chill"
-  },
-  "A$AP Rocky": {
-    "genre": "Cloud Rap",
-    "mood": "Chill"
-  },
-  "Aesop Rock": {
-    "genre": "Underground Hip-Hop",
-    "mood": "Dark"
-  },
-  "Anuel AA": {
-    "genre": "Latin Trap",
-    "mood": "Energetic"
-  },
-  "Autumn!": {
-    "genre": "Pluggnb",
-    "mood": "Melancholic"
-  },
-  "B-Real": {
-    "genre": "Chicano Rap",
-    "mood": "Aggressive"
-  },
-  "BROCKHAMPTON": {
-    "genre": "Psychedelic Rap",
-    "mood": "Energetic"
-  },
-  "Bad Bunny": {
-    "genre": "Latin Trap",
-    "mood": "Energetic"
-  },
-  "Big Freedia": {
-    "genre": "Bounce",
-    "mood": "Energetic"
-  },
-  "Big Sean": {
-    "genre": "Detroit Hip-Hop",
-    "mood": "Energetic"
-  },
-  "Birocratic": {
-    "genre": "Chillhop",
-    "mood": "Chill"
-  },
-  "Blockhead": {
-    "genre": "Instrumental Hip-Hop",
-    "mood": "Chill"
-  },
-  "Brokencyde": {
-    "genre": "Crunkcore",
-    "mood": "Aggressive"
-  },
-  "Brotha Lynch Hung": {
-    "genre": "Horrorcore",
-    "mood": "Dark"
-  },
-  "Bubba Sparxxx": {
-    "genre": "Country Rap",
-    "mood": "Energetic"
-  },
-  "Busta Rhymes": {
-    "genre": "Chopper",
-    "mood": "Energetic"
-  },
-  "Carns Hill": {
-    "genre": "Road Rap",
-    "mood": "Dark"
-  },
-  "Central Cee": {
-    "genre": "UK Drill",
-    "mood": "Dark"
-  },
-  "Chief Keef": {
-    "genre": "Chicago Drill",
-    "mood": "Aggressive"
-  },
-  "Childish Gambino": {
-    "genre": "Hipster Hop",
-    "mood": "Chill"
-  },
-  "Clams Casino": {
-    "genre": "Cloud Rap",
-    "mood": "Chill"
-  },
-  "Colt Ford": {
-    "genre": "Country Rap",
-    "mood": "Energetic"
-  },
-  "Common": {
-    "genre": "Conscious Hip-Hop",
-    "mood": "Soulful"
-  },
-  "D'Angelo": {
-    "genre": "Neo Soul",
-    "mood": "Chill"
-  },
-  "D12": {
-    "genre": "Detroit Hip-Hop",
-    "mood": "Aggressive"
-  },
-  "D4L": {
-    "genre": "Snap Music",
-    "mood": "Energetic"
-  },
-  "DJ Muggs": {
-    "genre": "Latino Hip-Hop",
-    "mood": "Dark"
-  },
-  "DJ Premier": {
-    "genre": "Boom Bap",
-    "mood": "Soulful"
-  },
-  "DJ Quik": {
-    "genre": "West Coast Hip-Hop",
-    "mood": "Chill"
-  },
-  "DJ Screw": {
-    "genre": "Chopped and Screwed",
-    "mood": "Chill"
-  },
-  "DJ Shadow": {
-    "genre": "Instrumental Hip-Hop",
-    "mood": "Dark"
-  },
-  "Daddy Yankee": {
-    "genre": "Reggaeton",
-    "mood": "Energetic"
-  },
-  "Dave": {
-    "genre": "British Hip-Hop",
-    "mood": "Melancholic"
-  },
-  "Death Grips": {
-    "genre": "Experimental Hip-Hop",
-    "mood": "Dark"
-  },
-  "Delinquent Habits": {
-    "genre": "Latino Hip-Hop",
-    "mood": "Energetic"
-  },
-  "Dem Franchize Boyz": {
-    "genre": "Snap Music",
-    "mood": "Energetic"
-  },
-  "Diego Money": {
-    "genre": "Plugg",
-    "mood": "Chill"
-  },
-  "Digable Planets": {
-    "genre": "Jazz Rap",
-    "mood": "Chill"
-  },
-  "Dr. Dre": {
-    "genre": "West Coast Hip-Hop",
-    "mood": "Chill"
-  },
-  "Drake": {
-    "genre": "Pop Rap",
-    "mood": "Chill"
-  },
-  "E-40": {
-    "genre": "Hyphy",
-    "mood": "Energetic"
-  },
-  "Eazy-E": {
-    "genre": "Gangsta Rap",
-    "mood": "Aggressive"
-  },
-  "El-P": {
-    "genre": "Industrial Hip-Hop",
-    "mood": "Aggressive"
-  },
-  "Emile Haynie": {
-    "genre": "Hipster Hop",
-    "mood": "Chill"
-  },
-  "Eminem": {
-    "genre": "Detroit Hip-Hop",
-    "mood": "Aggressive"
-  },
-  "Erykah Badu": {
-    "genre": "Hip-Hop Soul",
-    "mood": "Chill"
-  },
-  "F1lthy": {
-    "genre": "Rage",
-    "mood": "Aggressive"
-  },
-  "Fever 333": {
-    "genre": "Punk Rap",
-    "mood": "Aggressive"
-  },
-  "Fivio Foreign": {
-    "genre": "Brooklyn Drill",
-    "mood": "Dark"
-  },
-  "Flying Lotus": {
-    "genre": "Psychedelic Rap",
-    "mood": "Dark"
-  },
-  "Future": {
-    "genre": "Trap",
-    "mood": "Dark"
-  },
-  "Ghostemane": {
-    "genre": "Trap Metal",
-    "mood": "Dark"
-  },
-  "Ghostface Playa": {
-    "genre": "Phonk",
-    "mood": "Aggressive"
-  },
-  "Ghosty": {
-    "genre": "UK Drill",
-    "mood": "Dark"
-  },
-  "Giggs": {
-    "genre": "Road Rap",
-    "mood": "Dark"
-  },
-  "Goyxrd": {
-    "genre": "Pluggnb",
-    "mood": "Melancholic"
-  },
-  "Gravediggaz": {
-    "genre": "Horrorcore",
-    "mood": "Dark"
-  },
-  "Gucci Mane": {
-    "genre": "Georgia Trap",
-    "mood": "Dark"
-  },
-  "Headie One": {
-    "genre": "UK Drill",
-    "mood": "Dark"
-  },
-  "Ho99o9": {
-    "genre": "Industrial Hip-Hop",
-    "mood": "Aggressive"
-  },
-  "Hollywood Undead": {
-    "genre": "Crunkcore",
-    "mood": "Aggressive"
-  },
-  "Ice Cube": {
-    "genre": "Gangsta Rap",
-    "mood": "Aggressive"
-  },
-  "Idealism": {
-    "genre": "Lofi Hip-Hop",
-    "mood": "Chill"
-  },
-  "Immortal Technique": {
-    "genre": "Political Hip-Hop",
-    "mood": "Dark"
-  },
-  "Inflo": {
-    "genre": "British Hip-Hop",
-    "mood": "Soulful"
-  },
-  "Insane Clown Posse": {
-    "genre": "Horrorcore",
-    "mood": "Dark"
-  },
-  "J Balvin": {
-    "genre": "Reggaeton",
-    "mood": "Energetic"
-  },
-  "J Dilla": {
-    "genre": "Instrumental Hip-Hop",
-    "mood": "Soulful"
-  },
-  "J. Cole": {
-    "genre": "Progressive Rap",
-    "mood": "Soulful"
-  },
-  "JPEGMAFIA": {
-    "genre": "Experimental Hip-Hop",
-    "mood": "Aggressive"
-  },
-  "Jay-Z": {
-    "genre": "East Coast Hip-Hop",
-    "mood": "Soulful"
-  },
-  "Jinsang": {
-    "genre": "Lofi Hip-Hop",
-    "mood": "Melancholic"
-  },
-  "Juice WRLD": {
-    "genre": "Emo Rap",
-    "mood": "Melancholic"
-  },
-  "Junior H": {
-    "genre": "Mexican Drill",
-    "mood": "Dark"
-  },
-  "Juvenile": {
-    "genre": "Bounce",
-    "mood": "Energetic"
-  },
-  "Kanye West": {
-    "genre": "Progressive Rap",
-    "mood": "Soulful"
-  },
-  "Keak da Sneak": {
-    "genre": "Hyphy",
-    "mood": "Energetic"
-  },
-  "Ken Carson": {
-    "genre": "Rage",
-    "mood": "Aggressive"
-  },
-  "Kendrick Lamar": {
-    "genre": "Conscious Hip-Hop",
-    "mood": "Soulful"
-  },
-  "Kid Cudi": {
-    "genre": "Hipster Hop",
-    "mood": "Melancholic"
-  },
-  "Kid Frost": {
-    "genre": "Chicano Rap",
-    "mood": "Aggressive"
-  },
-  "Killa Kyleon": {
-    "genre": "Slab Music",
-    "mood": "Dark"
-  },
-  "King Von": {
-    "genre": "Chicago Drill",
-    "mood": "Aggressive"
-  },
-  "Kool G Rap": {
-    "genre": "Mafioso Rap",
-    "mood": "Dark"
-  },
-  "Kordhell": {
-    "genre": "Phonk",
-    "mood": "Aggressive"
-  },
-  "Korn": {
-    "genre": "Nu Metal",
-    "mood": "Dark"
-  },
-  "Kupla": {
-    "genre": "Chillhop",
-    "mood": "Melancholic"
-  },
-  "Lauryn Hill": {
-    "genre": "Neo Soul",
-    "mood": "Soulful"
-  },
-  "Lil Dicky": {
-    "genre": "Comedy Hip-Hop",
-    "mood": "Energetic"
-  },
-  "Lil Jon": {
-    "genre": "Crunk",
-    "mood": "Aggressive"
-  },
-  "Lil Nas X": {
-    "genre": "Country Rap",
-    "mood": "Energetic"
-  },
-  "Lil Peep": {
-    "genre": "Emo Rap",
-    "mood": "Melancholic"
-  },
-  "Lil Pump": {
-    "genre": "Mumble Rap",
-    "mood": "Energetic"
-  },
-  "Lil Rob": {
-    "genre": "Chicano Rap",
-    "mood": "Chill"
-  },
-  "Lil Scrappy": {
-    "genre": "Crunk",
-    "mood": "Aggressive"
-  },
-  "Limp Bizkit": {
-    "genre": "Nu Metal",
-    "mood": "Aggressive"
-  },
-  "Linkin Park": {
-    "genre": "Rap Rock",
-    "mood": "Aggressive"
-  },
-  "Little Simz": {
-    "genre": "British Hip-Hop",
-    "mood": "Energetic"
-  },
-  "Luny Tunes": {
-    "genre": "Reggaeton",
-    "mood": "Energetic"
-  },
-  "Lupe Fiasco": {
-    "genre": "Progressive Rap",
-    "mood": "Soulful"
-  },
-  "MF DOOM": {
-    "genre": "Underground Hip-Hop",
-    "mood": "Soulful"
-  },
-  "Mac Dre": {
-    "genre": "Hyphy",
-    "mood": "Energetic"
-  },
-  "Machine Gun Kelly": {
-    "genre": "Punk Rap",
-    "mood": "Energetic"
-  },
-  "Macklemore": {
-    "genre": "Pop Rap",
-    "mood": "Energetic"
-  },
-  "Madlib": {
-    "genre": "Underground Hip-Hop",
-    "mood": "Soulful"
-  },
-  "Mannie Fresh": {
-    "genre": "Bounce",
-    "mood": "Energetic"
-  },
-  "Mary J. Blige": {
-    "genre": "Hip-Hop Soul",
-    "mood": "Soulful"
-  },
-  "Massive Attack": {
-    "genre": "Trip Hop",
-    "mood": "Melancholic"
-  },
-  "Meek Mill": {
-    "genre": "Philadelphia Hip-Hop",
-    "mood": "Aggressive"
-  },
-  "Metro Boomin": {
-    "genre": "Trap",
-    "mood": "Dark"
-  },
-  "Mexikodro": {
-    "genre": "Plugg",
-    "mood": "Chill"
-  },
-  "Migos": {
-    "genre": "Trap",
-    "mood": "Dark"
-  },
-  "Mobb Deep": {
-    "genre": "Hardcore Hip-Hop",
-    "mood": "Dark"
-  },
-  "Mr. Collipark": {
-    "genre": "Snap Music",
-    "mood": "Energetic"
-  },
-  "NWA": {
-    "genre": "Gangsta Rap",
-    "mood": "Aggressive"
-  },
-  "Nas": {
-    "genre": "Boom Bap",
-    "mood": "Soulful"
-  },
-  "Natanael Cano": {
-    "genre": "Mexican Drill",
-    "mood": "Dark"
-  },
-  "Nate Dogg": {
-    "genre": "G-Funk",
-    "mood": "Chill"
-  },
-  "Nine Inch Nails": {
-    "genre": "Industrial Hip-Hop",
-    "mood": "Dark"
-  },
-  "Nines": {
-    "genre": "Road Rap",
-    "mood": "Dark"
-  },
-  "Nujabes": {
-    "genre": "Lofi Hip-Hop",
-    "mood": "Chill"
-  },
-  "Onyx": {
-    "genre": "Hardcore Hip-Hop",
-    "mood": "Aggressive"
-  },
-  "Organized Noize": {
-    "genre": "Southern Hip-Hop",
-    "mood": "Soulful"
+  "Tyler, The Creator": {
+    "genre": "Alternative Hip-Hop",
+    "search_hint": "Chill"
   },
   "Outkast": {
     "genre": "Alternative Hip-Hop",
-    "mood": "Energetic"
-  },
-  "Paul Wall": {
-    "genre": "Chopped and Screwed",
-    "mood": "Chill"
-  },
-  "Peso Pluma": {
-    "genre": "Mexican Drill",
-    "mood": "Aggressive"
-  },
-  "Pete Rock": {
-    "genre": "Boom Bap",
-    "mood": "Soulful"
+    "search_hint": "Energetic"
   },
   "Pharrell Williams": {
     "genre": "Alternative Hip-Hop",
-    "mood": "Energetic"
+    "search_hint": "Energetic"
   },
-  "Philanthrope": {
-    "genre": "Lofi Hip-Hop",
-    "mood": "Melancholic"
+  "JPEGMAFIA": {
+    "genre": "Experimental Hip-Hop",
+    "search_hint": "Aggressive"
   },
-  "Pi'erre Bourne": {
-    "genre": "Mumble Rap",
-    "mood": "Energetic"
-  },
-  "Playboi Carti": {
-    "genre": "Mumble Rap",
-    "mood": "Energetic"
-  },
-  "Pop Smoke": {
-    "genre": "Brooklyn Drill",
-    "mood": "Dark"
-  },
-  "Portishead": {
-    "genre": "Trip Hop",
-    "mood": "Melancholic"
-  },
-  "Post Malone": {
-    "genre": "Pop Rap",
-    "mood": "Chill"
-  },
-  "Public Enemy": {
-    "genre": "Political Hip-Hop",
-    "mood": "Aggressive"
-  },
-  "Puff Daddy": {
-    "genre": "Hip-Hop Soul",
-    "mood": "Soulful"
-  },
-  "Q-Tip": {
-    "genre": "Jazz Rap",
-    "mood": "Chill"
-  },
-  "Questlove": {
-    "genre": "Philadelphia Hip-Hop",
-    "mood": "Soulful"
-  },
-  "RZA": {
-    "genre": "East Coast Hip-Hop",
-    "mood": "Dark"
-  },
-  "Raekwon": {
-    "genre": "Mafioso Rap",
-    "mood": "Dark"
-  },
-  "Rage Against the Machine": {
-    "genre": "Rap Rock",
-    "mood": "Aggressive"
-  },
-  "Rondodasosa": {
-    "genre": "Afro Drill",
-    "mood": "Dark"
-  },
-  "Ronny J": {
-    "genre": "Trap Metal",
-    "mood": "Aggressive"
-  },
-  "Run-DMC": {
-    "genre": "Rap Rock",
-    "mood": "Energetic"
-  },
-  "SL": {
-    "genre": "Afro Drill",
-    "mood": "Aggressive"
-  },
-  "Scarlxrd": {
-    "genre": "Trap Metal",
-    "mood": "Aggressive"
-  },
-  "Skepta": {
-    "genre": "Grime",
-    "mood": "Aggressive"
-  },
-  "Slipknot": {
-    "genre": "Nu Metal",
-    "mood": "Aggressive"
-  },
-  "Snoop Dogg": {
-    "genre": "G-Funk",
-    "mood": "Chill"
-  },
-  "Snow Tha Product": {
-    "genre": "Latino Hip-Hop",
-    "mood": "Aggressive"
-  },
-  "Snowgoons": {
-    "genre": "Hardcore Hip-Hop",
-    "mood": "Dark"
-  },
-  "Soudiere": {
-    "genre": "Phonk",
-    "mood": "Aggressive"
-  },
-  "Southside": {
-    "genre": "Georgia Trap",
-    "mood": "Dark"
-  },
-  "Stormzy": {
-    "genre": "Grime",
-    "mood": "Aggressive"
-  },
-  "Summrs": {
-    "genre": "Pluggnb",
-    "mood": "Melancholic"
-  },
-  "T.I.": {
-    "genre": "Southern Hip-Hop",
-    "mood": "Soulful"
-  },
-  "Tainy": {
-    "genre": "Latin Trap",
-    "mood": "Energetic"
-  },
-  "Tech N9ne": {
-    "genre": "Chopper",
-    "mood": "Energetic"
-  },
-  "The Alchemist": {
-    "genre": "Mafioso Rap",
-    "mood": "Soulful"
-  },
-  "The Lonely Island": {
-    "genre": "Comedy Hip-Hop",
-    "mood": "Energetic"
-  },
-  "The Notorious B.I.G.": {
-    "genre": "East Coast Hip-Hop",
-    "mood": "Soulful"
-  },
-  "The Roots": {
-    "genre": "Philadelphia Hip-Hop",
-    "mood": "Soulful"
-  },
-  "The Soulquarians": {
-    "genre": "Neo Soul",
-    "mood": "Soulful"
-  },
-  "Three 6 Mafia": {
-    "genre": "Memphis Rap",
-    "mood": "Dark"
-  },
-  "Tomppabeats": {
-    "genre": "Chillhop",
-    "mood": "Chill"
-  },
-  "Tony Shhnow": {
-    "genre": "Plugg",
-    "mood": "Chill"
-  },
-  "Travis Scott": {
-    "genre": "Psychedelic Rap",
-    "mood": "Dark"
-  },
-  "Tricky": {
-    "genre": "Trip Hop",
-    "mood": "Dark"
-  },
-  "Twista": {
-    "genre": "Chopper",
-    "mood": "Energetic"
-  },
-  "Tyler, The Creator": {
-    "genre": "Alternative Hip-Hop",
-    "mood": "Chill"
-  },
-  "UGK": {
-    "genre": "Southern Hip-Hop",
-    "mood": "Soulful"
-  },
-  "Unknown T": {
-    "genre": "Afro Drill",
-    "mood": "Dark"
-  },
-  "Warren G": {
-    "genre": "G-Funk",
-    "mood": "Chill"
-  },
-  "Weird Al Yankovic": {
-    "genre": "Comedy Hip-Hop",
-    "mood": "Energetic"
-  },
-  "Wiley": {
-    "genre": "Grime",
-    "mood": "Energetic"
-  },
-  "Wu-Tang Clan": {
-    "genre": "Boom Bap",
-    "mood": "Dark"
-  },
-  "XXXTentacion": {
-    "genre": "Emo Rap",
-    "mood": "Melancholic"
-  },
-  "Yeat": {
-    "genre": "Rage",
-    "mood": "Aggressive"
-  },
-  "Ying Yang Twins": {
-    "genre": "Crunk",
-    "mood": "Aggressive"
-  },
-  "Young Chop": {
-    "genre": "Chicago Drill",
-    "mood": "Aggressive"
-  },
-  "Yung Lean": {
-    "genre": "Cloud Rap",
-    "mood": "Melancholic"
-  },
-  "Z-Ro": {
-    "genre": "Chopped and Screwed",
-    "mood": "Dark"
-  },
-  "Zaytoven": {
-    "genre": "Georgia Trap",
-    "mood": "Energetic"
+  "Death Grips": {
+    "genre": "Experimental Hip-Hop",
+    "search_hint": "Dark"
   },
   "clipping.": {
     "genre": "Experimental Hip-Hop",
-    "mood": "Dark"
+    "search_hint": "Dark"
   },
-  "dead prez": {
-    "genre": "Political Hip-Hop",
-    "mood": "Aggressive"
+  "Childish Gambino": {
+    "genre": "Hipster Hop",
+    "search_hint": "Chill"
+  },
+  "Kid Cudi": {
+    "genre": "Hipster Hop",
+    "search_hint": "Melancholic"
+  },
+  "Emile Haynie": {
+    "genre": "Hipster Hop",
+    "search_hint": "Chill"
+  },
+  "DJ Premier": {
+    "genre": "Boom Bap",
+    "search_hint": "Soulful"
+  },
+  "Nas": {
+    "genre": "Boom Bap",
+    "search_hint": "Soulful"
+  },
+  "Wu-Tang Clan": {
+    "genre": "Boom Bap",
+    "search_hint": "Dark"
+  },
+  "Pete Rock": {
+    "genre": "Boom Bap",
+    "search_hint": "Soulful"
+  },
+  "Mannie Fresh": {
+    "genre": "Bounce",
+    "search_hint": "Energetic"
+  },
+  "Big Freedia": {
+    "genre": "Bounce",
+    "search_hint": "Energetic"
+  },
+  "Juvenile": {
+    "genre": "Bounce",
+    "search_hint": "Energetic"
+  },
+  "Dave": {
+    "genre": "British Hip-Hop",
+    "search_hint": "Melancholic"
+  },
+  "Little Simz": {
+    "genre": "British Hip-Hop",
+    "search_hint": "Energetic"
+  },
+  "Inflo": {
+    "genre": "British Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Giggs": {
+    "genre": "Road Rap",
+    "search_hint": "Dark"
+  },
+  "Nines": {
+    "genre": "Road Rap",
+    "search_hint": "Dark"
+  },
+  "Carns Hill": {
+    "genre": "Road Rap",
+    "search_hint": "Dark"
+  },
+  "DJ Screw": {
+    "genre": "Chopped and Screwed",
+    "search_hint": "Chill"
+  },
+  "Paul Wall": {
+    "genre": "Chopped and Screwed",
+    "search_hint": "Chill"
+  },
+  "Z-Ro": {
+    "genre": "Chopped and Screwed",
+    "search_hint": "Dark"
+  },
+  "Tech N9ne": {
+    "genre": "Chopper",
+    "search_hint": "Energetic"
+  },
+  "Twista": {
+    "genre": "Chopper",
+    "search_hint": "Energetic"
+  },
+  "Busta Rhymes": {
+    "genre": "Chopper",
+    "search_hint": "Energetic"
+  },
+  "Clams Casino": {
+    "genre": "Cloud Rap",
+    "search_hint": "Chill"
+  },
+  "A$AP Rocky": {
+    "genre": "Cloud Rap",
+    "search_hint": "Chill"
+  },
+  "Yung Lean": {
+    "genre": "Cloud Rap",
+    "search_hint": "Melancholic"
+  },
+  "Lil Jon": {
+    "genre": "Crunk",
+    "search_hint": "Aggressive"
+  },
+  "Ying Yang Twins": {
+    "genre": "Crunk",
+    "search_hint": "Aggressive"
+  },
+  "Lil Scrappy": {
+    "genre": "Crunk",
+    "search_hint": "Aggressive"
   },
   "dltzk": {
     "genre": "Digicore",
-    "mood": "Energetic"
-  },
-  "ericdoa": {
-    "genre": "Digicore",
-    "mood": "Energetic"
+    "search_hint": "Energetic"
   },
   "glaive": {
     "genre": "Digicore",
-    "mood": "Energetic"
+    "search_hint": "Energetic"
+  },
+  "ericdoa": {
+    "genre": "Digicore",
+    "search_hint": "Energetic"
+  },
+  "Chief Keef": {
+    "genre": "Chicago Drill",
+    "search_hint": "Aggressive"
+  },
+  "King Von": {
+    "genre": "Chicago Drill",
+    "search_hint": "Aggressive"
+  },
+  "Young Chop": {
+    "genre": "Chicago Drill",
+    "search_hint": "Aggressive"
+  },
+  "Lil Durk": {
+    "genre": "Chicago Drill",
+    "search_hint": "Melancholic"
+  },
+  "Polo G": {
+    "genre": "Chicago Drill",
+    "search_hint": "Melancholic"
+  },
+  "Pop Smoke": {
+    "genre": "Brooklyn Drill",
+    "search_hint": "Dark"
+  },
+  "808Melo": {
+    "genre": "Brooklyn Drill",
+    "search_hint": "Dark"
+  },
+  "Fivio Foreign": {
+    "genre": "Brooklyn Drill",
+    "search_hint": "Dark"
+  },
+  "Central Cee": {
+    "genre": "UK Drill",
+    "search_hint": "Dark"
+  },
+  "Headie One": {
+    "genre": "UK Drill",
+    "search_hint": "Dark"
+  },
+  "Ghosty": {
+    "genre": "UK Drill",
+    "search_hint": "Dark"
+  },
+  "Natanael Cano": {
+    "genre": "Corridos Tumbados",
+    "search_hint": "Dark"
+  },
+  "Junior H": {
+    "genre": "Corridos Tumbados",
+    "search_hint": "Dark"
+  },
+  "Peso Pluma": {
+    "genre": "Corridos Tumbados",
+    "search_hint": "Aggressive"
+  },
+  "Rondodasosa": {
+    "genre": "Afro Drill",
+    "search_hint": "Dark"
+  },
+  "SL": {
+    "genre": "Afro Drill",
+    "search_hint": "Aggressive"
+  },
+  "Unknown T": {
+    "genre": "Afro Drill",
+    "search_hint": "Dark"
+  },
+  "Jay-Z": {
+    "genre": "East Coast Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "The Notorious B.I.G.": {
+    "genre": "East Coast Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "RZA": {
+    "genre": "East Coast Hip-Hop",
+    "search_hint": "Dark"
+  },
+  "2Pac": {
+    "genre": "West Coast Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Dr. Dre": {
+    "genre": "West Coast Hip-Hop",
+    "search_hint": "Chill"
+  },
+  "DJ Quik": {
+    "genre": "West Coast Hip-Hop",
+    "search_hint": "Chill"
+  },
+  "DJ Mustard": {
+    "genre": "West Coast Hip-Hop",
+    "search_hint": "Energetic"
+  },
+  "Cardo": {
+    "genre": "West Coast Hip-Hop",
+    "search_hint": "Chill"
+  },
+  "Roddy Ricch": {
+    "genre": "West Coast Hip-Hop",
+    "search_hint": "Melancholic"
+  },
+  "MF DOOM": {
+    "genre": "Underground Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Madlib": {
+    "genre": "Underground Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Aesop Rock": {
+    "genre": "Underground Hip-Hop",
+    "search_hint": "Dark"
+  },
+  "Kenny Beats": {
+    "genre": "Underground Hip-Hop",
+    "search_hint": "Chill"
+  },
+  "Snoop Dogg": {
+    "genre": "G-Funk",
+    "search_hint": "Chill"
+  },
+  "Nate Dogg": {
+    "genre": "G-Funk",
+    "search_hint": "Chill"
+  },
+  "Warren G": {
+    "genre": "G-Funk",
+    "search_hint": "Chill"
+  },
+  "Mobb Deep": {
+    "genre": "Hardcore Hip-Hop",
+    "search_hint": "Dark"
+  },
+  "Onyx": {
+    "genre": "Hardcore Hip-Hop",
+    "search_hint": "Aggressive"
+  },
+  "Snowgoons": {
+    "genre": "Hardcore Hip-Hop",
+    "search_hint": "Dark"
+  },
+  "Ice Cube": {
+    "genre": "Gangsta Rap",
+    "search_hint": "Aggressive"
+  },
+  "NWA": {
+    "genre": "Gangsta Rap",
+    "search_hint": "Aggressive"
+  },
+  "Eazy-E": {
+    "genre": "Gangsta Rap",
+    "search_hint": "Aggressive"
+  },
+  "The Alchemist": {
+    "genre": "Mafioso Rap",
+    "search_hint": "Soulful"
+  },
+  "Raekwon": {
+    "genre": "Mafioso Rap",
+    "search_hint": "Dark"
+  },
+  "Kool G Rap": {
+    "genre": "Mafioso Rap",
+    "search_hint": "Dark"
+  },
+  "E-40": {
+    "genre": "Hyphy",
+    "search_hint": "Energetic"
+  },
+  "Mac Dre": {
+    "genre": "Hyphy",
+    "search_hint": "Energetic"
+  },
+  "Keak da Sneak": {
+    "genre": "Hyphy",
+    "search_hint": "Energetic"
+  },
+  "Nujabes": {
+    "genre": "Lofi Hip-Hop",
+    "search_hint": "Chill"
+  },
+  "Jinsang": {
+    "genre": "Lofi Hip-Hop",
+    "search_hint": "Melancholic"
+  },
+  "Idealism": {
+    "genre": "Lofi Hip-Hop",
+    "search_hint": "Chill"
+  },
+  "Philanthrope": {
+    "genre": "Lofi Hip-Hop",
+    "search_hint": "Melancholic"
+  },
+  "Birocratic": {
+    "genre": "Chillhop",
+    "search_hint": "Chill"
+  },
+  "Tomppabeats": {
+    "genre": "Chillhop",
+    "search_hint": "Chill"
+  },
+  "Kupla": {
+    "genre": "Chillhop",
+    "search_hint": "Melancholic"
+  },
+  "Mexikodro": {
+    "genre": "Plugg",
+    "search_hint": "Chill"
+  },
+  "Diego Money": {
+    "genre": "Plugg",
+    "search_hint": "Chill"
+  },
+  "Tony Shhnow": {
+    "genre": "Plugg",
+    "search_hint": "Chill"
+  },
+  "Goyxrd": {
+    "genre": "Pluggnb",
+    "search_hint": "Melancholic"
+  },
+  "Summrs": {
+    "genre": "Pluggnb",
+    "search_hint": "Melancholic"
+  },
+  "Autumn!": {
+    "genre": "Pluggnb",
+    "search_hint": "Melancholic"
+  },
+  "Three 6 Mafia": {
+    "genre": "Memphis Rap",
+    "search_hint": "Dark"
+  },
+  "DJ Paul": {
+    "genre": "Memphis Rap",
+    "search_hint": "Dark"
+  },
+  "Project Pat": {
+    "genre": "Memphis Rap",
+    "search_hint": "Dark"
+  },
+  "Tay Keith": {
+    "genre": "Memphis Rap",
+    "search_hint": "Aggressive"
+  },
+  "Hitkidd": {
+    "genre": "Memphis Rap",
+    "search_hint": "Aggressive"
+  },
+  "Key Glock": {
+    "genre": "Memphis Rap",
+    "search_hint": "Dark"
+  },
+  "Playboi Carti": {
+    "genre": "Mumble Rap",
+    "search_hint": "Energetic"
+  },
+  "Lil Pump": {
+    "genre": "Mumble Rap",
+    "search_hint": "Energetic"
+  },
+  "Pi'erre Bourne": {
+    "genre": "Mumble Rap",
+    "search_hint": "Energetic"
+  },
+  "Turbo": {
+    "genre": "Mumble Rap",
+    "search_hint": "Energetic"
+  },
+  "Gunna": {
+    "genre": "Mumble Rap",
+    "search_hint": "Chill"
+  },
+  "Lil Uzi Vert": {
+    "genre": "Mumble Rap",
+    "search_hint": "Energetic"
+  },
+  "Metro Boomin": {
+    "genre": "Trap",
+    "search_hint": "Dark"
+  },
+  "Future": {
+    "genre": "Trap",
+    "search_hint": "Dark"
+  },
+  "Migos": {
+    "genre": "Trap",
+    "search_hint": "Dark"
+  },
+  "21 Savage": {
+    "genre": "Trap",
+    "search_hint": "Dark"
+  },
+  "TM88": {
+    "genre": "Trap",
+    "search_hint": "Dark"
+  },
+  "Murda Beatz": {
+    "genre": "Trap",
+    "search_hint": "Energetic"
+  },
+  "Bad Bunny": {
+    "genre": "Latin Trap",
+    "search_hint": "Energetic"
+  },
+  "Tainy": {
+    "genre": "Latin Trap",
+    "search_hint": "Energetic"
+  },
+  "Anuel AA": {
+    "genre": "Latin Trap",
+    "search_hint": "Energetic"
+  },
+  "Kordhell": {
+    "genre": "Phonk",
+    "search_hint": "Aggressive"
+  },
+  "Soudiere": {
+    "genre": "Phonk",
+    "search_hint": "Aggressive"
+  },
+  "Ghostface Playa": {
+    "genre": "Phonk",
+    "search_hint": "Aggressive"
+  },
+  "Yeat": {
+    "genre": "Rage",
+    "search_hint": "Aggressive"
+  },
+  "F1lthy": {
+    "genre": "Rage",
+    "search_hint": "Aggressive"
+  },
+  "Ken Carson": {
+    "genre": "Rage",
+    "search_hint": "Aggressive"
+  },
+  "Bnyx": {
+    "genre": "Rage",
+    "search_hint": "Aggressive"
+  },
+  "Destroy Lonely": {
+    "genre": "Rage",
+    "search_hint": "Aggressive"
+  },
+  "Kendrick Lamar": {
+    "genre": "Conscious Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "9th Wonder": {
+    "genre": "Conscious Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Common": {
+    "genre": "Conscious Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Hit-Boy": {
+    "genre": "Conscious Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Kanye West": {
+    "genre": "Progressive Rap",
+    "search_hint": "Soulful"
+  },
+  "Lupe Fiasco": {
+    "genre": "Progressive Rap",
+    "search_hint": "Soulful"
+  },
+  "J. Cole": {
+    "genre": "Progressive Rap",
+    "search_hint": "Soulful"
+  },
+  "T.I.": {
+    "genre": "Southern Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Organized Noize": {
+    "genre": "Southern Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "UGK": {
+    "genre": "Southern Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Mike Will Made-It": {
+    "genre": "Southern Hip-Hop",
+    "search_hint": "Energetic"
+  },
+  "Jetsonmade": {
+    "genre": "Southern Hip-Hop",
+    "search_hint": "Energetic"
+  },
+  "NBA YoungBoy": {
+    "genre": "Southern Hip-Hop",
+    "search_hint": "Melancholic"
+  },
+  "Public Enemy": {
+    "genre": "Political Hip-Hop",
+    "search_hint": "Aggressive"
+  },
+  "dead prez": {
+    "genre": "Political Hip-Hop",
+    "search_hint": "Aggressive"
+  },
+  "Immortal Technique": {
+    "genre": "Political Hip-Hop",
+    "search_hint": "Dark"
+  },
+  "Kid Frost": {
+    "genre": "Chicano Rap",
+    "search_hint": "Aggressive"
+  },
+  "Lil Rob": {
+    "genre": "Chicano Rap",
+    "search_hint": "Chill"
+  },
+  "B-Real": {
+    "genre": "Chicano Rap",
+    "search_hint": "Aggressive"
+  },
+  "Juice WRLD": {
+    "genre": "Emo Rap",
+    "search_hint": "Melancholic"
+  },
+  "Lil Peep": {
+    "genre": "Emo Rap",
+    "search_hint": "Melancholic"
+  },
+  "XXXTentacion": {
+    "genre": "Emo Rap",
+    "search_hint": "Melancholic"
+  },
+  "Nick Mira": {
+    "genre": "Emo Rap",
+    "search_hint": "Melancholic"
+  },
+  "Rod Wave": {
+    "genre": "Emo Rap",
+    "search_hint": "Melancholic"
+  },
+  "Mary J. Blige": {
+    "genre": "Hip-Hop Soul",
+    "search_hint": "Soulful"
+  },
+  "Erykah Badu": {
+    "genre": "Hip-Hop Soul",
+    "search_hint": "Chill"
+  },
+  "Puff Daddy": {
+    "genre": "Hip-Hop Soul",
+    "search_hint": "Soulful"
+  },
+  "The Soulquarians": {
+    "genre": "Neo Soul",
+    "search_hint": "Soulful"
+  },
+  "D'Angelo": {
+    "genre": "Neo Soul",
+    "search_hint": "Chill"
+  },
+  "Lauryn Hill": {
+    "genre": "Neo Soul",
+    "search_hint": "Soulful"
+  },
+  "El-P": {
+    "genre": "Industrial Hip-Hop",
+    "search_hint": "Aggressive"
+  },
+  "Backxwash": {
+    "genre": "Industrial Hip-Hop",
+    "search_hint": "Dark"
+  },
+  "Ho99o9": {
+    "genre": "Industrial Hip-Hop",
+    "search_hint": "Aggressive"
+  },
+  "A Tribe Called Quest": {
+    "genre": "Jazz Rap",
+    "search_hint": "Chill"
+  },
+  "Digable Planets": {
+    "genre": "Jazz Rap",
+    "search_hint": "Chill"
+  },
+  "Q-Tip": {
+    "genre": "Jazz Rap",
+    "search_hint": "Chill"
+  },
+  "Drake": {
+    "genre": "Pop Rap",
+    "search_hint": "Chill"
+  },
+  "Post Malone": {
+    "genre": "Pop Rap",
+    "search_hint": "Chill"
+  },
+  "Macklemore": {
+    "genre": "Pop Rap",
+    "search_hint": "Energetic"
+  },
+  "Boi-1da": {
+    "genre": "Pop Rap",
+    "search_hint": "Soulful"
+  },
+  "Travis Scott": {
+    "genre": "Psychedelic Rap",
+    "search_hint": "Dark"
+  },
+  "Flying Lotus": {
+    "genre": "Psychedelic Rap",
+    "search_hint": "Dark"
+  },
+  "BROCKHAMPTON": {
+    "genre": "Psychedelic Rap",
+    "search_hint": "Energetic"
+  },
+  "OZ": {
+    "genre": "Psychedelic Rap",
+    "search_hint": "Dark"
+  },
+  "Don Toliver": {
+    "genre": "Psychedelic Rap",
+    "search_hint": "Chill"
+  },
+  "Machine Gun Kelly": {
+    "genre": "Punk Rap",
+    "search_hint": "Energetic"
   },
   "slowthai": {
     "genre": "Punk Rap",
-    "mood": "Aggressive"
+    "search_hint": "Aggressive"
+  },
+  "Fever 333": {
+    "genre": "Punk Rap",
+    "search_hint": "Aggressive"
+  },
+  "Linkin Park": {
+    "genre": "Rap Rock",
+    "search_hint": "Aggressive"
+  },
+  "Rage Against the Machine": {
+    "genre": "Rap Rock",
+    "search_hint": "Aggressive"
+  },
+  "Run-DMC": {
+    "genre": "Rap Rock",
+    "search_hint": "Energetic"
+  },
+  "Limp Bizkit": {
+    "genre": "Nu Metal",
+    "search_hint": "Aggressive"
+  },
+  "Korn": {
+    "genre": "Nu Metal",
+    "search_hint": "Dark"
+  },
+  "Slipknot": {
+    "genre": "Nu Metal",
+    "search_hint": "Aggressive"
+  },
+  "Ghostemane": {
+    "genre": "Trap Metal",
+    "search_hint": "Dark"
+  },
+  "Ronny J": {
+    "genre": "Trap Metal",
+    "search_hint": "Aggressive"
+  },
+  "Scarlxrd": {
+    "genre": "Trap Metal",
+    "search_hint": "Aggressive"
+  },
+  "Massive Attack": {
+    "genre": "Trip Hop",
+    "search_hint": "Melancholic"
+  },
+  "Portishead": {
+    "genre": "Trip Hop",
+    "search_hint": "Melancholic"
+  },
+  "Tricky": {
+    "genre": "Trip Hop",
+    "search_hint": "Dark"
+  },
+  "Lil Nas X": {
+    "genre": "Country Rap",
+    "search_hint": "Energetic"
+  },
+  "Bubba Sparxxx": {
+    "genre": "Country Rap",
+    "search_hint": "Energetic"
+  },
+  "Colt Ford": {
+    "genre": "Country Rap",
+    "search_hint": "Energetic"
+  },
+  "Skepta": {
+    "genre": "Grime",
+    "search_hint": "Aggressive"
+  },
+  "Wiley": {
+    "genre": "Grime",
+    "search_hint": "Energetic"
+  },
+  "Stormzy": {
+    "genre": "Grime",
+    "search_hint": "Aggressive"
+  },
+  "Daddy Yankee": {
+    "genre": "Reggaeton",
+    "search_hint": "Energetic"
+  },
+  "J Balvin": {
+    "genre": "Reggaeton",
+    "search_hint": "Energetic"
+  },
+  "Luny Tunes": {
+    "genre": "Reggaeton",
+    "search_hint": "Energetic"
+  },
+  "Questlove": {
+    "genre": "Philadelphia Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Meek Mill": {
+    "genre": "Philadelphia Hip-Hop",
+    "search_hint": "Aggressive"
+  },
+  "The Roots": {
+    "genre": "Philadelphia Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "Eminem": {
+    "genre": "Detroit Hip-Hop",
+    "search_hint": "Aggressive"
+  },
+  "Big Sean": {
+    "genre": "Detroit Hip-Hop",
+    "search_hint": "Energetic"
+  },
+  "D12": {
+    "genre": "Detroit Hip-Hop",
+    "search_hint": "Aggressive"
+  },
+  "Helluva": {
+    "genre": "Detroit Hip-Hop",
+    "search_hint": "Energetic"
+  },
+  "Babyface Ray": {
+    "genre": "Detroit Hip-Hop",
+    "search_hint": "Chill"
+  },
+  "Zaytoven": {
+    "genre": "Georgia Trap",
+    "search_hint": "Energetic"
+  },
+  "Southside": {
+    "genre": "Georgia Trap",
+    "search_hint": "Dark"
+  },
+  "Gucci Mane": {
+    "genre": "Georgia Trap",
+    "search_hint": "Dark"
+  },
+  "Wheezy": {
+    "genre": "Georgia Trap",
+    "search_hint": "Dark"
+  },
+  "ATL Jacob": {
+    "genre": "Georgia Trap",
+    "search_hint": "Dark"
+  },
+  "Young Thug": {
+    "genre": "Georgia Trap",
+    "search_hint": "Energetic"
+  },
+  "DJ Muggs": {
+    "genre": "Latino Hip-Hop",
+    "search_hint": "Dark"
+  },
+  "Snow Tha Product": {
+    "genre": "Latino Hip-Hop",
+    "search_hint": "Aggressive"
+  },
+  "Delinquent Habits": {
+    "genre": "Latino Hip-Hop",
+    "search_hint": "Energetic"
+  },
+  "J Dilla": {
+    "genre": "Instrumental Hip-Hop",
+    "search_hint": "Soulful"
+  },
+  "DJ Shadow": {
+    "genre": "Instrumental Hip-Hop",
+    "search_hint": "Dark"
+  },
+  "Blockhead": {
+    "genre": "Instrumental Hip-Hop",
+    "search_hint": "Chill"
   }
 }
