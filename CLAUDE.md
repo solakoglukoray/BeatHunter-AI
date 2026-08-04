@@ -283,6 +283,17 @@ tarama (80, 112) zaman kaybı. Boyutla düşüş ise gerçek: 384 vs 96 arası 2
    genre %28.21→%30.77. Yani etiket gürültüsü tavanın **tek** açıklaması değildi;
    1,171 etiketi düzeltmek 0.1 puan getirdi. Kalan tavan başka yerde.
 
+10. **Katalog ≠ eğitim seti (2026-08-04)**
+   Korpusun **%9.3'ü type beat değil** — yayınlanmış şarkı, resmi klip, karaoke.
+   Bunlar **sınıflandırıcı eğitiminde**, ama **katalogda değil** (16,169 → 14,660).
+   → Gerekçe ölçüldü, varsayılmadı (`experiment_nonbeat.py`): sabit bir type-beat test
+   setinde, şarkıları eğitimden çıkarmak top-1'i −0.51p, top-5'i **+0.57p** oynattı —
+   ters yönlerde ve 0.7 SE altında, yani **nötr**. Nötr kanıt 1,509 parçalık eğitim
+   sinyalini atmayı haklı çıkarmaz; ama beat arayana gerçek şarkı önermeyi de haklı
+   çıkarmaz. Filtre `train_classic.py`'de, her eğitimde uygulanıyor.
+   → ⚠️ `data_collector.py` bu içeriği hâlâ **indiriyor**; ileriye dönük filtre
+   (`artist_match.looks_like_type_beat`) hazır ama bağlanmadı (TODO 5.1).
+
 ## Kurallar
 - **CNN eğitimi emekli** — `model_trainer.py` duruyor ama üretim yolunda değil.
   Yeniden denenecekse önce `overfit_test.py`, ve başarı ölçütü PANNs'in 22.9x'i.

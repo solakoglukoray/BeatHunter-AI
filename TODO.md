@@ -464,32 +464,36 @@ sample weight'ler, accuracy tabanlı callback'ler, epoch başına train/val/şan
 - [ ] **4.5 — `[EĞİTİM GEREKİR]` `random_flip_left_right` augmentation'ını gözden geçir**
   Spektrogramda zaman eksenini ters çeviriyor — ritim yönü müzikte anlamlı, tartışmalı.
 
-- [ ] **5.1 — Type beat OLMAYAN 1,509 parça: silinecek mi, ayrı tur mu?**
-  Korpusun **%9.6'sı type beat değil** — yayınlanmış şarkılar, resmi klipler, karaoke
-  versiyonları (`"Kendrick Lamar - ELEMENT."`, `"A$AP Rocky - L$D (Official Video)"`,
-  `"Guts over Fear (Piano Karaoke Version)"`). Enstrümantal olması gereken bir veri
-  setinde vokalli, telifli, tamamlanmış şarkılar var.
+- [x] **5.1 — Type beat OLMAYAN 1,509 parça** — *2026-08-04* — **ölçüldü, retrieval'dan çıkarıldı**
 
-  Ölçüm: `models/video_titles.csv` + `artist_match.looks_like_type_beat()`.
-  Başlığı olan 15,716 parçanın 1,509'u işareti taşımıyor.
+  Korpusun %9.3'ü type beat değil: yayınlanmış şarkılar, resmi klipler, karaoke
+  (`"Kendrick Lamar - ELEMENT."`, `"A$AP Rocky - L$D (Official Video)"`). Kullanıcı
+  canlı örnek bildirdi: bir Post Malone şarkısı "Drake / Pop Rap" etiketiyle
+  **beat olarak öneriliyordu**.
 
-  Neden bu turda dokunulmadı: yeniden etiketleme turunda **tek değişken tutmak**
-  ölçümü yorumlanabilir kılıyordu. Ayrıca silmek korpusu %9.6 küçültür ve zinciri
-  yeniden koşmayı gerektirir.
+  **Ölçüm** (`experiment_nonbeat.py`) — iki koşul da AYNI test setinde, ve o set
+  yalnızca type beat'lerden oluşuyor (üretimde kullanıcı beat yükler; şarkı üzerinde
+  ölçmek ürünün görmediği bir şeyi ölçerdi):
 
-  Seçenekler:
-  - **Sil** — en temizi, ama 1,509 parça ve bazı sınıflar epey küçülebilir (önce
-    sanatçı bazında etkiyi ölç, yeniden etiketlemede yaptığımız gibi).
-  - **Ayrı tur** — yeni genre ekleme turuyla (Afrobeats, Jersey, Amapiano) birleştir;
-    zincir zaten o zaman koşacak.
-  - **Bırak** — vokalli parçalar Demucs'tan geçmediği için embedding'leri vokal
-    içeriyor; bu, artist sınıflandırmasına *yardım* bile ediyor olabilir. Ölçülmedi.
+  | koşul | top-1 | top-5 | genre |
+  |---|---|---|---|
+  | A: hepsi eğitimde | %17.89 | %39.49 | %30.91 |
+  | B: şarkılar eğitimden çıkarıldı | %17.38 | %40.06 | %30.58 |
+  | fark | −0.51p | **+0.57p** | −0.34p |
 
-  ⚠️ Karar vermeden önce ölç: bu 1,509 parçayı çıkarınca top-1/top-5/genre ne oluyor?
-  Ucuz — embedding'ler zaten cache'te, sadece `train_classic.py` yeniden koşar.
+  **Nötr.** Farklar ters yönlerde ve hepsi 0.7 SE altında. Model şarkılarda %17.71
+  yapıyor, beat'lerde %17.89 — yani başlık metriğini şişirmiyorlardı da.
 
-  → İleriye dönük filtre `artist_match.looks_like_type_beat()` olarak hazır ama
-    `data_collector.py`'ye **bağlanmadı**; bağlanırsa gelecekteki toplamalar temiz olur.
+  **Karar:** vokal içerikleri ne yardım ediyor ne zarar, o yüzden 1,509 parça
+  **sınıflandırıcı eğitiminde kaldı** (nötr kanıt, 1,509 parçalık eğitim sinyalini
+  atmayı haklı çıkarmaz) ama **katalogdan çıkarıldı** (16,169 → 14,660). Ses eşleşmesi
+  ne kadar iyi olursa olsun, beat arayana gerçek bir şarkı önermek yanlış.
+
+  → Filtre `train_classic.py` içinde, `artist_match.looks_like_type_beat()` ile;
+    her yeniden eğitimde otomatik uygulanıyor.
+  → ⚠️ İleriye dönük **toplama filtresi hâlâ bağlanmadı**: `data_collector.py` bu
+    içeriği indirmeye devam ediyor. Bağlamak ucuz ama ayrı bir karar — indirmemek,
+    sınıflandırıcının nötr bulunan eğitim sinyalini de azaltır.
 
 ---
 

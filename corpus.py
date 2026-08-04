@@ -59,6 +59,10 @@ def rebuild_track_meta(verbose=True):
     # Tumbados, 225 rows still carried the old string and joint decoding died looking up
     # a genre the data had never heard of. In this taxonomy genre is a function of
     # artist, so computing it removes the possibility of them disagreeing.
+    if "title" not in df.columns:
+        df["title"] = ""
+    df["title"] = df["title"].fillna("")
+
     tax_genre = {t["artist"]: t["genre"] for t in config.TARGETS}
     derived = df["artist_type"].map(tax_genre)
     changed = int((derived.notna() & (derived != df["genre"])).sum())
@@ -66,7 +70,7 @@ def rebuild_track_meta(verbose=True):
     if changed and verbose:
         print(f"  {changed:,} satirin genre'si taksonomiden guncellendi")
 
-    out = df[["track", "genre", "artist_type", "search_hint"]]
+    out = df[["track", "genre", "artist_type", "search_hint", "title"]]
     os.makedirs(os.path.dirname(TRACK_META), exist_ok=True)
     out.to_csv(TRACK_META, index=False)
 

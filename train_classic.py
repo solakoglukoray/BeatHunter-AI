@@ -30,6 +30,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GroupShuffleSplit
 
+import artist_match
 import audio_features as AF
 import corpus
 
@@ -293,11 +294,31 @@ def main():
                     "genre_joint": g_joint, "n_held_out": int(is_val.sum())},
     }, MODEL_PATH)
 
-    Xn = Xs / (np.linalg.norm(Xs, axis=1, keepdims=True) + 1e-9)
-    np.savez_compressed(CATALOG_NPZ, X=Xn.astype(np.float32), tracks=tracks)
-    pd.DataFrame({"track": tracks,
-                  "artist_type": meta.loc[tracks, "artist_type"].to_numpy(),
-                  "genre": meta.loc[tracks, "genre"].to_numpy()}).to_csv(CATALOG_CSV, index=False)
+    # The catalogue is what "similar beats" comes from, so it is filtered where the
+    # training set is not. 9.6% of the corpus is released songs, official videos and
+    # karaoke — recommending "Post Malone - Circles" to someone looking for a beat is
+    # wrong however good the audio match is, and a user reported exactly that.
+    #
+    # They stay in CLASSIFIER training because removing them was measured and changes
+    # nothing: on a fixed held-out type-beat test set, dropping them from training moved
+    # top-1 -0.51p and top-5 +0.57p, both under 1 SE and in opposite directions
+    # (experiment_nonbeat.py). Neutral evidence does not justify throwing away 1,509
+    # tracks of training signal, but it also does not justify serving them as results.
+    titles = meta.loc[tracks, "title"].fillna("").to_numpy() \
+        if "title" in meta.columns else np.array([""] * len(tracks))
+    is_song = np.array([bool(t) and not artist_match.looks_like_type_beat(t)
+                        for t in titles])
+    if is_song.any():
+        print(f"\ncatalogue: {is_song.sum():,} type beat olmayan parca cikarildi "
+              f"(egitimde kaldilar)")
+
+    keep_cat = ~is_song
+    Xn = Xs[keep_cat] / (np.linalg.norm(Xs[keep_cat], axis=1, keepdims=True) + 1e-9)
+    cat_tracks = tracks[keep_cat]
+    np.savez_compressed(CATALOG_NPZ, X=Xn.astype(np.float32), tracks=cat_tracks)
+    pd.DataFrame({"track": cat_tracks,
+                  "artist_type": meta.loc[cat_tracks, "artist_type"].to_numpy(),
+                  "genre": meta.loc[cat_tracks, "genre"].to_numpy()}).to_csv(CATALOG_CSV, index=False)
 
     print(f"\nwrote {MODEL_PATH} ({os.path.getsize(MODEL_PATH)/1e6:.1f} MB)")
     print(f"wrote {CATALOG_NPZ} ({os.path.getsize(CATALOG_NPZ)/1e6:.1f} MB, {Xn.shape})")
