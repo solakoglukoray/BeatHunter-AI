@@ -389,8 +389,14 @@ async def background_youtube_worker(query: str, cache_key: str, username: str):
             asyncio.run(manager.send_update(cache_key, response_data))
 
     except Exception as e:
+        # Failures expire in a minute, successes in a week. Caching a failure for an hour
+        # like a result meant one bad run — a network blip, a broken dependency — pinned
+        # that query to "failed" for an hour with no way to retry. It happened during this
+        # very debugging session: torchaudio was fixed, and the app kept serving the
+        # cached failure. Long enough for the waiting client to read the error, short
+        # enough that clicking again actually tries again.
         error_data = {"status": "failed", "error": str(e)}
-        api_cache.set(cache_key, error_data, expire=3600)
+        api_cache.set(cache_key, error_data, expire=60)
         try:
             loop = asyncio.get_running_loop()
             loop.create_task(manager.send_update(cache_key, error_data))
@@ -431,7 +437,15 @@ async def analyze_youtube_endpoint(
     current_user: auth.User = Depends(check_rate_limit)
 ):
     try:
-        cache_key     = f"yt_{query.strip().lower()}"
+        # Hashed, not the raw query. The key doubles as the task_id, and the task_id
+        # travels back through /task_status/{task_id} and /ws/{task_id} — both path
+        # parameters, which match a single segment. A pasted YouTube URL put slashes in
+        # it, Starlette decoded %2F back to / before routing, and every poll 404'd until
+        # the UI gave up after 180s and blamed a slow analysis. Search terms have no
+        # slashes, so the bug only showed for URLs.
+        # Hashing keeps the cache behaviour identical (same query -> same key) while
+        # guaranteeing the id survives a round trip. The upload path already did this.
+        cache_key     = f"yt_{hashlib.sha256(query.strip().lower().encode('utf-8')).hexdigest()[:16]}"
         cached_result = api_cache.get(cache_key)
 
         if cached_result:

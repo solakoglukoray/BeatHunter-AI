@@ -21,6 +21,16 @@ python-dotenv
 torch
 panns-inference
 
+# torchaudio must be the SAME version as torch. Demucs imports it, and its compiled
+# extension links against a specific torch ABI — a mismatched pair fails at import with
+# "OSError: [WinError 127] The specified procedure could not be found", which surfaces
+# only as "Demucs failed (exit 1)" three layers up. It happened here: torch 2.6.0 against
+# torchaudio 2.10.0, which broke every path that separates vocals while leaving the
+# skip_demucs path working, so the app looked half-alive.
+# Install both from the same index, e.g.
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+torchaudio
+
 # --- ML ---
 # tensorflow is only needed to train or inspect the retired EfficientNetB3 path
 # (model_trainer.py, overfit_test.py). Serving no longer imports it.
