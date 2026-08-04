@@ -225,6 +225,22 @@ def main():
 
     print("training...", flush=True)
     t0 = time.time()
+    # ⚠️ class_weight='balanced' WAS TRIED AND REJECTED (2026-08-04). Do not re-add it
+    # without re-measuring; the reasoning that recommends it does not survive contact
+    # with this pipeline.
+    #
+    # Trap 6 said rare classes are never predicted, and re-labelling from video titles
+    # had just pushed the artist imbalance from 5.0x to 6.0x, so balancing looked free
+    # and overdue. Measured on the same held-out split, one variable changed:
+    #
+    #     class_weight   top-1     top-5     genre     classes predicted
+    #     None           17.90%    39.33%    30.77%    213/213
+    #     balanced       17.84%    38.78%    30.24%    213/213
+    #
+    # Worse on all three, and the premise is false: BOTH settings predict every one of
+    # the 213 classes. Joint decoding already spreads predictions across the taxonomy.
+    # Trap 6 was measured on the retired EfficientNetB3 multi-head model and does not
+    # transfer to PCA + LogReg + joint decoding.
     clf_a = LogisticRegression(max_iter=1000, n_jobs=-1).fit(Xs[~is_val], ya[~is_val])
     clf_g = LogisticRegression(max_iter=1000, n_jobs=-1).fit(Xs[~is_val], yg[~is_val])
     print(f"  {time.time()-t0:.0f}s")

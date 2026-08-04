@@ -8,11 +8,12 @@ artist/genre sınıflandırır (joint decoding ile tutarlı çift) → aynı 128
 vektörle 16,169 parçalık katalogda kosinüs benzerliği ile benzer beat önerir.
 BPM ve key librosa'dan (modelden bağımsız).
 
-**Ölçülen — GÜNCEL (2026-08-04, 3,234 held-out parça, 213 sanatçı / 60 genre):**
+**Ölçülen — GÜNCEL (2026-08-04, 3,234 held-out parça, 213 sanatçı / 60 genre,
+başlıktan yeniden etiketleme sonrası):**
 
 | | artist top-1 | oran | top-5 | genre (joint) |
 |---|---|---|---|---|
-| **fine-tuned PANNs, yeni korpus** | **%17.81** | **35.4x** | **%38.81** | **%30.33** |
+| **fine-tuned PANNs, temizlenmiş korpus** | **%17.90** | **34.5x** | **%39.33** | **%30.77** |
 
 **Temsil karşılaştırması (eski 2,847 parçalık split, 194 sanatçı — kendi içinde geçerli):**
 
@@ -201,7 +202,20 @@ tarama (80, 112) zaman kaybı. Boyutla düşüş ise gerçek: 384 vs 96 arası 2
    120-150 BPM), `onset_contrast` (ters yönde), `dynamic_range` (-0.00),
    `rolloff_mean` (centroid ile r=0.97). Gerekçeler `audio_features.py`'de.
 
-6. **Sınıf dengesizliği** — class_weight yok, genre'de 46x, artist'te 28x oran var.
+6. **Sınıf dengesizliği — ⚠️ `class_weight` DENENDİ VE REDDEDİLDİ (2026-08-04)**
+   Bu maddenin öncülü bu boru hattı için **yanlış**. Aynı held-out split'te, tek değişken:
+
+   | class_weight | top-1 | top-5 | genre | tahmin edilen sınıf |
+   |---|---|---|---|---|
+   | **None** *(üretimde)* | **%17.90** | **%39.33** | **%30.77** | 213/213 |
+   | balanced | %17.84 | %38.78 | %30.24 | 213/213 |
+
+   Üç metrikte de kötü, **ve "nadir sınıflar hiç tahmin edilmiyor" iddiası geçersiz** —
+   iki ayarda da 213 sınıfın hepsi tahmin ediliyor, joint decoding tahminleri zaten
+   yayıyor. Bu tuzak emekli EfficientNetB3'ün üç-head'li mimarisinde ölçülmüştü.
+   Yeniden ölçmeden geri ekleme. (Eski metin aşağıda, tarihsel kayıt olarak.)
+
+   ~~Eski:~~  — class_weight yok, genre'de 46x, artist'te 28x oran var.
    Nadir sınıflar pratikte hiç tahmin edilmiyor. (Eğitim gerektirir, ertelendi.)
 
 7. **Eşzamanlılık (✅ DÜZELTİLDİ 2026-07-28)**
@@ -253,9 +267,21 @@ tarama (80, 112) zaman kaybı. Boyutla düşüş ise gerçek: 384 vs 96 arası 2
    KABUL ediliyor — sonuçların %26'sı öyle ve onları atmak her aramanın dörtte birini
    kanıtsız çöpe atardı. Eşleştirme `artist_match.py`'de, toplayıcı ve denetleyici
    aynı kodu kullanıyor.
-   → ⚠️ **Mevcut 16,169 parça temizlenmedi**, bilerek ertelendi. Temizlik model/katalog/
-   eşik/mood zincirinin tamamını yeniden koşmayı gerektiriyor; yeni genre eklendiğinde
-   (Afrobeats, Jersey, Amapiano…) taksonomi zaten değişeceği için o turla birleştirilecek.
+   → ✅ **Mevcut korpus da temizlendi (2026-08-04).** `relabel_from_titles.py` bütün
+   16,169 başlığı çekti (oEmbed, ~7 dk) ve **1,171 parçayı** başlıkta adı geçen sanatçıya
+   yeniden etiketledi — silmedi. Genre otomatik düzeldi, çünkü `corpus.py` genre'yi
+   sanatçıdan türetiyor.
+   → ⚠️ Yeniden etiketleme kapsam DIŞI bırakılanlar, ikisi de kasıtlı:
+   **grup üyeleri** (44 parça — "ANDRE 3000 x ERYKAH BADU" bir Outkast etiketiyle
+   çelişmez, André 3000 zaten Outkast'tır) ve **type beat olmayan içerik**
+   (119 parça — resmi klipler, karaoke). `undetermined` (%31) de dokunulmadı:
+   doğrulanamamış olmak kirli olmak değil.
+   → ⚠️ Etki tek yönlü değil: dengesizlik **5.0x → 6.0x** yükseldi, çünkü jenerik ve
+   yapımcı sorguları popüler isimlere akıyor (808Melo 75→27, çünkü "808Melo type beat"
+   Pop Smoke getiriyor; Drake 75→138, J. Cole 75→141).
+   → 🚨 **Sayılar neredeyse hiç değişmedi**: top-1 %17.81→%17.90, top-5 %38.81→%39.33,
+   genre %28.21→%30.77. Yani etiket gürültüsü tavanın **tek** açıklaması değildi;
+   1,171 etiketi düzeltmek 0.1 puan getirdi. Kalan tavan başka yerde.
 
 ## Kurallar
 - **CNN eğitimi emekli** — `model_trainer.py` duruyor ama üretim yolunda değil.

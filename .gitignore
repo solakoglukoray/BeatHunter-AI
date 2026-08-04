@@ -84,3 +84,6 @@ api_cache_dir/
 # Label-noise audit output — regenerate with measure_label_noise.py.
 label_noise_sample.csv
 label_noise_report.txt
+
+# Re-label planning output — regenerate with relabel_from_titles.py.
+relabel_plan*.csv

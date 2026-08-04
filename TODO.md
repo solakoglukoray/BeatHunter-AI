@@ -464,6 +464,33 @@ sample weight'ler, accuracy tabanlı callback'ler, epoch başına train/val/şan
 - [ ] **4.5 — `[EĞİTİM GEREKİR]` `random_flip_left_right` augmentation'ını gözden geçir**
   Spektrogramda zaman eksenini ters çeviriyor — ritim yönü müzikte anlamlı, tartışmalı.
 
+- [ ] **5.1 — Type beat OLMAYAN 1,509 parça: silinecek mi, ayrı tur mu?**
+  Korpusun **%9.6'sı type beat değil** — yayınlanmış şarkılar, resmi klipler, karaoke
+  versiyonları (`"Kendrick Lamar - ELEMENT."`, `"A$AP Rocky - L$D (Official Video)"`,
+  `"Guts over Fear (Piano Karaoke Version)"`). Enstrümantal olması gereken bir veri
+  setinde vokalli, telifli, tamamlanmış şarkılar var.
+
+  Ölçüm: `models/video_titles.csv` + `artist_match.looks_like_type_beat()`.
+  Başlığı olan 15,716 parçanın 1,509'u işareti taşımıyor.
+
+  Neden bu turda dokunulmadı: yeniden etiketleme turunda **tek değişken tutmak**
+  ölçümü yorumlanabilir kılıyordu. Ayrıca silmek korpusu %9.6 küçültür ve zinciri
+  yeniden koşmayı gerektirir.
+
+  Seçenekler:
+  - **Sil** — en temizi, ama 1,509 parça ve bazı sınıflar epey küçülebilir (önce
+    sanatçı bazında etkiyi ölç, yeniden etiketlemede yaptığımız gibi).
+  - **Ayrı tur** — yeni genre ekleme turuyla (Afrobeats, Jersey, Amapiano) birleştir;
+    zincir zaten o zaman koşacak.
+  - **Bırak** — vokalli parçalar Demucs'tan geçmediği için embedding'leri vokal
+    içeriyor; bu, artist sınıflandırmasına *yardım* bile ediyor olabilir. Ölçülmedi.
+
+  ⚠️ Karar vermeden önce ölç: bu 1,509 parçayı çıkarınca top-1/top-5/genre ne oluyor?
+  Ucuz — embedding'ler zaten cache'te, sadece `train_classic.py` yeniden koşar.
+
+  → İleriye dönük filtre `artist_match.looks_like_type_beat()` olarak hazır ama
+    `data_collector.py`'ye **bağlanmadı**; bağlanırsa gelecekteki toplamalar temiz olur.
+
 ---
 
 ## Notlar
