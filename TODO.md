@@ -3,6 +3,21 @@
 Kurallar: Her madde işaretlendiğinde tarih ve kısa not eklenir. Eğitim gerektiren
 maddeler `[EĞİTİM GEREKİR]` ile işaretli — şu an ertelenmiş durumda.
 
+> 🗄️ **2026-11-20 — Proje rafa kaldırıldı, ham veri silindi.**
+> `dataset/audio/*.mp3` (16,169 dosya, 71.2 GB) ve `dataset_processed/images/*.png`
+> (873,924 dosya, 61.5 GB) disk açmak için silindi — toplam +134.4 GB boş alan. `dataset/pruned/` duruyor.
+> Yedek (models/ tamamı + metadata + küçük artefaktlar, SHA-256 doğrulamalı):
+> `C:\Users\koray\BeatHunter_backup\`.
+> **Sonuç:** yeniden fine-tune, embedding üretimi (`--extract`) ve taksonomi
+> değişikliği (`corpus.py` yeniden kurulumu) zinciri artık **önce YouTube'dan yeniden
+> toplama** gerektiriyor. Aşağıdaki `[EĞİTİM GEREKİR]` maddelerin hepsi bu ön koşula
+> bağlı. Serving ve önbellekten `train_classic.py` (`--extract` olmadan) çalışmaya
+> devam ediyor. Ayrıntı ve `corpus.py` boş-korpus tuzağı: CLAUDE.md → "RAFA KALDIRILDI".
+>
+> - [ ] **R.1 — Yeniden toplamadan önce:** `data_collector.py`'nin ses yokken
+>   metadata'daki satırlara davranışını test et (çift satır riski); `corpus.py`
+>   ses eksikken boş korpus yazmak yerine hata versin.
+
 ---
 
 ## FAZ 0 — Sistemi çalışır hale getir (eğitim gerekmiyor, ~1 saat)

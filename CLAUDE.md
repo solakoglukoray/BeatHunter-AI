@@ -44,6 +44,42 @@ PCA+LogReg+joint decoding mimarisi hiç değişmedi — sadece embedding kaynağ
 Tek istisna top-5: uçtan uca model orada 2.7p (~3 SE) daha iyi, çünkü kendi head'i
 2048 boyutun tamamını görüyor, PCA ise %10 varyansı atıyor.
 
+## 🗄️ RAFA KALDIRILDI — ham ses ve spektrogramlar SİLİNDİ (2026-11-20)
+
+Disk açmak için silindi (yedek doğrulandıktan sonra):
+- `dataset/audio/*.mp3` — 16,169 dosya, 71.2 GB
+- `dataset_processed/images/*.png` — 873,924 dosya, 61.5 GB
+
+**Kalanlar:** `dataset/pruned/` (1,131 mp3, 4.9 GiB, dokunulmadı),
+`dataset/metadata.csv`, `dataset_processed/metadata_processed.csv`, `models/` tamamı.
+
+**Yedek:** `C:\Users\koray\BeatHunter_backup\` — `models/` tamamı (2.9 GB) + metadata,
+pruned manifest, `collection_log.json`, relabel/label-noise dosyaları, kullanıcı DB'si.
+37 dosya, 2.97 GB, `SHA256SUMS.txt` ile doğrulandı (`sha256sum -c SHA256SUMS.txt`).
+Sesin kendisi yedeklenmedi — yeniden üretilebilir sayıldı (YouTube'dan).
+
+**Hâlâ çalışan (sese ihtiyaç yok):**
+- Serving: `analyze_beat`, API, UI — yalnızca `models/` okur. Öneriler YouTube ID döner.
+- `train_classic.py` (**`--extract` OLMADAN**): sınıflandırıcı, katalog, eşik kalibrasyonu
+  `models/panns_ft_features.npz`'den — önbellek 16,169/16,169 parçayı kapsıyor.
+- `calibrate_mood.py`: önbellekteki 2,500 parçalık sinyalle (`models/mood_signals.npz`).
+
+**🚨 Artık YouTube'dan YENİDEN TOPLAMA gerektiren zincir:**
+yeniden fine-tune (`panns_finetune.py`) → embedding üretimi (`train_classic.py --extract`,
+`panns_features_experiment.py`, `panns_ft_frozen_experiment.py`) → taksonomi değişikliği
+(`corpus.py` yeniden kurulumu) → yeni mood sinyalleri, `calibrate_label_choice.py` mood
+bölümü (sessizce 0 örnekle çalışır). CNN yolu (`data_processor.py`, `model_trainer.py`,
+`overfit_test.py`) da spektrogramsız kaldı.
+
+⚠️ **TUZAK — `corpus.py` boş korpus üretir.** `rebuild_track_meta()` yalnızca diskinde
+mp3'ü olan satırları tutar. Ses yokken `python corpus.py` çalışırsa veya
+`corpus.load_tracks()` otomatik yeniden kurulumu tetiklenirse (`dataset/metadata.csv`,
+`models/vector_meta_track.csv`'den yeniyse) `vector_meta_track.csv` **0 satırla** yazılır.
+Önce sesi geri getir. Bozulursa `git checkout models/vector_meta_track.csv` veya yedekten dön.
+⚠️ `data_collector.py` kaldığı yerden devam ederken mevcut ID'leri **diskteki dosyalardan**
+okur; ses yokken çalıştırılınca metadata'daki satırları indirilmemiş sayar. Bu durumdaki
+davranışı (çift satır riski) test edilmedi — yeniden toplamadan önce kontrol et.
+
 ## Stack
 - Backend: FastAPI + Uvicorn
 - Frontend: Streamlit
@@ -318,9 +354,11 @@ python get_encoder.py        # ne var ne yok, stock ağırlıkları indirir
 | `models/panns_ft_encoder.pt` (327 MB) | **bizim** fine-tune ettiğimiz encoder | indirilemez — build artefaktı |
 | `~/panns_data/Cnn14_mAP=0.431.pth` (327 MB) | stock AudioSet | Zenodo'dan indirilir |
 
-Fine-tuned ağırlık için üç yol: **(1)** başka makineden kopyala (günlük kullanımda bu),
+Fine-tuned ağırlık için üç yol: **(1)** başka makineden ya da
+`C:\Users\koray\BeatHunter_backup\models\` yedeğinden kopyala (günlük kullanımda bu),
 **(2)** yeniden üret (`panns_finetune.py` ~2.8 sa GPU + `--extract-encoder`, sonra
-`train_classic.py --extract` ~45 dk), **(3)** onsuz çalış — stock ağırlıklar otomatik
+`train_classic.py --extract` ~45 dk) — ⚠️ 2026-11-20'den beri önce sesin YouTube'dan
+yeniden toplanmasını gerektirir, **(3)** onsuz çalış — stock ağırlıklar otomatik
 devreye girer, maliyeti artist top-1 %16.16 → %12.96; ardından `train_classic.py`
 (dakikalar, embedding'ler cache'te).
 
